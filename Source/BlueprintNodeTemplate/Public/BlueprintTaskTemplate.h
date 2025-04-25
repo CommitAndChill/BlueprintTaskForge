@@ -62,6 +62,9 @@ public:
 //--CK
 	UPROPERTY(BlueprintAssignable)
 	FCustomPinDelegate OnCustomPinTriggered;
+	UPROPERTY(BlueprintAssignable)
+	FCustomPinDelegate OnCustomPinTriggered;
+
 
     UFUNCTION(BlueprintCallable, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Activate", ExposeAutoCall = "true"))
 //++CK
