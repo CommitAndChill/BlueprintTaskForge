@@ -10,7 +10,6 @@
 
 
 #if WITH_EDITOR
-#include "Interfaces/IPluginManager.h"
 #include "ObjectEditorUtils.h"
 
 //++CK
@@ -21,10 +20,6 @@
 
 UBlueprintTaskTemplate::UBlueprintTaskTemplate(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-    if (const UObject* Owner = GetOuter())
-    {
-        WorldPrivate = Owner->GetWorld();
-    }
 }
 
 //++CK
@@ -96,12 +91,6 @@ auto
 }
 //--CK
 
-void UBlueprintTaskTemplate::BeginDestroy()
-{
-    WorldPrivate = nullptr;
-    Super::BeginDestroy();
-}
-
 //++CK
 auto
     UBlueprintTaskTemplate::
@@ -150,7 +139,7 @@ void UBlueprintTaskTemplate::Serialize(FArchive& Ar)
 void
     UBlueprintTaskTemplate::Deactivate_Internal()
 {
-    QUICK_SCOPE_CYCLE_COUNTER(Deactivate_Internal)
+    QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Deactivate_Internal)
     if (IsBeingDestroyed)
     { return; }
 
