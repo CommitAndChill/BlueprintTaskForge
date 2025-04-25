@@ -14,6 +14,7 @@
 
 #include "K2Node_ExtendConstructObject.generated.h"
 
+class UBNTNodeDecorator;
 class UBlueprintTaskTemplate;
 struct FCustomOutputPin;
 class FBlueprintActionDatabaseRegistrar;
@@ -33,19 +34,19 @@ class BLUEPRINTNODETEMPLATEEDITOR_API UK2Node_ExtendConstructObject : public UK2
 public:
     UK2Node_ExtendConstructObject(const FObjectInitializer& ObjectInitializer);
 
-    // - UEdGraphNode interface			// UK2Node_BaseAsyncTask
-    virtual void AllocateDefaultPins() override;
-    virtual FText GetTooltipText() const override;
-    virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
-    virtual bool IsCompatibleWithGraph(const UEdGraph* TargetGraph) const override;
-    virtual void ValidateNodeDuringCompilation(class FCompilerResultsLog& MessageLog) const override;
-    virtual void GetPinHoverText(const UEdGraphPin& Pin, FString& HoverTextOut) const override;
-    virtual bool ShouldShowNodeProperties() const override { return true; }
-    virtual bool CanDuplicateNode() const override { return true; }
-    virtual void PostPasteNode() override;
-    virtual UObject* GetJumpTargetForDoubleClick() const override;
-    // End of UEdGraphNode interface	// UK2Node_BaseAsyncTask
+	// - UEdGraphNode interface			// UK2Node_BaseAsyncTask
+	virtual void AllocateDefaultPins() override;
+	virtual FText GetTooltipText() const override;
+	virtual FLinearColor GetNodeTitleColor() const override;
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
+	virtual bool IsCompatibleWithGraph(const UEdGraph* TargetGraph) const override;
+	virtual void ValidateNodeDuringCompilation(class FCompilerResultsLog& MessageLog) const override;
+	virtual void GetPinHoverText(const UEdGraphPin& Pin, FString& HoverTextOut) const override;
+	virtual bool ShouldShowNodeProperties() const override { return true; }
+	virtual bool CanDuplicateNode() const override { return true; }
+	virtual void PostPasteNode() override;
+	virtual UObject* GetJumpTargetForDoubleClick() const override;
+	
 	/**Not the same as @ValidateNodeDuringCompilation.
 	 * This is called at the start of @ExpandNode so most
 	 * variables that we need are valid for the context of

@@ -47,14 +47,19 @@ void FBlueprintNodeTemplateEditorModule::StartupModule()
 
 void FBlueprintNodeTemplateEditorModule::ShutdownModule()
 {
-    //if(FAssetRegistryModule* AssetRegistryModule = FModuleManager::LoadModulePtr<FAssetRegistryModule>(TEXT("AssetRegistry")))
-    //{
-    //	AssetRegistryModule->Get().OnAssetRemoved().RemoveAll(this);
-    //}
+	//if(FAssetRegistryModule* AssetRegistryModule = FModuleManager::LoadModulePtr<FAssetRegistryModule>(TEXT("AssetRegistry")))
+	//{
+	//	AssetRegistryModule->Get().OnAssetRemoved().RemoveAll(this);
+	//}
 
-//++CK
-    FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(_OnObjectPropertyChangedDelegateHandle);
-//--CK
+	//++CK
+	FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(_OnObjectPropertyChangedDelegateHandle);
+	//--CK
+}
+
+void FBlueprintNodeTemplateEditorModule::OnBlueprintCompiled()
+{
+	RefreshClassActions();
 }
 
 void FBlueprintNodeTemplateEditorModule::OnFilesLoaded()

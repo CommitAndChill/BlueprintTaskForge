@@ -224,18 +224,8 @@ public:
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
 //++CK
-    virtual auto
-    Get_StatusBackgroundColor(
-        FLinearColor& OutColor) const -> bool;
-
-    virtual FString
-    Get_NodeDescription() const;
-
-    virtual FString
-    Get_StatusString() const;
-
-    auto
-    Get_IsActive() const -> bool;
+	auto
+	Get_IsActive() const -> bool;
 //--CK
 
 protected:
