@@ -6,6 +6,8 @@
 #include "Modules/ModuleManager.h"
 #include "Modules/ModuleInterface.h"
 
+class FBlueprintEditor;
+class FWorkflowAllowedTabSet;
 class FString;
 class UObject;
 struct FAssetData;
@@ -16,7 +18,12 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
+	FDelegateHandle BlueprintEditorTabSpawnerHandle, BlueprintEditorLayoutExtensionHandle;
+
 private:
+
+	void OnBlueprintCompiled();
+	
 	void OnFilesLoaded();
 
 	void OnAssetAdded(const FAssetData& AssetData) const;

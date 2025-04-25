@@ -16,16 +16,17 @@
 #include "PropertyEditorDelegates.h"
 #include "PropertyEditorModule.h"
 #include "AssetRegistry/ARFilter.h"
+#include "NodeCustomizations/FBNTNodeDetailsCustomizations.h"
 
 
 #define LOCTEXT_NAMESPACE "FBlueprintNodeTemplateEditorModule"
 
 void FBlueprintNodeTemplateEditorModule::StartupModule()
 {
-    const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-    AssetRegistryModule.Get().OnFilesLoaded().AddRaw(this, &FBlueprintNodeTemplateEditorModule::OnFilesLoaded);
-    AssetRegistryModule.Get().OnAssetRenamed().AddRaw(this, &FBlueprintNodeTemplateEditorModule::OnAssetRenamed);
-    AssetRegistryModule.Get().OnInMemoryAssetDeleted().AddRaw(this, &FBlueprintNodeTemplateEditorModule::HandleAssetDeleted);
+	const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	// AssetRegistryModule.Get().OnFilesLoaded().AddRaw(this, &FBlueprintNodeTemplateEditorModule::OnFilesLoaded);
+	AssetRegistryModule.Get().OnAssetRenamed().AddRaw(this, &FBlueprintNodeTemplateEditorModule::OnAssetRenamed);
+	AssetRegistryModule.Get().OnInMemoryAssetDeleted().AddRaw(this, &FBlueprintNodeTemplateEditorModule::HandleAssetDeleted);
 
     FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
     PropertyModule.RegisterCustomPropertyTypeLayout(
@@ -34,6 +35,14 @@ void FBlueprintNodeTemplateEditorModule::StartupModule()
 //++CK
     _OnObjectPropertyChangedDelegateHandle = FCoreUObjectDelegates::OnObjectPropertyChanged.AddRaw(this, &FBlueprintNodeTemplateEditorModule::OnObjectPropertyChanged);
 //--CK
+
+	//BNT node customization
+	PropertyModule.RegisterCustomClassLayout(
+		"K2Node_Blueprint_Template",
+		FOnGetDetailCustomizationInstance::CreateStatic(&FBNTNodeDetailsCustomizations::MakeInstance)
+	);
+
+	PropertyModule.NotifyCustomizationModuleChanged();
 }
 
 void FBlueprintNodeTemplateEditorModule::ShutdownModule()
@@ -54,7 +63,11 @@ void FBlueprintNodeTemplateEditorModule::OnFilesLoaded()
 
     AssetRegistryModule.Get().OnAssetAdded().AddRaw(this, &FBlueprintNodeTemplateEditorModule::OnAssetAdded);
 
-    RefreshClassActions();
+	RefreshClassActions();
+
+#if WITH_EDITOR
+	GEditor->OnBlueprintCompiled().AddRaw(this, &FBlueprintNodeTemplateEditorModule::OnBlueprintCompiled);
+#endif
 }
 
 void FBlueprintNodeTemplateEditorModule::RefreshClassActions() const
