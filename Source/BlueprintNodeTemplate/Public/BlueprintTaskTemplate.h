@@ -40,8 +40,8 @@ struct FCustomOutputPinData
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCustomPinDelegate, FName, PinName, TInstancedStruct<FCustomOutputPinData>, Data);
 
 /** BlueprintTaskTemplate */
-UCLASS(Abstract, Blueprintable, BlueprintType)
-class BLUEPRINTNODETEMPLATE_API UBlueprintTaskTemplate : public UObject
+UCLASS(Abstract, Blueprintable, BlueprintType, EditInlineNew)
+class BLUEPRINTNODETEMPLATE_API UBlueprintTaskTemplate : public UBlueprintExtension
 {
     GENERATED_BODY()
 public:
@@ -65,6 +65,19 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FCustomPinDelegate OnCustomPinTriggered;
 
+	UFUNCTION(
+		BlueprintCallable,
+		Category = "BlueprintTaskTemplate",
+		meta =
+			(DisplayName = "BlueprintTaskTemplate",
+			 DefaultToSelf = "Outer",
+			 BlueprintInternalUseOnly = "TRUE",
+			 DeterminesOutputType = "Class",
+			 Keywords = "BP Blueprint Task Template"))
+	static UBlueprintTaskTemplate* BlueprintTaskTemplate(UObject* Outer, TSubclassOf<UBlueprintTaskTemplate> Class, FString NodeGuidStr);
+
+	/**Returns the task template that is attached to the @Outer's blueprint.*/
+	static UBlueprintTaskTemplate* GetTaskTemplateByNodeGUID(UObject* Outer, FString NodeGUID);
 
     UFUNCTION(BlueprintCallable, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Activate", ExposeAutoCall = "true"))
 //++CK
@@ -127,6 +140,14 @@ public:
 	 * on the node, which can then be triggered by calling @TriggerCustomOutputPin */
 	UFUNCTION(BlueprintNativeEvent, Category = "BlueprintTaskTemplate")
 	TArray<FCustomOutputPin> GetCustomOutputPins();
+	/**Returns whether this instance is an extension
+	 * attached to the blueprint.
+	 * This is NOT the CDO, this is NOT the runtime instance.
+	 * If true, this instance is an instance that is attached
+	 * to the blueprint the node is inside. */
+	UFUNCTION(Category = "BlueprintTaskTemplate", BlueprintCallable, BlueprintPure)
+	bool IsExtension() const;
+
 	/**For each element returned by this, the node will generate a output
 	 * pin that can be triggered by calling @TriggerCustomOutputPin */
 	UFUNCTION(Category = "BlueprintTaskTemplate", BlueprintCallable)
