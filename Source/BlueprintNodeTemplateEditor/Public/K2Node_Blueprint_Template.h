@@ -65,32 +65,3 @@ protected:
 
     virtual void CollectSpawnParam(UClass* InClass, const bool bFullRefresh) override;
 };
-
-// --------------------------------------------------------------------------------------------------------------------
-
-//++CK
-class SGraphNode_Blueprint_Template : public SGraphNodeK2Base
-{
-public:
-    SLATE_BEGIN_ARGS(SGraphNode_Blueprint_Template) {}
-    SLATE_END_ARGS()
-
-    auto Construct(
-        const FArguments& InArgs,
-        UK2Node_Blueprint_Template* InNode) -> void;
-
-    auto GetNodeInfoPopups(
-        FNodeInfoContext* Context,
-        TArray<FGraphInformationPopupInfo>& Popups) const -> void override;
-
-    auto CreateBelowPinControls(
-        TSharedPtr<SVerticalBox> MainBox) -> void override;
-
-    auto Get_NodeConfigTextVisibility() const -> EVisibility;
-    auto Get_NodeConfigText() const -> FText;
-
-protected:
-    TWeakObjectPtr<UK2Node_Blueprint_Template> _BlueprintTaskNode;
-    TSharedPtr<STextBlock> _ConfigTextBlock;
-};
-//--CK
