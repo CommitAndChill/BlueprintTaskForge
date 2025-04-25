@@ -10,10 +10,9 @@
 #include "BlueprintActionDatabase.h"
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintTaskTemplate.h"
-#include "BlueprintAITaskTemplate.h"
+
 #include "BlueprintNodeTemplate.h"
 #include "K2Node_Blueprint_Template.h"
-#include "K2Node_ExtendConstructAiTask.h"
 #include "PropertyEditorDelegates.h"
 #include "PropertyEditorModule.h"
 #include "AssetRegistry/ARFilter.h"
@@ -91,14 +90,11 @@ void FBlueprintNodeTemplateEditorModule::RefreshClassActions() const
         }
     }
 
-    if (FBlueprintActionDatabase* Bad = FBlueprintActionDatabase::TryGet())
-    {
-        Bad->RefreshClassActions(UBlueprintTaskTemplate::StaticClass());
-        Bad->RefreshClassActions(UK2Node_Blueprint_Template::StaticClass());
-
-        Bad->RefreshClassActions(UBlueprintAITaskTemplate::StaticClass());
-        Bad->RefreshClassActions(UK2Node_ExtendConstructAiTask::StaticClass());
-    }
+	if (FBlueprintActionDatabase* Bad = FBlueprintActionDatabase::TryGet())
+	{
+		Bad->RefreshClassActions(UBlueprintTaskTemplate::StaticClass());
+		Bad->RefreshClassActions(UK2Node_Blueprint_Template::StaticClass());
+	}
 }
 
 //++CK
