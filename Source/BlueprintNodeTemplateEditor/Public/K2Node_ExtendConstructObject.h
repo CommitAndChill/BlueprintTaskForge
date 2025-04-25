@@ -45,23 +45,33 @@ public:
     virtual void PostPasteNode() override;
     virtual UObject* GetJumpTargetForDoubleClick() const override;
     // End of UEdGraphNode interface	// UK2Node_BaseAsyncTask
+	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
+	/**Not the same as @ValidateNodeDuringCompilation.
+	 * This is called at the start of @ExpandNode so most
+	 * variables that we need are valid for the context of
+	 * what this node does. */
+	virtual bool CanBePlacedInGraph() const;
+	virtual void GenerateCustomOutputPins();
+	virtual TSharedPtr<SGraphNode> CreateVisualWidget() override;
 	FName GetTemplateInstanceName() const { return FName(ProxyClass->GetName() + NodeGuid.ToString()); }
+	
+	virtual void DestroyNode() override;
 
     virtual void PinDefaultValueChanged(UEdGraphPin* Pin) override;
     //virtual bool CanCreateUnderSpecifiedSchema(const UEdGraphSchema* DesiredSchema) const override;
     // - End of UEdGraphNode interface
 
-    // - UK2Node interface
-    virtual void ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
-    virtual bool HasExternalDependencies(TArray<class UStruct*>* OptionalOutput) const override;
-    virtual FName GetCornerIcon() const override;
-    virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
-    virtual FText GetMenuCategory() const override;
 	/**Used for scenarios where we need to run a function or retrieve
 	 * a value from the CDO, but if we are using a instance, we will
 	 * return the instance instead. */
 	UBlueprintTaskTemplate* GetInstanceOrDefaultObject() const;
 
+	// - UK2Node interface
+	virtual void ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
+	virtual bool HasExternalDependencies(TArray<class UStruct*>* OptionalOutput) const override;
+	virtual FName GetCornerIcon() const override;
+	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
+	virtual FText GetMenuCategory() const override;
 
     virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
     virtual void GetMenuEntries(struct FGraphContextMenuBuilder& ContextMenuBuilder) const override;
@@ -136,6 +146,15 @@ public:
 
 	UPROPERTY()
 	UBlueprintTaskTemplate* TaskInstance = nullptr;
+
+	/**V: For some extra details panel customization, I'm using the
+	 * decorator as a proxy class to simplify the API.
+	 * But for some reason, there's no "GetNodeWidget" function and
+	 * the "NodeWidget" property is deprecated. So I'm storing an
+	 * extra reference in here until Epic provide a true way
+	 * of retrieving the node widget. */
+	TWeakObjectPtr<UBNTNodeDecorator> Decorator = nullptr;
+
 	UPROPERTY()
 	TArray<FCustomOutputPin> CustomPins;
 

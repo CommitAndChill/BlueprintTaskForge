@@ -5,6 +5,7 @@
 #include "UObject/UObjectGlobals.h"
 #include "UObject/Package.h"
 #include "BlueprintNodeTemplate.h"
+#include "BNTRuntimeDeveloperSettings.h"
 #include "ExtendConstructObject_FnLib.h"
 
 
@@ -171,7 +172,38 @@ void
 
     OnDestroy();
 }
+
+bool UBlueprintTaskTemplate::Get_StatusBackgroundColor_Implementation(FLinearColor& OutColor) const
+{
+	OutColor = FLinearColor();
+	return false;
+}
+
+FString UBlueprintTaskTemplate::Get_NodeDescription_Implementation() const
+{
+	return FString();
+}
+
 //--CK
+
+TArray<FString> UBlueprintTaskTemplate::ValidateNodeDuringCompilation_Implementation()
+{
+	return TArray<FString>();
+}
+
+void UBlueprintTaskTemplate::DeactivateAllTasksRelatedToObject(UObject* Object)
+{
+	TArray<UObject*> SubObjects;
+	GetObjectsWithOuter(Object, SubObjects);
+
+	for(auto& CurrentObject : SubObjects)
+	{
+		if(UBlueprintTaskTemplate* TaskTemplate = Cast<UBlueprintTaskTemplate>(CurrentObject))
+		{
+			TaskTemplate->Deactivate();
+		}
+	}
+}
 
 void UBlueprintTaskTemplate::TriggerCustomOutputPin(FName OutputPin, TInstancedStruct<FCustomOutputPinData> Data)
 {
@@ -194,6 +226,13 @@ TArray<FName> UBlueprintTaskTemplate::GetCustomOutputPinNames()
 	}
 	return Result;
 }
+
+bool UBlueprintTaskTemplate::GetNodeTitleColor_Implementation(FLinearColor& Color)
+{
+	Color = FLinearColor();
+	return false;
+}
+
 bool UBlueprintTaskTemplate::IsExtension() const
 {
 	for (UObject* TemplateOwnerClass = (GetOuter() != nullptr) ? GetOuter() : nullptr
@@ -377,8 +416,16 @@ void UBlueprintTaskTemplate::RefreshCollected()
         AutoCallFunction.AddUnique(FName(TEXT("Activate")));
 
 //++CK
-        AutoCallFunction.Remove(FName(TEXT("Deactivate")));
-        ExecFunction.AddUnique(FName(TEXT("Deactivate")));
+		AutoCallFunction.Remove(FName(TEXT("Deactivate")));
+		//++V ExecFunction.AddUnique was added by CK, I am adding the developer settings logic to optionally disable this behavior
+		if(const UBNTRuntimeDeveloperSettings* DeveloperSettings = GetDefault<UBNTRuntimeDeveloperSettings>())
+		{
+			if(DeveloperSettings->EnforceDeactivateExecFunction)
+			{
+				ExecFunction.AddUnique(FName(TEXT("Deactivate")));
+			}
+		}
+		//--V
 //--CK
     }
     #endif // WITH_EDITORONLY_DATA
@@ -386,34 +433,18 @@ void UBlueprintTaskTemplate::RefreshCollected()
 
 void UBlueprintTaskTemplate::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
-    RefreshCollected();
-    Super::PostEditChangeProperty(PropertyChangedEvent);
+	RefreshCollected();
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	OnPostPropertyChanged.ExecuteIfBound(PropertyChangedEvent);
 }
 
 //++CK
-auto
-    UBlueprintTaskTemplate::
-    Get_StatusBackgroundColor(
-        FLinearColor& OutColor) const
-    -> bool
-{
-    return Get_StatusBackgroundColor_BP(OutColor);
-}
 
-auto
-    UBlueprintTaskTemplate::
-    Get_NodeDescription() const
-    -> FString
-{
-    return Get_NodeDescription_BP();
-}
 
-auto
-    UBlueprintTaskTemplate::
-    Get_StatusString() const
-    -> FString
+FString UBlueprintTaskTemplate::Get_StatusString_Implementation() const
 {
-    return Get_StatusString_BP();
+	return FString();
 }
 
 auto
