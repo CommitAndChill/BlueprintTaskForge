@@ -37,10 +37,13 @@
 #include "BlueprintNodeSpawner.h"
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintTaskTemplate.h"
+#include "DetailLayoutBuilder.h"
 #include "Framework/Commands/UIAction.h"
 #include "ToolMenu.h"
-#include "BlueprintFunctionNodeSpawner.h"
 #include "K2Node_SwitchName.h"
+#include "ObjectTools.h"
+#include "NodeCustomizations/SBNTNode.h"
+#include "StructUtils/InstancedStruct.h"
 
 
 #define LOCTEXT_NAMESPACE "K2Node"
@@ -510,30 +513,50 @@ void UK2Node_ExtendConstructObject::ValidateNodeDuringCompilation(class FCompile
         }
     }
 
-    if (ProxyClass == nullptr)
-    {
-        if (UObject const* SourceObject = MessageLog.FindSourceObject(this))
-        {
-            if (UK2Node_MacroInstance const* MacroInstance = Cast<UK2Node_MacroInstance>(SourceObject))
-            {
-                MessageLog.Error(
-                    *LOCTEXT("ExtendConstructObject", "@@ is being used in Function '@@' resulting from expansion of Macro '@@'").ToString(),
-                    this,
-                    GetGraph(),
-                    MacroInstance);
-            }
-        }
-    }
-    const UEdGraphPin* ClassPin = FindPin(ClassPinName, EGPD_Input);
-    if (!(ProxyClass && ClassPin && ClassPin->Direction == EGPD_Input))
-    {
-        MessageLog.Error(
-            *FText::Format(
-                 LOCTEXT("GenericCreateObject_WrongClassFmt", "Cannot construct Node Class of type '{0}' in @@"),
-                 FText::FromString(GetPathNameSafe(ProxyClass)))
-                 .ToString(),
-            this);
-    }
+	if (ProxyClass == nullptr)
+	{
+		if (UObject const* SourceObject = MessageLog.FindSourceObject(this))
+		{
+			if (UK2Node_MacroInstance const* MacroInstance = Cast<UK2Node_MacroInstance>(SourceObject))
+			{
+				MessageLog.Error(
+					*LOCTEXT("ExtendConstructObject", "@@ is being used in Function '@@' resulting from expansion of Macro '@@'").ToString(),
+					this,
+					GetGraph(),
+					MacroInstance);
+			}
+		}
+	}
+	const UEdGraphPin* ClassPin = FindPin(ClassPinName, EGPD_Input);
+	if (!(ProxyClass && ClassPin && ClassPin->Direction == EGPD_Input))
+	{
+		MessageLog.Error(
+			*FText::Format(
+				 LOCTEXT("GenericCreateObject_WrongClassFmt", "Cannot construct Node Class of type '{0}' in @@"),
+				 FText::FromString(GetPathNameSafe(ProxyClass)))
+				 .ToString(),
+			this);
+	}
+
+	if(!CanBePlacedInGraph())
+	{
+		MessageLog.Error(
+			*FText::Format(
+				 LOCTEXT("ExtendConstructObjectPlacedInGraph", "{0} is not allowed to be placed in this class. @@"),
+				 FText::FromString(GetPathNameSafe(ProxyClass))).ToString(), this);
+	}
+
+	if(UBlueprintTaskTemplate* Task = GetInstanceOrDefaultObject())
+	{
+		TArray<FString> Errors = Task->ValidateNodeDuringCompilation();
+		for(const FString& It : Errors)
+		{
+			MessageLog.Error(
+	            *FText::Format(
+            		 LOCTEXT("ExtendConstructObjectPlacedInGraph", "{0} @@"),
+            		 FText::FromString(It)).ToString(), this);
+		}
+	}
 }
 
 void UK2Node_ExtendConstructObject::GetPinHoverText(const UEdGraphPin& Pin, FString& HoverTextOut) const
@@ -631,6 +654,17 @@ FText UK2Node_ExtendConstructObject::GetTooltipText() const
 {
 	const FString FunctionToolTipText = ObjectTools::GetDefaultTooltipForFunction(GetFactoryFunction());
 	return FText::FromString(FunctionToolTipText);
+}
+
+FLinearColor UK2Node_ExtendConstructObject::GetNodeTitleColor() const
+{
+	FLinearColor CustomColor = FLinearColor();
+	if(GetInstanceOrDefaultObject()->GetNodeTitleColor(CustomColor))
+	{
+		return CustomColor;
+	}
+	
+	return Super::GetNodeTitleColor();
 }
 
 FName UK2Node_ExtendConstructObject::GetCornerIcon() const
@@ -736,6 +770,31 @@ UObject* UK2Node_ExtendConstructObject::GetJumpTargetForDoubleClick() const
     return nullptr;
 }
 
+bool UK2Node_ExtendConstructObject::CanBePlacedInGraph() const
+{
+	/**Check if the node is limited to specific classes.
+	 * If so, then return whether it's allowed in the current class. */
+	if(UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForGraph(GetGraph()))
+	{
+		if(ProxyClass && Cast<UBlueprintTaskTemplate>(ProxyClass->ClassDefaultObject) && Cast<UBlueprintTaskTemplate>(ProxyClass->ClassDefaultObject)->ClassLimitations.IsValidIndex(0))
+		{
+			for(auto& CurrentClass : Cast<UBlueprintTaskTemplate>(ProxyClass->ClassDefaultObject)->ClassLimitations)
+			{
+				if(!CurrentClass.IsNull())
+				{
+					if(CurrentClass->GetClassPathName().ToString() == Blueprint->GetPathName() + "_C") //Blueprints have _C appended to the name
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+	}
+	
+	return true;
+}
 
 UBlueprintTaskTemplate* UK2Node_ExtendConstructObject::GetInstanceOrDefaultObject() const
 {
@@ -783,6 +842,22 @@ void UK2Node_ExtendConstructObject::GenerateCustomOutputPins()
 	}
 }
 
+TSharedPtr<SGraphNode> UK2Node_ExtendConstructObject::CreateVisualWidget()
+{
+	if(TaskInstance)
+	{
+		/**V: I can't figure out how or where, but @TaskInstance is seemingly getting serialized (?)
+		 * and I can't figure out what is supposed to be the "begin play" for this node, so I can't
+		 * figure out what is the actual best spot to bind this delegate. Not even the constructor
+		 * is triggered. */
+		TaskInstance->OnPostPropertyChanged.BindLambda([this](FPropertyChangedEvent PropertyChangedEvent)
+		{
+			ReconstructNode();
+		});
+	}
+	
+	return SNew(SBNTNode, this, ProxyClass);
+}
 
 void UK2Node_ExtendConstructObject::DestroyNode()
 {
@@ -911,32 +986,6 @@ UK2Node::ERedirectType UK2Node_ExtendConstructObject::DoPinsMatchForReconstructi
 
 void UK2Node_ExtendConstructObject::AllocateDefaultPins()
 {
-    if (const auto OldPin = FindPin(UEdGraphSchema_K2::PN_Execute))
-    {
-        const int32 Idx = Pins.IndexOfByKey(OldPin);
-        if (Idx != 0)
-        {
-            Pins.RemoveAt(Idx, 1, false);
-            Pins.Insert(OldPin, 0);
-        }
-    }
-    else
-    {
-        CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Execute);
-    }
-    if (const auto OldPin = FindPin(UEdGraphSchema_K2::PN_Then))
-    {
-        const int32 Idx = Pins.IndexOfByKey(OldPin);
-        if (Idx != 1)
-        {
-            Pins.RemoveAt(Idx, 1, false);
-            Pins.Insert(OldPin, 1);
-        }
-    }
-    else
-    {
-        CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Then);
-    }
 	if (const auto OldPin = FindPin(UEdGraphSchema_K2::PN_Execute))
 	{
 		const int32 Idx = Pins.IndexOfByKey(OldPin);

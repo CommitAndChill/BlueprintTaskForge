@@ -30,6 +30,11 @@
 				"Mac",
 				"Linux"
 			]
+		},
+		{
+			"Name": "BlueprintNodeTemplateEditorTools",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
 		}
 	]
 }

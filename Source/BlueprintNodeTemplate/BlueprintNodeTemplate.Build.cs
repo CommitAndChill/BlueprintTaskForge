@@ -50,6 +50,7 @@ public class BlueprintNodeTemplate : ModuleRules
 
             });
     }
+				"DeveloperSettings"
 }
 
 /*

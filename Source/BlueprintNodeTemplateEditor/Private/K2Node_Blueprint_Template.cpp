@@ -227,15 +227,6 @@ FText UK2Node_Blueprint_Template::GetMenuCategory() const
     return Super::GetMenuCategory();
 }
 
-//++CK
-auto
-    UK2Node_Blueprint_Template::
-    CreateVisualWidget()
-    -> TSharedPtr<SGraphNode>
-{
-    return SNew(SGraphNode_Blueprint_Template, this);
-}
-
 auto
     UK2Node_Blueprint_Template::
     Get_NodeDescription() const
@@ -243,10 +234,15 @@ auto
 {
     if (IsValid(GEditor->PlayWorld) == false && IsValid(ProxyClass))
     {
+    	if(TaskInstance)
+    	{
+    		return TaskInstance->Get_NodeDescription_Implementation();
+    	}
+    	
         if (const auto& TaskCDO = Cast<UBlueprintTaskTemplate>(ProxyClass->ClassDefaultObject);
             IsValid(TaskCDO))
         {
-            const auto& NodeDescription = TaskCDO->Get_NodeDescription();
+            const auto& NodeDescription = TaskCDO->Get_NodeDescription_Implementation();
             return NodeDescription;
         }
 
@@ -264,7 +260,7 @@ auto
         if (const auto FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
             IsValid(FoundTaskInstance))
         {
-            const auto& NodeDescription = FoundTaskInstance->Get_NodeDescription();
+            const auto& NodeDescription = FoundTaskInstance->Get_NodeDescription_Implementation();
             return NodeDescription;
         }
     }
@@ -286,7 +282,7 @@ auto
             if (FoundTaskInstance->Get_IsActive() == false)
             { return {}; }
 
-            const auto& NodeStatus = FoundTaskInstance->Get_StatusString();
+            const auto& NodeStatus = FoundTaskInstance->Get_StatusString_Implementation();
             return NodeStatus;
         }
     }
@@ -306,7 +302,7 @@ auto
             IsValid(FoundTaskInstance))
         {
             if (FLinearColor ObtainedColor;
-                FoundTaskInstance->Get_StatusBackgroundColor(ObtainedColor))
+                FoundTaskInstance->Get_StatusBackgroundColor_Implementation(ObtainedColor))
             {
                 return ObtainedColor;
             }
@@ -395,115 +391,4 @@ void UK2Node_Blueprint_Template::CollectSpawnParam(UClass* InClass, const bool b
         }
     }
 }
-
-//++CK
-auto
-    SGraphNode_Blueprint_Template::
-    Construct(
-        const FArguments& InArgs,
-        UK2Node_Blueprint_Template* InNode)
-    -> void
-{
-    GraphNode = InNode;
-    _BlueprintTaskNode = InNode;
-
-    SetCursor(EMouseCursor::CardinalCross);
-    UpdateGraphNode();
-}
-
-auto
-    SGraphNode_Blueprint_Template::
-    GetNodeInfoPopups(
-        FNodeInfoContext* Context,
-        TArray<FGraphInformationPopupInfo>& Popups) const
-    -> void
-{
-    if (const auto& Description = _BlueprintTaskNode->Get_NodeDescription();
-        Description.IsEmpty() == false)
-    {
-        // TODO: Expose through developer settings
-        constexpr auto NodeDescriptionBackGroundColor = FLinearColor(0.0625f, 0.0625f, 0.0625f, 1.0f);
-
-        const auto DescriptionPopup = FGraphInformationPopupInfo(nullptr, NodeDescriptionBackGroundColor, Description);
-        Popups.Add(DescriptionPopup);
-    }
-
-    if (GEditor->PlayWorld)
-    {
-        if (const auto& Status = _BlueprintTaskNode->Get_StatusString();
-            Status.IsEmpty() == false)
-        {
-            const auto DescriptionPopup = FGraphInformationPopupInfo(nullptr, _BlueprintTaskNode->Get_StatusBackgroundColor(), Status);
-            Popups.Add(DescriptionPopup);
-        }
-    }
-}
-
-auto
-    SGraphNode_Blueprint_Template::
-    CreateBelowPinControls(
-        TSharedPtr<SVerticalBox> MainBox)
-    -> void
-{
-    static const FMargin ConfigBoxPadding = FMargin(2.0f, 0.0f, 1.0f, 0.0);
-
-    // Add a box to wrap around the Config Text area to make it a more visually distinct part of the node
-    TSharedPtr<SVerticalBox> BelowPinsBox;
-    MainBox->AddSlot()
-        .AutoHeight()
-        .Padding(ConfigBoxPadding)
-        [
-            SNew(SBorder)
-            .BorderImage(FAppStyle::GetBrush("Graph.StateNode.Body"))
-            .BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.04f, 1.0f))
-            .Visibility(this, &SGraphNode_Blueprint_Template::Get_NodeConfigTextVisibility)
-            [
-                SAssignNew(BelowPinsBox, SVerticalBox)
-            ]
-        ];
-
-    static const FMargin ConfigTextPadding = FMargin(2.0f, 0.0f, 0.0f, 3.0f);
-
-    BelowPinsBox->AddSlot()
-        .AutoHeight()
-        .Padding(ConfigTextPadding)
-        [
-            SAssignNew(_ConfigTextBlock, STextBlock)
-            .AutoWrapText(true)
-            .LineBreakPolicy(FBreakIterator::CreateWordBreakIterator())
-            .Text(this, &SGraphNode_Blueprint_Template::Get_NodeConfigText)
-        ];
-}
-
-auto
-    SGraphNode_Blueprint_Template::
-    Get_NodeConfigTextVisibility() const
-    -> EVisibility
-{
-    // Hide in lower LODs
-    if (const TSharedPtr<SGraphPanel> OwnerPanel = GetOwnerPanel();
-        OwnerPanel.IsValid() == false || OwnerPanel->GetCurrentLOD() > EGraphRenderingLOD::MediumDetail)
-    {
-        if (_ConfigTextBlock.IsValid() && _ConfigTextBlock->GetText().IsEmptyOrWhitespace() == false)
-        {
-            return EVisibility::Visible;
-        }
-    }
-
-    return EVisibility::Collapsed;
-}
-
-auto
-    SGraphNode_Blueprint_Template::
-    Get_NodeConfigText() const
-    -> FText
-{
-    if (IsValid(_BlueprintTaskNode.Get()))
-    { return _BlueprintTaskNode->Get_NodeConfigText(); }
-
-    return FText::GetEmpty();
-}
-
-//-CK
-
 #undef LOCTEXT_NAMESPACE
