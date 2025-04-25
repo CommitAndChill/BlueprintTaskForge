@@ -145,6 +145,27 @@ void
 }
 //--CK
 
+void UBlueprintTaskTemplate::TriggerCustomOutputPin(FName OutputPin, TInstancedStruct<FCustomOutputPinData> Data)
+{
+	/**For now, this is just broadcasting the event. Future changes could include adding
+	 * logging into this function or validation. */
+	OnCustomPinTriggered.Broadcast(OutputPin, Data);
+}
+
+TArray<FCustomOutputPin> UBlueprintTaskTemplate::GetCustomOutputPins_Implementation()
+{
+	return TArray<FCustomOutputPin>();
+}
+
+TArray<FName> UBlueprintTaskTemplate::GetCustomOutputPinNames()
+{
+	TArray<FName> Result;
+	for(auto& CurrentPin : GetCustomOutputPins())
+	{
+		Result.Add(FName(CurrentPin.PinName));
+	}
+	return Result;
+}
 #if WITH_EDITOR
 void UBlueprintTaskTemplate::CollectSpawnParam(const UClass* InClass, TSet<FName>& Out)
 {
@@ -253,13 +274,13 @@ void UBlueprintTaskTemplate::CollectDelegates(const UClass* InClass, TSet<FName>
 }
 void UBlueprintTaskTemplate::CleanInvalidParams(TArray<FNameSelect>& Arr, const TSet<FName>& ArrRef)
 {
-    for (int32 i = Arr.Num() - 1; i >= 0; --i)
-    {
-        if (Arr[i].Name != NAME_None && !ArrRef.Contains(Arr[i]))
-        {
-            Arr.RemoveAt(i, 1, false);
-        }
-    }
+	for (int32 i = Arr.Num() - 1; i >= 0; --i)
+	{
+		if ((Arr[i].Name != NAME_None && !ArrRef.Contains(Arr[i])) || Arr[i].Name == GET_MEMBER_NAME_CHECKED(UBlueprintTaskTemplate, OnCustomPinTriggered))
+		{
+			Arr.RemoveAt(i, 1, EAllowShrinking::No);
+		}
+	}
 }
 
 void UBlueprintTaskTemplate::RefreshCollected()
