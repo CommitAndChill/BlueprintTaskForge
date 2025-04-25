@@ -80,33 +80,32 @@ void FBlueprintNodeTemplateEditorModule::RefreshClassActions() const
     TArray<FAssetData> AssetDataArr;
     const IAssetRegistry* AssetRegistry = &FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
 
-    FARFilter Filter;
-    Filter.ClassPaths.Add(FTopLevelAssetPath(UBlueprintTaskTemplate::StaticClass()));
-    Filter.ClassPaths.Add(FTopLevelAssetPath(UBlueprintAITaskTemplate::StaticClass()));
-    Filter.bRecursiveClasses = true;
+	FARFilter Filter;
+	Filter.ClassPaths.Add(FTopLevelAssetPath(UBlueprintTaskTemplate::StaticClass()));
+	Filter.bRecursiveClasses = true;
 
     AssetRegistry->GetAssets(Filter, AssetDataArr);
 
-    for (const FAssetData& AssetData : AssetDataArr)
-    {
-        if (const UBlueprint* Blueprint = Cast<UBlueprint>(AssetData.GetAsset()))
-        {
-            if (const UClass* TestClass = Blueprint->GeneratedClass)
-            {
-                if (TestClass->IsChildOf(UBlueprintTaskTemplate::StaticClass()) || TestClass->IsChildOf(UBlueprintAITaskTemplate::StaticClass()))
-                {
-                    if (const auto CDO = TestClass->GetDefaultObject(true))
-                    {
-                        //check(CDO);
-                        //if(CDO->GetLinkerCustomVersion(FBlueprintNodeTemplateCustomVersion::GUID) < FBlueprintNodeTemplateCustomVersion::LatestVersion)
-                        //{
-                        //	CDO->MarkPackageDirty();
-                        //}
-                    }
-                }
-            }
-        }
-    }
+	for (const FAssetData& AssetData : AssetDataArr)
+	{
+		if (const UBlueprint* Blueprint = Cast<UBlueprint>(AssetData.GetAsset()))
+		{
+			if (const UClass* TestClass = Blueprint->GeneratedClass)
+			{
+				if (TestClass->IsChildOf(UBlueprintTaskTemplate::StaticClass()))
+				{
+					if (const auto CDO = TestClass->GetDefaultObject(true))
+					{
+						//check(CDO);
+						//if(CDO->GetLinkerCustomVersion(FBlueprintNodeTemplateCustomVersion::GUID) < FBlueprintNodeTemplateCustomVersion::LatestVersion)
+						//{
+						//	CDO->MarkPackageDirty();
+						//}
+					}
+				}
+			}
+		}
+	}
 
 	if (FBlueprintActionDatabase* Bad = FBlueprintActionDatabase::TryGet())
 	{
@@ -147,31 +146,31 @@ void FBlueprintNodeTemplateEditorModule::OnAssetRenamed(const struct FAssetData&
 
 void FBlueprintNodeTemplateEditorModule::OnAssetAdded(const FAssetData& AssetData) const
 {
-    if (const auto Blueprint = Cast<UBlueprint>(AssetData.GetAsset()))
-    {
-        if (const UClass* TestClass = Blueprint->GeneratedClass)
-        {
-            if (TestClass->IsChildOf(UBlueprintTaskTemplate::StaticClass()) || TestClass->IsChildOf(UBlueprintAITaskTemplate::StaticClass()))
-            {
-                //TestClass->GetDefaultObject(true);
-                RefreshClassActions();
-            }
-        }
-    }
+	if (const auto Blueprint = Cast<UBlueprint>(AssetData.GetAsset()))
+	{
+		if (const UClass* TestClass = Blueprint->GeneratedClass)
+		{
+			if (TestClass->IsChildOf(UBlueprintTaskTemplate::StaticClass()))
+			{
+				//TestClass->GetDefaultObject(true);
+				RefreshClassActions();
+			}
+		}
+	}
 }
 
 void FBlueprintNodeTemplateEditorModule::HandleAssetDeleted(UObject* Object) const
 {
-    if (const auto Blueprint = Cast<UBlueprint>(Object))
-    {
-        if (const UClass* TestClass = Blueprint->ParentClass)
-        {
-            if (TestClass->IsChildOf(UBlueprintTaskTemplate::StaticClass()) || TestClass->IsChildOf(UBlueprintAITaskTemplate::StaticClass()))
-            {
-                RefreshClassActions();
-            }
-        }
-    }
+	if (const auto Blueprint = Cast<UBlueprint>(Object))
+	{
+		if (const UClass* TestClass = Blueprint->ParentClass)
+		{
+			if (TestClass->IsChildOf(UBlueprintTaskTemplate::StaticClass()))
+			{
+				RefreshClassActions();
+			}
+		}
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

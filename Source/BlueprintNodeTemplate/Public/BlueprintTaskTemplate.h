@@ -73,37 +73,67 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Activate", ExposeAutoCall = "true"))
 //++CK
-    void Activate()
-    {
-        if (const auto World = GetWorld();
-            IsValid(World))
-        {
-            UUtils_BlueprintTask_Subsystem_UE::Request_TrackTask(World, this);
-        }
-        Activate_Internal();
-    }
+	void Activate()
+	{
+		if (const auto World = GetWorld();
+			IsValid(World))
+		{
+			UUtils_BlueprintTask_Subsystem_UE::Request_TrackTask(World, this);
+		}
+		
+		//++V
+		#if !UE_BUILD_SHIPPING
+		UBlueprintTaskTrackerSubsystem* TrackerSubsystem = GEngine->GetEngineSubsystem<UBlueprintTaskTrackerSubsystem>();
+		if(TrackerSubsystem)
+		{
+			TrackerSubsystem->AddTask(this);
+		}
+		#endif
+		//--V
+		
+		Activate_Internal();
+	}
 //--CK
 
 //++CK
-    UFUNCTION(BlueprintCallable, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Deactivate", ExposeAutoCall = "false"))
-    void Deactivate()
-    {
-        QUICK_SCOPE_CYCLE_COUNTER(Deactivate)
-        for (const auto& Task : _TasksToDeactivateOnDeactivate)
-        {
-            if (Task.IsValid())
-            {
-                Task->Deactivate();
-            }
-        }
+	UFUNCTION(BlueprintCallable, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Deactivate", ExposeAutoCall = "false"))
+	void Deactivate()
+	{
+		QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Deactivate)
 
-        if (const auto World = GetWorld();
-            IsValid(World))
-        {
-            UUtils_BlueprintTask_Subsystem_UE::Request_UntrackTask(World, this);
-        }
-        Deactivate_Internal();
-    }
+		//++V
+		if(!IsActive)
+		{
+			return;
+		}
+		//--V
+		
+		for (const auto& Task : _TasksToDeactivateOnDeactivate)
+		{
+			if (Task.IsValid())
+			{
+				Task->Deactivate();
+			}
+		}
+
+		if (const auto World = GetWorld();
+			IsValid(World))
+		{
+			UUtils_BlueprintTask_Subsystem_UE::Request_UntrackTask(World, this);
+		}
+
+		//++V
+		#if !UE_BUILD_SHIPPING
+		UBlueprintTaskTrackerSubsystem* TrackerSubsystem = GEngine->GetEngineSubsystem<UBlueprintTaskTrackerSubsystem>();
+		if(TrackerSubsystem)
+		{
+			TrackerSubsystem->RemoveTask(this);
+		}
+		#endif
+		//--V
+		
+		Deactivate_Internal();
+	}
 
     UFUNCTION(BlueprintCallable,
               Category = "BlueprintTaskTemplate",
@@ -114,14 +144,28 @@ public:
         class UBlueprintTaskTemplate* InTask);
 //--CK
 
-    virtual UWorld* GetWorld() const override { return WorldPrivate; }
-    virtual void BeginDestroy() override;
+	virtual UWorld* GetWorld() const override
+	{
+		//++V
+		return IsTemplate() ? nullptr : GetOuter() ? GetOuter()->GetWorld() : nullptr;
+		//--V
+	}
 
 //++CK
     virtual void OnDestroy();
 //--CK
 
     virtual void Serialize(FArchive& Ar) override;
+
+//++V
+
+	/**Gets all objects that have @Object assigned as their outer
+	 * and recursively deactivates all tasks it finds.
+	 * This includes nested objects, so for example; if @Object is
+	 * an actor and its actor components have a task active and the
+	 * component is its outer, this will also deactivate those tasks. */
+	UFUNCTION(Category = "BlueprintTaskTemplate", BlueprintCallable, meta = (DefaultToSelf = "Object"))
+	static void DeactivateAllTasksRelatedToObject(UObject* Object);
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(Category = "Decorator", EditDefaultsOnly)
@@ -161,14 +205,17 @@ public:
 	 * pin that can be triggered by calling @TriggerCustomOutputPin */
 	UFUNCTION(Category = "BlueprintTaskTemplate", BlueprintCallable)
 	TArray<FName> GetCustomOutputPinNames();
+//--V
+
 protected:
-    UFUNCTION(BlueprintImplementableEvent, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Activate"))
-    void Activate_BP();
-    virtual void Activate_Internal()
-    {
-//++CK
-        if (IsBeingDestroyed)
-        { return; }
+	UFUNCTION(BlueprintImplementableEvent, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Activate"))
+	void Activate_BP();
+	virtual void Activate_Internal()
+	{
+		QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Activate_Internal)
+		//++CK
+		if (IsBeingDestroyed)
+		{ return; }
 
         if (IsValid(GetOuter()))
 //--CK
@@ -196,8 +243,6 @@ protected:
 //--CK
 
 private:
-    UPROPERTY(Transient)
-    UWorld* WorldPrivate = nullptr;
 
 //++CK
     UPROPERTY(Transient)
@@ -207,14 +252,26 @@ private:
     bool IsActive = false;
 
 public:
-    UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions")
-    FName Category = NAME_None;
 
-    UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions")
-    FName Tooltip = NAME_None;
+	//++V
+	/**These three options don't seem to ever be used for runtime logic.
+	 * Think this safely can be wrapped with #if WITH_EDITORONLY_DATA
+	 * to reduce tasks size 36 bytes. Tiny optimization though */
+	//--V
 
-    UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions")
-    FName MenuDisplayName = NAME_None;
+#if WITH_EDITORONLY_DATA
+	
+	UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions")
+	FName Category = NAME_None;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions", meta = (MultiLine = true))
+	FName Tooltip = NAME_None;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions")
+	FName MenuDisplayName = NAME_None;
+
+#endif
+	
 //--CK
 
 #if WITH_EDITOR
