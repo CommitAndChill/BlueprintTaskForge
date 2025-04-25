@@ -39,6 +39,7 @@
 #include "Framework/Commands/UIAction.h"
 #include "ToolMenu.h"
 #include "BlueprintFunctionNodeSpawner.h"
+#include "K2Node_SwitchName.h"
 
 
 #define LOCTEXT_NAMESPACE "K2Node"
@@ -149,7 +150,19 @@ void UK2Node_ExtendConstructObject::PostEditChangeProperty(FPropertyChangedEvent
         //todo: Warning: you need to make sure that the reconstruction of the node is not called when copying it
     }
 
-    Super::PostEditChangeProperty(e);
+	bool bIsDirty = false;
+	FName PropertyName = (e.Property != NULL) ? e.Property->GetFName() : NAME_None;
+	if (PropertyName == TEXT("CustomPins"))
+	{
+		bIsDirty = true;
+	}
+
+	if (bIsDirty)
+	{
+		ReconstructNode();
+	}
+
+	Super::PostEditChangeProperty(e);
 }
 void UK2Node_ExtendConstructObject::ResetToDefaultExposeOptions_Impl()
 {
@@ -657,6 +670,46 @@ UObject* UK2Node_ExtendConstructObject::GetJumpTargetForDoubleClick() const
     return nullptr;
 }
 
+void UK2Node_ExtendConstructObject::GenerateCustomOutputPins()
+{
+	if(ProxyClass)
+	{
+		if(auto* TargetClassAsBlueprintTask = GetInstanceOrDefaultObject())
+		{
+			TArray<FCustomOutputPin> OldCustomPins = CustomPins;
+			CustomPins = TargetClassAsBlueprintTask->GetCustomOutputPins();
+		
+			for(const auto& Pin : CustomPins)
+			{
+				if(!FindPin(Pin.PinName))
+				{
+					CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, FName(Pin.PinName))->PinToolTip = Pin.Tooltip;
+				}
+				else
+				{
+					//Pin already exists. Check if they should be removed
+					for(auto& OldPin : OldCustomPins)
+					{
+						if(UEdGraphPin* OldPinRef =  FindPin(OldPin.PinName))
+						{
+							RemovePin(OldPinRef);
+						}
+					}
+				}
+			}
+
+			//Custom pin data is only relevant if we have any custom pins
+			if(CustomPins.IsValidIndex(0))
+			{
+				if(!FindPin(FName("Custom Pin Data")))
+				{
+					UEdGraphPin* DataPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Struct, "Custom Pin Data");
+					DataPin->PinType.PinSubCategoryObject = TBaseStructure<FInstancedStruct>::Get();
+				}
+			}
+		}
+	}
+}
 
 void UK2Node_ExtendConstructObject::PinDefaultValueChanged(UEdGraphPin* Pin)
 {
@@ -826,6 +879,7 @@ void UK2Node_ExtendConstructObject::AllocateDefaultPins()
         CreatePinsForClass(nullptr, true);
     }
 
+	GenerateCustomOutputPins();
 
     Super::AllocateDefaultPins();
 
@@ -871,9 +925,11 @@ void UK2Node_ExtendConstructObject::ReallocatePinsDuringReconstruction(TArray<UE
         CreatePinsForClass(ProxyClass, true);
     }
 
-    Super::AllocateDefaultPins();
-    GetGraph()->NotifyGraphChanged();
-    FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
+	GenerateCustomOutputPins();
+
+	// Super::AllocateDefaultPins();
+	GetGraph()->NotifyGraphChanged();
+	FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
 }
 
 
@@ -1953,6 +2009,56 @@ void UK2Node_ExtendConstructObject::ExpandNode(class FKismetCompilerContext& Com
         CompilerContext.MessageLog.Error(TEXT("ConnectSpawnProperties error. @@"), this);
     }
 
+	// --------------------------------------------------------------------------------------
+	// Create the custom pins
+	// --------------------------------------------------------------------------------------
+	// CustomPins = GetInstanceOrDefaultObject()->GetCustomOutputPins();
+	if(!CustomPins.IsEmpty())
+	{
+	    //Find the delegate property
+		FProperty* DelegateProperty = ProxyClass->FindPropertyByName(GET_MEMBER_NAME_CHECKED(UBlueprintTaskTemplate, OnCustomPinTriggered));
+	    FMulticastDelegateProperty* MulticastDelegateProperty = CastField<FMulticastDelegateProperty>(DelegateProperty);
+	 
+	    if (!MulticastDelegateProperty)
+	    {
+	        CompilerContext.MessageLog.Error(*FString::Printf(TEXT("Failed to find delegate property for %s."), *GetNodeTitle(ENodeTitleType::FullTitle).ToString()));
+	        BreakAllNodeLinks();
+	        return;
+	    }
+	 
+	    //Define the output pins that correspond to each possible delegate value
+		//Varian: I don't think this is needed?
+	    TArray<FNodeHelper::FOutputPinAndLocalVariable> VariableOutputs2;
+	    for (UEdGraphPin* Pin : Pins)
+	    {
+	        if (Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+	        {
+	            FNodeHelper::FOutputPinAndLocalVariable OutputMapping;
+	            OutputMapping.OutputPin = Pin;
+	            OutputMapping.TempVar = nullptr; // No local variable needed
+	            VariableOutputs2.Add(OutputMapping);
+	        }
+	    }
+
+		/**The regular HandleDelegateImplementation is more strict and I didn't want to modify it.
+		 * So we use our CustomPins implementation instead. */
+	    const bool bSuccess = FNodeHelper::HandleCustomPinsImplementation(
+	        MulticastDelegateProperty,
+	        VariableOutputs2,
+	        Cast_Output,
+	        LastThenPin,
+	        this,
+	        SourceGraph,
+	        CustomPins,
+	        CompilerContext
+	    );
+	 
+	    if (!bSuccess)
+	    {
+	        CompilerContext.MessageLog.Error(*FString::Printf(TEXT("Failed to handle delegate for %s."), *GetNodeTitle(ENodeTitleType::FullTitle).ToString()));
+	    }
+	}
+
 
     // --------------------------------------------------------------------------------------
     // Create a call to activate the proxy object
@@ -2418,6 +2524,8 @@ bool UK2Node_ExtendConstructObject::FNodeHelper::HandleDelegateImplementation(
 
         PinNameStr.RemoveAt(0, DelegateNameStr.Len() + 1);
 
+		UEdGraphPin* PinWithData = CurrentCeNode->FindPinChecked(FName(*PinNameStr));
+
 //++CK
         //UEdGraphPin* PinWithData = CurrentCeNode->FindPinChecked(FName(*PinNameStr));
         UEdGraphPin* PinWithData = CurrentCeNode->FindPin(FName(*PinNameStr));
@@ -2439,6 +2547,108 @@ bool UK2Node_ExtendConstructObject::FNodeHelper::HandleDelegateImplementation(
 
     bIsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*PinForCurrentDelegateProperty, *LastActivatedNodeThen).CanSafeConnect();
     return bIsErrorFree;
+}
+
+bool UK2Node_ExtendConstructObject::FNodeHelper::HandleCustomPinsImplementation(
+	FMulticastDelegateProperty* CurrentProperty, const TArray<FOutputPinAndLocalVariable>& VariableOutputs,
+	UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, TArray<FCustomOutputPin> OutputNames,
+	FKismetCompilerContext& CompilerContext)
+{
+	bool bIsErrorFree = true;
+	const UEdGraphSchema_K2* Schema = CompilerContext.GetSchema();
+	check(CurrentProperty && ProxyObjectPin && InOutLastThenPin && CurrentNode && SourceGraph && Schema);
+
+	UK2Node_CustomEvent* CurrentCeNode =
+	CompilerContext.SpawnIntermediateNode<UK2Node_CustomEvent>(CurrentNode, SourceGraph);
+	{
+		UK2Node_AddDelegate* AddDelegateNode = CompilerContext.SpawnIntermediateNode<UK2Node_AddDelegate>(CurrentNode, SourceGraph);
+		AddDelegateNode->SetFromProperty(CurrentProperty, false, CurrentProperty->GetOwnerClass());
+		AddDelegateNode->AllocateDefaultPins();
+		bIsErrorFree &= Schema->TryCreateConnection(AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Self), ProxyObjectPin);
+		bIsErrorFree &= Schema->TryCreateConnection(InOutLastThenPin, AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+		InOutLastThenPin = AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+
+		CurrentCeNode->CustomFunctionName = *FString::Printf(TEXT("%s_%s"), *CurrentProperty->GetName(), *CompilerContext.GetGuid(CurrentNode));
+		CurrentCeNode->AllocateDefaultPins();
+
+		//We need to assign the signature for the proper pins to generate before we connect them
+		bIsErrorFree &= FNodeHelper::CreateDelegateForNewFunction(
+			AddDelegateNode->GetDelegatePin(),
+			CurrentCeNode->GetFunctionName(),
+			CurrentNode,
+			SourceGraph,
+			CompilerContext);
+		bIsErrorFree &= FNodeHelper::CopyEventSignature(CurrentCeNode, AddDelegateNode->GetDelegateSignature(), Schema);
+
+		/**Start creating a way for the custom data pin to retrieve the data from the
+		 * delegates custom event Data pin.
+		 *
+		 * This involves creating a temporary variable, then assigning that variable
+		 * through the Assign node, which is connected to the custom event's Data pin.
+		 *
+		 * Varian: Do note, that the debugger will claim the data from the CustomPinData
+		 * is correct and valid, BUT the IsValid function for instanced structs
+		 * will return false. So we're just one piece away from figuring this out
+		 * and until then, this feature does not work. */
+		UEdGraphPin* DataPin = CurrentCeNode->FindPin(TEXT("Data"));
+
+		//Create the temporary variable
+		UK2Node_TemporaryVariable* TempVarOutput =
+			CompilerContext.SpawnInternalVariable(
+				CurrentNode,
+				DataPin->PinType.PinCategory,
+				DataPin->PinType.PinSubCategory,
+				DataPin->PinType.PinSubCategoryObject.Get(),
+				DataPin->PinType.ContainerType,
+				DataPin->PinType.PinValueType
+				);
+		
+
+		//Create the assign node and make the appropriate connections
+		UK2Node_AssignmentStatement* AssignNode = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>(CurrentNode, SourceGraph);
+		AssignNode->AllocateDefaultPins();
+		bIsErrorFree &= Schema->TryCreateConnection(CurrentCeNode->FindPinChecked(UEdGraphSchema_K2::PN_Then), AssignNode->GetExecPin());
+		bIsErrorFree &= Schema->TryCreateConnection(TempVarOutput->GetVariablePin(), AssignNode->GetVariablePin());
+		AssignNode->NotifyPinConnectionListChanged(AssignNode->GetVariablePin());
+		bIsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), DataPin);
+		AssignNode->NotifyPinConnectionListChanged(AssignNode->GetValuePin());
+
+		//This allows the Custom Pin Data to read from the temporary variable
+		bIsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*CurrentNode->FindPin(TEXT("Custom Pin Data")), *TempVarOutput->GetVariablePin()).CanSafeConnect();
+
+		//To simplify the custom output pins, just make a switch node
+		UK2Node_SwitchName* SwitchNode = CompilerContext.SpawnIntermediateNode<UK2Node_SwitchName>(CurrentNode, SourceGraph);
+		TArray<FName> ConvertedOutputNames;
+		for(auto& CurrentPin : OutputNames)
+		{
+			ConvertedOutputNames.Add(FName(CurrentPin.PinName));
+		}
+		SwitchNode->PinNames = ConvertedOutputNames;
+		SwitchNode->AllocateDefaultPins();
+
+		//Connect the assign node to the switch node
+		Schema->TryCreateConnection(AssignNode->GetThenPin(), SwitchNode->GetExecPin());
+
+		//Connect the Custom Event's FName output pin to the Switch's Selection pin
+		Schema->TryCreateConnection(CurrentCeNode->FindPin(TEXT("PinName")), SwitchNode->GetSelectionPin());
+		
+		//Redirect all the switch nodes output pins to our custom pins
+		for (int32 i = 0; i < OutputNames.Num(); ++i)
+		{
+			const FName& OutputName = FName(OutputNames[i].PinName);
+			if(UEdGraphPin* SwitchCasePin = SwitchNode->FindPin(OutputName.ToString()))
+			{
+				SwitchCasePin->PinToolTip = OutputNames[i].Tooltip;
+				UEdGraphPin* NodeOutputPin = CurrentNode->FindPin(OutputName);
+				if (SwitchCasePin && NodeOutputPin)
+				{
+					CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *SwitchCasePin);
+				}
+			}
+		}
+	}
+	
+	return bIsErrorFree;
 }
 
 void UK2Node_ExtendConstructObject::CollectSpawnParam(UClass* InClass, const bool bFullRefresh)
