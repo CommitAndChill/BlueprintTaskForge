@@ -14,6 +14,8 @@
 
 #include "K2Node_ExtendConstructObject.generated.h"
 
+class UBlueprintTaskTemplate;
+struct FCustomOutputPin;
 class FBlueprintActionDatabaseRegistrar;
 class UEdGraph;
 class UEdGraphPin;
@@ -122,6 +124,8 @@ protected:
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
     bool bOwnerContextPin = false;
 
+	UPROPERTY()
+	TArray<FCustomOutputPin> CustomPins;
 //++CK
 private:
     TMap<FName, TMap<FName, FString>> _PinMetadataMap;
@@ -189,6 +193,7 @@ protected:
     {
         struct FOutputPinAndLocalVariable
         {
+        	FOutputPinAndLocalVariable() = default;
             UEdGraphPin* OutputPin;
             class UK2Node_TemporaryVariable* TempVar;
             FOutputPinAndLocalVariable(UEdGraphPin* Pin, class UK2Node_TemporaryVariable* Var) : OutputPin(Pin), TempVar(Var) {}
@@ -212,6 +217,17 @@ protected:
             UEdGraph* SourceGraph,
             FKismetCompilerContext& CompilerContext);
     };
+
+		static bool HandleCustomPinsImplementation(
+			FMulticastDelegateProperty* CurrentProperty,
+			const TArray<FOutputPinAndLocalVariable>& VariableOutputs,
+			UEdGraphPin* ProxyObjectPin,
+			UEdGraphPin*& InOutLastThenPin,
+			UK2Node* CurrentNode,
+			UEdGraph* SourceGraph,
+			TArray<FCustomOutputPin> OutputNames,
+			FKismetCompilerContext& CompilerContext);
+	};
 
     struct FNames_Helper
     {
