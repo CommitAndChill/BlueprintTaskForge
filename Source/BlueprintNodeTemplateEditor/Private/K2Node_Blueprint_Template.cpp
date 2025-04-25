@@ -39,23 +39,36 @@ void UK2Node_Blueprint_Template::RegisterBlueprintAction(UClass* TargetClass, FB
 {
     const FString Name = TargetClass->GetName();
 
-    if (!TargetClass->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated) && !Name.Contains(FNames_Helper::SkelPrefix) &&
-        !Name.Contains(FNames_Helper::ReinstPrefix) && !Name.Contains(FNames_Helper::DeadclassPrefix))
-    {
-        UClass* NodeClass = GetClass();
-        auto Lambda = [NodeClass, TargetClass](const UFunction* FactoryFunc) -> UBlueprintNodeSpawner*
-        {
-            auto CustomizeTimelineNodeLambda = [TargetClass](UEdGraphNode* NewNode, bool bIsTemplateNode, const TWeakObjectPtr<UFunction> FunctionPtr)
-            {
-                UK2Node_Blueprint_Template* AsyncTaskNode = CastChecked<UK2Node_Blueprint_Template>(NewNode);
-                if (FunctionPtr.IsValid())
-                {
-                    UFunction* Func = FunctionPtr.Get();
-                    AsyncTaskNode->ProxyFactoryFunctionName = Func->GetFName();
-                    //AsyncTaskNode->ProxyFactoryClass = Func->GetOuterUClass();
-                    AsyncTaskNode->ProxyClass = TargetClass;
-                }
-            };
+	if (!TargetClass->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated) && !Name.Contains(FNames_Helper::SkelPrefix) &&
+		!Name.Contains(FNames_Helper::ReinstPrefix) && !Name.Contains(FNames_Helper::DeadclassPrefix))
+	{
+		UClass* NodeClass = GetClass();
+		auto Lambda = [NodeClass, TargetClass](const UFunction* FactoryFunc) -> UBlueprintNodeSpawner*
+		{
+			auto CustomizeTimelineNodeLambda = [TargetClass](UEdGraphNode* NewNode, bool bIsTemplateNode, const TWeakObjectPtr<UFunction> FunctionPtr)
+			{
+				UK2Node_Blueprint_Template* AsyncTaskNode = CastChecked<UK2Node_Blueprint_Template>(NewNode);
+				if (FunctionPtr.IsValid())
+				{
+					UFunction* Func = FunctionPtr.Get();
+					AsyncTaskNode->ProxyFactoryFunctionName = Func->GetFName();
+					AsyncTaskNode->ProxyClass = TargetClass;
+
+					if(IsValid(TargetClass))
+					{
+						if(UBlueprintTaskTemplate* TaskCDO = Cast<UBlueprintTaskTemplate>(TargetClass->GetDefaultObject()))
+						{
+							TaskCDO->OnPostPropertyChanged.BindLambda([AsyncTaskNode](FPropertyChangedEvent PropertyChangedEvent)
+							{
+								if(IsValid(AsyncTaskNode))
+								{
+									AsyncTaskNode->ReconstructNode();
+								}
+							});
+						}
+					}
+				}
+			};
 
             UBlueprintNodeSpawner* NodeSpawner = UBlueprintFunctionNodeSpawner::Create(FactoryFunc);
             NodeSpawner->NodeClass = NodeClass;
@@ -146,9 +159,13 @@ void UK2Node_Blueprint_Template::AllocateDefaultPins()
     check(GetWorldContextPin());
     HideClassPin();
 
-    UK2Node::AllocateDefaultPins();
-    GetGraph()->NotifyGraphChanged();
-    FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
+	FindPin(NodeGuidStrName)->DefaultValue = ProxyClass->GetName() + NodeGuid.ToString();
+	FindPin(NodeGuidStrName)->bHidden = true; //Why isn't this working?
+	FindPin(NodeGuidStrName)->Modify();
+
+	UK2Node::AllocateDefaultPins();
+	GetGraph()->NotifyGraphChanged();
+	FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
 }
 
 void UK2Node_Blueprint_Template::ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins)
@@ -320,30 +337,6 @@ auto
     }
 
     return FText::GetEmpty();
-}
-
-auto
-    UK2Node_Blueprint_Template::
-    CustomizeProxyFactoryFunction(
-        FKismetCompilerContext& CompilerContext,
-        UEdGraph* SourceGraph,
-        UK2Node_CallFunction* InCreateProxyObjecNode)
-    -> void
-{
-    if (IsValid(InCreateProxyObjecNode) == false)
-    { return; }
-
-    // HACK: Associates the runtime node instance with the K2Node that created it.
-    // This is required to enable customizations in Slate, as we use runtime data
-    // from the node instance to dynamically populate information such as StatusString, Description, and more.
-    if (const auto Pin = InCreateProxyObjecNode->FindPin(TEXT("NodeGuidStr"));
-        Pin != nullptr)
-    {
-        if (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_String)
-        {
-            Pin->DefaultValue = NodeGuid.ToString();
-        }
-    }
 }
 
 auto

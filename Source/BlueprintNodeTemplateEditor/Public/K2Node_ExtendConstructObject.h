@@ -45,6 +45,7 @@ public:
     virtual void PostPasteNode() override;
     virtual UObject* GetJumpTargetForDoubleClick() const override;
     // End of UEdGraphNode interface	// UK2Node_BaseAsyncTask
+	FName GetTemplateInstanceName() const { return FName(ProxyClass->GetName() + NodeGuid.ToString()); }
 
     virtual void PinDefaultValueChanged(UEdGraphPin* Pin) override;
     //virtual bool CanCreateUnderSpecifiedSchema(const UEdGraphSchema* DesiredSchema) const override;
@@ -56,6 +57,11 @@ public:
     virtual FName GetCornerIcon() const override;
     virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
     virtual FText GetMenuCategory() const override;
+	/**Used for scenarios where we need to run a function or retrieve
+	 * a value from the CDO, but if we are using a instance, we will
+	 * return the instance instead. */
+	UBlueprintTaskTemplate* GetInstanceOrDefaultObject() const;
+
 
     virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
     virtual void GetMenuEntries(struct FGraphContextMenuBuilder& ContextMenuBuilder) const override;
@@ -80,16 +86,17 @@ public:
     virtual void ResetToDefaultExposeOptions_Impl();
 #endif
 
-    UEdGraphPin* GetClassPin() const { return FindPin(ClassPinName); }
-    UEdGraphPin* GetWorldContextPin() const;
-
-protected:
-    UPROPERTY()
-    FName WorldContextPinName = FName(TEXT("Outer"));
-    UPROPERTY()
-    FName ClassPinName = FName(TEXT("Class"));
-    UPROPERTY()
-    FName OutPutObjectPinName = FName(TEXT("Object"));
+	UEdGraphPin* GetClassPin() const { return FindPin(ClassPinName); }
+	UEdGraphPin* GetWorldContextPin() const;
+	
+	UPROPERTY()
+	FName WorldContextPinName = FName(TEXT("Outer"));
+	UPROPERTY()
+	FName ClassPinName = FName(TEXT("Class"));
+	UPROPERTY()
+	FName OutPutObjectPinName = FName(TEXT("Object"));
+	UPROPERTY()
+	FName NodeGuidStrName = FName(TEXT("NodeGuidStr"));
 
     UPROPERTY()
     UClass* ProxyFactoryClass;
@@ -124,8 +131,20 @@ protected:
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
     bool bOwnerContextPin = false;
 
+	UPROPERTY(EditAnywhere, Category = "Instance")
+	bool AllowInstance = false;
+
+	UPROPERTY()
+	UBlueprintTaskTemplate* TaskInstance = nullptr;
 	UPROPERTY()
 	TArray<FCustomOutputPin> CustomPins;
+
+	/**For some reason, the typical @SetOnPropertyValueChanged delegate
+	 * is not working for this node. So we store a pointer to the details
+	 * panel and when the @AllowInstance property is changed,
+	 * we manually refresh the details panel. */
+	IDetailLayoutBuilder* DetailsPanelBuilder = nullptr;
+
 //++CK
 private:
     TMap<FName, TMap<FName, FString>> _PinMetadataMap;
