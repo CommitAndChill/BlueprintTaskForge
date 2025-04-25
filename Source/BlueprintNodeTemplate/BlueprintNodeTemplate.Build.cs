@@ -29,28 +29,28 @@ public class BlueprintNodeTemplate : ModuleRules
                 "CoreUObject",
                 "Engine",
             });
-
-        PrivateDependencyModuleNames.AddRange(
-            new string[]
-            {
-                "CoreUObject",
-                "Engine",
-                "Slate",
-                "SlateCore",
-                "UMG",
-                "GameplayTasks",
-                "AIModule",
-
-            });
-
-
-        DynamicallyLoadedModuleNames.AddRange(
-            new string[]
-            {
-
-            });
-    }
+			
+		
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"CoreUObject",
+				"Engine",
+				"Slate",
+				"SlateCore",
+				"UMG",
+				"GameplayTasks",
+				"AIModule",
 				"DeveloperSettings"
+			});
+		
+		
+		DynamicallyLoadedModuleNames.AddRange(
+			new string[]
+			{
+				
+			});
+	}
 }
 
 /*
