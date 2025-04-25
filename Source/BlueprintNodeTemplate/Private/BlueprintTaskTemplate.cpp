@@ -31,13 +31,15 @@ UBlueprintTaskTemplate::UBlueprintTaskTemplate(const FObjectInitializer& ObjectI
 UBlueprintTaskTemplate* UBlueprintTaskTemplate::BlueprintTaskTemplate(UObject* Outer, const TSubclassOf<UBlueprintTaskTemplate> Class, FString NodeGuidStr)
 //--CK
 {
-    if (IsValid(Outer) && Class && !Class->HasAnyClassFlags(CLASS_Abstract))
-    {
+	if (IsValid(Outer) && Class && !Class->HasAnyClassFlags(CLASS_Abstract))
+	{
+		UBlueprintTaskTemplate* TaskTemplate = GetTaskTemplateByNodeGUID(Outer, NodeGuidStr);
+
 //++CK
         //const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName()); //Class->GetFName();//
         const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName(), EUniqueObjectNameOptions::GloballyUnique); //Class->GetFName();//
 //--CK
-        const auto Task = NewObject<UBlueprintTaskTemplate>(Outer, Class, TaskObjName, RF_NoFlags);
+		const auto Task = NewObject<UBlueprintTaskTemplate>(Outer, Class, TaskObjName, RF_NoFlags, TaskTemplate ? TaskTemplate : nullptr);
 
 //++CK
         if (IsValid(Task) == false)
@@ -49,9 +51,35 @@ UBlueprintTaskTemplate* UBlueprintTaskTemplate::BlueprintTaskTemplate(UObject* O
             BlueprintTaskEngineSystem->Request_Add(FGuid(NodeGuidStr), Task);
         }
 //--CK
+		
+		return Task;
+	}
+	return nullptr;
+}
 
-        return Task;
-    }
+UBlueprintTaskTemplate* UBlueprintTaskTemplate::GetTaskTemplateByNodeGUID(UObject* Outer, FString NodeGUID)
+{
+	for (UClass* TemplateOwnerClass = (Outer != nullptr) ? Outer->GetClass() : Outer->GetClass()
+		; TemplateOwnerClass
+		; TemplateOwnerClass = TemplateOwnerClass->GetSuperClass())
+	{
+		if (UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass))
+		{
+			if(UBlueprint* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy))
+			{
+				for(TObjectPtr<UBlueprintExtension> Extension : Blueprint->GetExtensions())
+				{
+					if(Extension)
+					{
+						if(Extension->IsA<UBlueprintTaskTemplate>() && Extension->GetFName().ToString().Contains(NodeGUID))
+						{
+							return Cast<UBlueprintTaskTemplate>(Extension);
+						}
+					}
+				}
+			}
+		}
+	}
 
     return nullptr;
 }
@@ -166,6 +194,29 @@ TArray<FName> UBlueprintTaskTemplate::GetCustomOutputPinNames()
 	}
 	return Result;
 }
+bool UBlueprintTaskTemplate::IsExtension() const
+{
+	for (UObject* TemplateOwnerClass = (GetOuter() != nullptr) ? GetOuter() : nullptr
+	; TemplateOwnerClass
+	; TemplateOwnerClass = TemplateOwnerClass->GetOuter())
+	{
+		if(UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass))
+		{
+			if(UBlueprint* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy))
+			{
+				return Blueprint->GetExtensions().Contains(this);
+			}
+		}
+
+		if(UBlueprint* Blueprint = Cast<UBlueprint>(TemplateOwnerClass))
+		{
+			return Blueprint->GetExtensions().Contains(this);
+		}
+	}
+
+	return false;
+}
+
 #if WITH_EDITOR
 void UBlueprintTaskTemplate::CollectSpawnParam(const UClass* InClass, TSet<FName>& Out)
 {
