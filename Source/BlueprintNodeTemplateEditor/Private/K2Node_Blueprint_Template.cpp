@@ -81,10 +81,8 @@ void UK2Node_Blueprint_Template::RegisterBlueprintAction(UClass* TargetClass, FB
             FBlueprintActionUiSpec& MenuSignature = NodeSpawner->DefaultMenuSignature;
 
 //++CK
-            if (TargetClass->HasAnyClassFlags(CLASS_CompiledFromBlueprint))
-            {
-                FString LocName = TargetClass->GetName();
-                LocName.RemoveFromEnd(FNames_Helper::CompiledFromBlueprintSuffix);
+			FString LocName = TargetClass->GetName();
+			LocName.RemoveFromEnd(FNames_Helper::CompiledFromBlueprintSuffix);
 
                 if (const UBlueprintTaskTemplate* TargetClassAsBlueprintTask = Cast<UBlueprintTaskTemplate>(TargetClass->ClassDefaultObject))
                 {
@@ -202,13 +200,13 @@ FText UK2Node_Blueprint_Template::GetNodeTitle(ENodeTitleType::Type TitleType) c
     if (ProxyClass)
     {
 //++CK
-        if (const auto* TargetClassAsBlueprintTask = Cast<UBlueprintTaskTemplate>(ProxyClass->ClassDefaultObject);
-            IsValid(TargetClassAsBlueprintTask) && ProxyClass->HasAnyClassFlags(CLASS_CompiledFromBlueprint))
-        {
-            if (const auto& MenuDisplayName = TargetClassAsBlueprintTask->MenuDisplayName;
-                MenuDisplayName != NAME_None)
-            { return FText::FromName(MenuDisplayName); }
-        }
+		if (const auto* TargetClassAsBlueprintTask = Cast<UBlueprintTaskTemplate>(ProxyClass->ClassDefaultObject);
+			IsValid(TargetClassAsBlueprintTask))
+		{
+			const auto& MenuDisplayName = TargetClassAsBlueprintTask->MenuDisplayName;
+		    if (MenuDisplayName != NAME_None)
+			{ return FText::FromName(MenuDisplayName); }
+		}
 //--CK
         const FString Str = ProxyClass->GetName();
         TArray<FString> ParseNames;
