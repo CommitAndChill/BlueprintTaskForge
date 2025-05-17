@@ -1,23 +1,25 @@
 ﻿#pragma once
+
 #include "KismetNodes/SGraphNodeK2Base.h"
-#include "NodeDecorators/BNTNodeDecorator.h"
 
-class UBNTNodeDecorator;
-class UK2Node_Blueprint_Template;
-class UBlueprintTaskTemplate;
+#include "NodeDecorators/Btf_NodeDecorator.h"
 
-class SBNTNode : public SGraphNodeK2Base
+class UBTF_NodeDecorator;
+class UBTF_TaskForge_K2Node;
+class UBTF_TaskForge;
+
+class SBTF_Node : public SGraphNodeK2Base
 {
 public:
-	
-	SLATE_BEGIN_ARGS(SBNTNode) {}
+
+	SLATE_BEGIN_ARGS(SBTF_Node) {}
 	SLATE_END_ARGS()
 
 	UClass* TaskClass = nullptr;
-	
-	TObjectPtr<UBNTNodeDecorator> Decorator = nullptr;
 
-	virtual ~SBNTNode()
+	TObjectPtr<UBTF_NodeDecorator> Decorator = nullptr;
+
+	virtual ~SBTF_Node()
 	{
 		if(Decorator)
 		{
@@ -37,6 +39,6 @@ public:
 	auto Get_NodeConfigText() const -> FText;
 
 protected:
-	TWeakObjectPtr<UK2Node_Blueprint_Template> _BlueprintTaskNode;
+	TWeakObjectPtr<UBTF_TaskForge_K2Node> _BlueprintTaskNode;
 	TSharedPtr<STextBlock> _ConfigTextBlock;
 };

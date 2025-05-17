@@ -1,53 +1,41 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "NameSelect.h"
+#include "BTF_NameSelect.h"
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Engine/EngineTypes.h"
 
-#include "ExtendConstructObject_FnLib.generated.h"
+#include "BTF_ExtendConstructObject_Utils.generated.h"
 
 class UObject;
 class UUserWidget;
-//class UWidget;
 
 #if WITH_EDITORONLY_DATA
-struct FSpawnParam
+struct FBTF_SpawnParam
 {
-	TArray<FNameSelect> SpawnParam;
-	TArray<FNameSelect> AutoCallFunction;
-	TArray<FNameSelect> ExecFunction;
-	TArray<FNameSelect> InDelegate;
-	TArray<FNameSelect> OutDelegate;
+	TArray<FBTF_NameSelect> SpawnParam;
+	TArray<FBTF_NameSelect> AutoCallFunction;
+	TArray<FBTF_NameSelect> ExecFunction;
+	TArray<FBTF_NameSelect> InDelegate;
+	TArray<FBTF_NameSelect> OutDelegate;
 };
 #endif
 
-
-/**
- * Extend Construct Object Function Library
- */
 UCLASS()
-class BLUEPRINTTASKFORGE_API UExtendConstructObject_FnLib : public UBlueprintFunctionLibrary
+class BLUEPRINTTASKFORGE_API UBTF_ExtendConstructObject_Utils : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:
-	//Construct Object
-	UFUNCTION(
-		BlueprintCallable,
-		Category = "ConstructTemplate",
-		meta =
-			(DefaultToSelf = "Outer",
-			 DisplayName = "ExtendConstructObject",
-			 BlueprintInternalUseOnly = "TRUE",
-			 DeterminesOutputType = "Class",
-			 Keywords = "Extend Spawn Create Construct Object"))
+	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly)
 	static UObject* ExtendConstructObject(UObject* Outer, TSubclassOf<UObject> Class);
 
 	static bool GetNumericSuffix(const FString& InStr, int32& Suffix);
 	static bool LessSuffix(const FName& A, const FString& AStr, const FName& B, const FString& BStr);
+
 #if WITH_EDITOR
-	static FSpawnParam CollectSpawnParam(
+	static FBTF_SpawnParam
+    CollectSpawnParam(
 		const UClass* InClass,
 		const TSet<FName>& AllDelegates,
 		const TSet<FName>& AllFunctions,

@@ -2,11 +2,13 @@
 
 #include "BlueprintActionDatabase.h"
 #include "BlueprintEditorModule.h"
-#include "BlueprintTaskTemplate.h"
-#include "K2Node_Blueprint_Template.h"
+#include "BTF_TaskForge.h"
+#include "BTF_TaskForge_K2Node.h"
+
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
-#include "Tools/STasksPalette.h"
+
+#include "Tools/BTF_STaskPalette.h"
 #include "WorkflowOrientedApp/WorkflowTabManager.h"
 
 #define LOCTEXT_NAMESPACE "FBlueprintTaskForgeEditorToolsModule"
@@ -41,7 +43,7 @@ void FBlueprintTaskForgeEditorToolsModule::OnBlueprintCompiled()
 	const IAssetRegistry* AssetRegistry = &FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
 
 	FARFilter Filter;
-	Filter.ClassPaths.Add(FTopLevelAssetPath(UBlueprintTaskTemplate::StaticClass()));
+	Filter.ClassPaths.Add(FTopLevelAssetPath(UBTF_TaskForge::StaticClass()));
 	Filter.bRecursiveClasses = true;
 
 	AssetRegistry->GetAssets(Filter, AssetDataArr);
@@ -52,7 +54,7 @@ void FBlueprintTaskForgeEditorToolsModule::OnBlueprintCompiled()
 		{
 			if (const UClass* TestClass = Blueprint->GeneratedClass)
 			{
-				if (TestClass->IsChildOf(UBlueprintTaskTemplate::StaticClass()))
+				if (TestClass->IsChildOf(UBTF_TaskForge::StaticClass()))
 				{
 					if (const auto CDO = TestClass->GetDefaultObject(true))
 					{
@@ -69,8 +71,8 @@ void FBlueprintTaskForgeEditorToolsModule::OnBlueprintCompiled()
 
 	if (FBlueprintActionDatabase* Bad = FBlueprintActionDatabase::TryGet())
 	{
-		Bad->RefreshClassActions(UBlueprintTaskTemplate::StaticClass());
-		Bad->RefreshClassActions(UK2Node_Blueprint_Template::StaticClass());
+		Bad->RefreshClassActions(UBTF_TaskForge::StaticClass());
+		Bad->RefreshClassActions(UBTF_TaskForge_K2Node::StaticClass());
 	}
 }
 

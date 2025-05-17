@@ -1,17 +1,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "K2Node_ExtendConstructObject.h"
 
-#include "K2Node_Blueprint_Template.generated.h"
+#include "BTF_ExtendConstructObject_K2Node.h"
+
+#include "BTF_TaskForge_K2Node.generated.h"
 
 /** */
 UCLASS()
-class BLUEPRINTNODETEMPLATEEDITOR_API UK2Node_Blueprint_Template : public UK2Node_ExtendConstructObject
+class BLUEPRINTTASKFORGE_API UBTF_TaskForge_K2Node : public UBTF_ExtendConstructObject_K2Node
 {
     GENERATED_BODY()
 public:
-    UK2Node_Blueprint_Template(const FObjectInitializer& ObjectInitializer);
+    UBTF_TaskForge_K2Node(const FObjectInitializer& ObjectInitializer);
 
 	virtual void PinDefaultValueChanged(UEdGraphPin* Pin) override
 	{

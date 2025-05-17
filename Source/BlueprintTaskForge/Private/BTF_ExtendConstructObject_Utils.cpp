@@ -7,10 +7,7 @@
 #include "GameFramework/Actor.h"
 #include "Kismet/GameplayStatics.h"
 
-//#include "Components/Widget.h"
-//#include "Blueprint/WidgetTree.h"
-
-UObject* UExtendConstructObject_FnLib::ExtendConstructObject(UObject* Outer, const TSubclassOf<UObject> Class)
+UObject* UBTF_ExtendConstructObject_Utils::ExtendConstructObject(UObject* Outer, const TSubclassOf<UObject> Class)
 {
 	if (IsValid(Outer) && Class && !Class->HasAnyClassFlags(CLASS_Abstract))
 	{
@@ -21,7 +18,7 @@ UObject* UExtendConstructObject_FnLib::ExtendConstructObject(UObject* Outer, con
 	return nullptr;
 }
 
-bool UExtendConstructObject_FnLib::GetNumericSuffix(const FString& InStr, int32& Suffix)
+bool UBTF_ExtendConstructObject_Utils::GetNumericSuffix(const FString& InStr, int32& Suffix)
 {
 	const TCHAR* Str = *InStr + InStr.Len() - 1;
 	int32 SufLength = 0;
@@ -38,7 +35,7 @@ bool UExtendConstructObject_FnLib::GetNumericSuffix(const FString& InStr, int32&
 	Suffix = MAX_int32;
 	return false;
 }
-bool UExtendConstructObject_FnLib::LessSuffix(const FName& A, const FString& AStr, const FName& B, const FString& BStr)
+bool UBTF_ExtendConstructObject_Utils::LessSuffix(const FName& A, const FString& AStr, const FName& B, const FString& BStr)
 {
 	int32 a, b;
 	if (GetNumericSuffix(AStr, a) && GetNumericSuffix(BStr, b))
@@ -49,7 +46,7 @@ bool UExtendConstructObject_FnLib::LessSuffix(const FName& A, const FString& ASt
 }
 
 #if WITH_EDITOR
-FSpawnParam UExtendConstructObject_FnLib::CollectSpawnParam(
+FBTF_SpawnParam UBTF_ExtendConstructObject_Utils::CollectSpawnParam(
 	const UClass* InClass,
 	const TSet<FName>& AllDelegates,
 	const TSet<FName>& AllFunctions,
@@ -61,7 +58,7 @@ FSpawnParam UExtendConstructObject_FnLib::CollectSpawnParam(
 	static const FString OutPrefix = FString::Printf(TEXT("Out_"));
 	static const FString InitPrefix = FString::Printf(TEXT("Init_"));
 
-	FSpawnParam Out;
+	FBTF_SpawnParam Out;
 
 	//params
 	for (const FName& It : AllParam)

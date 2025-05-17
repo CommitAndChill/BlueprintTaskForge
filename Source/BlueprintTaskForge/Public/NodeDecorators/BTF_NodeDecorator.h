@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "BNTNodeDecorator.generated.h"
+#include "BTF_NodeDecorator.generated.h"
 
-class SBNTNode;
-class UBlueprintTaskTemplate;
+class SBTF_Node;
+class UBTF_TaskForge;
 
 /**
  * This class allows you to decorate Blueprint Task nodes.
@@ -22,24 +22,24 @@ class UBlueprintTaskTemplate;
  * If you really want, you can override the ENTIRE node.
  */
 UCLASS(Abstract, NotBlueprintable)
-class BLUEPRINTTASKFORGE_API UBNTNodeDecorator : public UObject
+class BLUEPRINTTASKFORGE_API UBTF_NodeDecorator : public UObject
 {
 	GENERATED_BODY()
 
 public:
 
-	virtual TSharedRef<SWidget> CreateTopContent(UClass* TaskClass, UBlueprintTaskTemplate* BlueprintTaskNode, UEdGraphNode* GraphNode) { return SNullWidget::NullWidget; }
+	virtual TSharedRef<SWidget> CreateTopContent(UClass* TaskClass, UBTF_TaskForge* BlueprintTaskNode, UEdGraphNode* GraphNode) { return SNullWidget::NullWidget; }
 
-	virtual TSharedRef<SWidget> CreateCenterContent(UClass* TaskClass, UBlueprintTaskTemplate* BlueprintTaskNode, UEdGraphNode* GraphNode) { return SNullWidget::NullWidget; };
+	virtual TSharedRef<SWidget> CreateCenterContent(UClass* TaskClass, UBTF_TaskForge* BlueprintTaskNode, UEdGraphNode* GraphNode) { return SNullWidget::NullWidget; };
 
-	virtual TSharedRef<SWidget> CreateBottomContent(UClass* TaskClass, UBlueprintTaskTemplate* BlueprintTaskNode, UEdGraphNode* GraphNode) { return SNullWidget::NullWidget; }
+	virtual TSharedRef<SWidget> CreateBottomContent(UClass* TaskClass, UBTF_TaskForge* BlueprintTaskNode, UEdGraphNode* GraphNode) { return SNullWidget::NullWidget; }
 
 	/**If overriden, you can override the entirety of the node rather than
 	 * using the standardized top, center and bottom content.
 	 *
 	 * Remember to always assign the left and right vertical box, or you'll
 	 * get an engine crash.	 */
-	virtual TSharedRef<SWidget> OverrideContentNodeArea(SBNTNode* Node)
+	virtual TSharedRef<SWidget> OverrideContentNodeArea(SBTF_Node* Node)
 	{
 		return SNullWidget::NullWidget;
 	}

@@ -4,16 +4,14 @@
 #include "K2Node.h"
 #include "Engine/MemberReference.h"
 #include "UObject/ObjectMacros.h"
-#include "NameSelect.h"
+#include "BTF_NameSelect.h"
 
-//++CK
 #include "K2Node_DynamicCast.h"
-//--CK
 
-#include "K2Node_ExtendConstructObject.generated.h"
+#include "BTF_ExtendConstructObject_K2Node.generated.h"
 
-class UBNTNodeDecorator;
-class UBlueprintTaskTemplate;
+class UBTF_NodeDecorator;
+class UBTF_TaskForge;
 struct FCustomOutputPin;
 class FBlueprintActionDatabaseRegistrar;
 class UEdGraph;
@@ -21,16 +19,12 @@ class UEdGraphPin;
 class UEdGraphSchema;
 class UEdGraphSchema_K2;
 
-
-/**
-* UK2Node_ExtendConstructObject
-*/
 UCLASS()
-class BLUEPRINTNODETEMPLATEEDITOR_API UK2Node_ExtendConstructObject : public UK2Node
+class BLUEPRINTTASKFORGE_API UBTF_ExtendConstructObject_K2Node : public UK2Node
 {
     GENERATED_BODY()
 public:
-    UK2Node_ExtendConstructObject(const FObjectInitializer& ObjectInitializer);
+    UBTF_ExtendConstructObject_K2Node(const FObjectInitializer& ObjectInitializer);
 
 	// - UEdGraphNode interface			// UK2Node_BaseAsyncTask
 	virtual void AllocateDefaultPins() override;
@@ -63,7 +57,7 @@ public:
 	/**Used for scenarios where we need to run a function or retrieve
 	 * a value from the CDO, but if we are using a instance, we will
 	 * return the instance instead. */
-	UBlueprintTaskTemplate* GetInstanceOrDefaultObject() const;
+	UBTF_TaskForge* GetInstanceOrDefaultObject() const;
 
 	// - UK2Node interface
 	virtual void ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
@@ -127,15 +121,15 @@ public:
     bool bSelfContext = false;
 
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FNameSelect> SpawnParam;
+    TArray<FBTF_NameSelect> SpawnParam;
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FNameSelect> AutoCallFunction;
+    TArray<FBTF_NameSelect> AutoCallFunction;
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FNameSelect> ExecFunction;
+    TArray<FBTF_NameSelect> ExecFunction;
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FNameSelect> InDelegate;
+    TArray<FBTF_NameSelect> InDelegate;
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FNameSelect> OutDelegate;
+    TArray<FBTF_NameSelect> OutDelegate;
 
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
     bool bOwnerContextPin = false;
@@ -144,7 +138,7 @@ public:
 	bool AllowInstance = false;
 
 	UPROPERTY()
-	UBlueprintTaskTemplate* TaskInstance = nullptr;
+	UBTF_TaskForge* TaskInstance = nullptr;
 
 	/**V: For some extra details panel customization, I'm using the
 	 * decorator as a proxy class to simplify the API.
@@ -152,7 +146,8 @@ public:
 	 * the "NodeWidget" property is deprecated. So I'm storing an
 	 * extra reference in here until Epic provide a true way
 	 * of retrieving the node widget. */
-	TWeakObjectPtr<UBNTNodeDecorator> Decorator = nullptr;
+    UPROPERTY()
+	TWeakObjectPtr<UBTF_NodeDecorator> Decorator = nullptr;
 
 	UPROPERTY()
 	TArray<FCustomOutputPin> CustomPins;
@@ -178,8 +173,8 @@ protected:
     UEdGraphPin* FindParamPin(const FString& ContextName, FName NativePinName, EEdGraphPinDirection Direction = EGPD_MAX) const;
 
     void ResetPinByNames(TSet<FName>& NameArray);
-    void ResetPinByNames(TArray<FNameSelect>& NameArray);
-    void RefreshNames(TArray<FNameSelect>& NameArray, bool bRemoveNone = true) const;
+    void ResetPinByNames(TArray<FBTF_NameSelect>& NameArray);
+    void RefreshNames(TArray<FBTF_NameSelect>& NameArray, bool bRemoveNone = true) const;
 
     void RemoveNodePin(FName PinName);
     void AddAutoCallFunction(FName PinName);
@@ -189,12 +184,6 @@ protected:
     void AddSpawnParam(FName PinName);
 
 //++CK
-    virtual auto
-    CustomizeProxyFactoryFunction(
-        class FKismetCompilerContext& CompilerContext,
-        UEdGraph* SourceGraph,
-        UK2Node_CallFunction* InCreateProxyObjecNode) -> void {};
-
     virtual auto
     Get_PinsHiddenByDefault() -> TSet<FName> { return {}; };
 //--CK
@@ -237,14 +226,22 @@ protected:
             bool operator==(const UEdGraphPin* Pin) const { return Pin == OutputPin; }
         };
 
-        static bool ValidDataPin(const UEdGraphPin* Pin, EEdGraphPinDirection Direction);
+        static bool ValidDataPin(
+            const UEdGraphPin* Pin,
+            EEdGraphPinDirection Direction);
+
         static bool CreateDelegateForNewFunction(
             UEdGraphPin* DelegateInputPin,
             FName FunctionName,
             UK2Node* CurrentNode,
             UEdGraph* SourceGraph,
             FKismetCompilerContext& CompilerContext);
-        static bool CopyEventSignature(class UK2Node_CustomEvent* CENode, UFunction* Function, const UEdGraphSchema_K2* Schema);
+
+        static bool CopyEventSignature(
+            class UK2Node_CustomEvent* CENode,
+            UFunction* Function,
+            const UEdGraphSchema_K2* Schema);
+
         static bool HandleDelegateImplementation(
             FMulticastDelegateProperty* CurrentProperty,
             const TArray<FOutputPinAndLocalVariable>& VariableOutputs,
@@ -253,18 +250,17 @@ protected:
             UK2Node* CurrentNode,
             UEdGraph* SourceGraph,
             FKismetCompilerContext& CompilerContext);
-    };
 
-		static bool HandleCustomPinsImplementation(
-			FMulticastDelegateProperty* CurrentProperty,
-			const TArray<FOutputPinAndLocalVariable>& VariableOutputs,
-			UEdGraphPin* ProxyObjectPin,
-			UEdGraphPin*& InOutLastThenPin,
-			UK2Node* CurrentNode,
-			UEdGraph* SourceGraph,
-			TArray<FCustomOutputPin> OutputNames,
-			FKismetCompilerContext& CompilerContext);
-	};
+        static bool HandleCustomPinsImplementation(
+            FMulticastDelegateProperty* CurrentProperty,
+            const TArray<FOutputPinAndLocalVariable>& VariableOutputs,
+	        UEdGraphPin* ProxyObjectPin,
+            UEdGraphPin*& InOutLastThenPin,
+            UK2Node* CurrentNode,
+            UEdGraph* SourceGraph,
+            TArray<FCustomOutputPin> OutputNames,
+	        FKismetCompilerContext& CompilerContext);
+    };
 
     struct FNames_Helper
     {

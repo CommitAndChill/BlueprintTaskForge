@@ -1,13 +1,13 @@
-﻿#include "BtfEditorTools_STasksPalette.h"
+﻿#include "Tools/BTF_STaskPalette.h"
 
-#include "BlueprintActionDatabase.h"
+#include "Settings/BTF_EditorSettings.h"
+
 #include "BlueprintActionMenuBuilder.h"
 #include "BlueprintEditor.h"
 #include "BlueprintNodeSpawner.h"
-#include "BlueprintTaskTemplate.h"
-#include "BNTEditorDeveloperSettings.h"
+#include "BTF_TaskForge.h"
+#include "BTF_TaskForge_K2Node.h"
 #include "EditorWidgetsModule.h"
-#include "K2Node_Blueprint_Template.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/LevelScriptBlueprint.h"
 
@@ -23,12 +23,12 @@ FTaskPaletteSummoner::FTaskPaletteSummoner(TSharedPtr<FBlueprintEditor> Blueprin
 
 TSharedRef<SWidget> FTaskPaletteSummoner::CreateTabBody(const FWorkflowTabSpawnInfo& Info) const
 {
-	return SNew(STasksPalette, WeakBlueprintEditor);
+	return SNew(SBTF_TaskPalette, WeakBlueprintEditor);
 }
 
-void STasksPalette::Construct(const FArguments& InArgs, TWeakPtr<FBlueprintEditor> InBlueprintEditor)
+void SBTF_TaskPalette::Construct(const FArguments& InArgs, TWeakPtr<FBlueprintEditor> InBlueprintEditor)
 {
-	bIsActiveTimerRegistered = false;
+	IsActiveTimerRegistered = false;
 	BlueprintEditorPtr = InBlueprintEditor;
 
 	// Create the asset discovery indicator
@@ -50,9 +50,9 @@ void STasksPalette::Construct(const FArguments& InArgs, TWeakPtr<FBlueprintEdito
 					.VAlign(VAlign_Fill)
 					[
 						SAssignNew(GraphActionMenu, SGraphActionMenu)
-						.OnActionDragged(this, &STasksPalette::OnActionDragged)
-						.OnCreateWidgetForAction(this, &STasksPalette::OnCreateWidgetForAction)
-						.OnCollectAllActions(this, &STasksPalette::CollectAllActions)
+						.OnActionDragged(this, &SBTF_TaskPalette::OnActionDragged)
+						.OnCreateWidgetForAction(this, &SBTF_TaskPalette::OnCreateWidgetForAction)
+						.OnCollectAllActions(this, &SBTF_TaskPalette::CollectAllActions)
 						.AutoExpandActionMenu(true)
 					]
 					+SOverlay::Slot()
@@ -83,7 +83,7 @@ void STasksPalette::Construct(const FArguments& InArgs, TWeakPtr<FBlueprintEdito
 
 	// Register with the Asset Registry to be informed when it is done loading up files.
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::GetModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	AssetRegistryModule.Get().OnFilesLoaded().AddSP(this, &STasksPalette::RefreshActionsList, true);
+	AssetRegistryModule.Get().OnFilesLoaded().AddSP(this, &SBTF_TaskPalette::RefreshActionsList, true);
 
 	/**V: These delegates will be getting reworked in the future. Right now, calling CollectAllActions
 	 * to ensure they always work is causing IMMENSE lag, because with each database action being updated,
@@ -94,11 +94,11 @@ void STasksPalette::Construct(const FArguments& InArgs, TWeakPtr<FBlueprintEdito
 	 * But there doesn't seem to be any engine examples of how to do that. */
 
 	// FBlueprintActionDatabase& ActionDatabase = FBlueprintActionDatabase::Get();
-	// ActionDatabase.OnEntryRemoved().AddSP(this, &STasksPalette::OnDatabaseActionsRemoved);
-	// ActionDatabase.OnEntryUpdated().AddSP(this, &STasksPalette::OnDatabaseActionsUpdated);
+	// ActionDatabase.OnEntryRemoved().AddSP(this, &SBTF_TaskPalette::OnDatabaseActionsRemoved);
+	// ActionDatabase.OnEntryUpdated().AddSP(this, &SBTF_TaskPalette::OnDatabaseActionsUpdated);
 }
 
-UBlueprint* STasksPalette::GetBlueprint() const
+UBlueprint* SBTF_TaskPalette::GetBlueprint() const
 {
 	UBlueprint* BlueprintBeingEdited = NULL;
 	if (BlueprintEditorPtr.IsValid())
@@ -108,7 +108,7 @@ UBlueprint* STasksPalette::GetBlueprint() const
 	return BlueprintBeingEdited;
 }
 
-void STasksPalette::CollectAllActions(FGraphActionListBuilderBase& OutAllActions)
+void SBTF_TaskPalette::CollectAllActions(FGraphActionListBuilderBase& OutAllActions)
 {
 	FBlueprintActionFilter::EFlags FilterFlags = FBlueprintActionFilter::BPFILTER_NoFlags;
 
@@ -120,7 +120,7 @@ void STasksPalette::CollectAllActions(FGraphActionListBuilderBase& OutAllActions
 	{
 		if(BlueprintAction.NodeSpawner)
 		{
-			const UBNTEditorDeveloperSettings* DeveloperSettings = GetDefault<UBNTEditorDeveloperSettings>();
+			const UBTF_EditorSettings* DeveloperSettings = GetDefault<UBTF_EditorSettings>();
 
 			//Add any functions that developers want added to the task palette.
 			//This is most commonly done for functions that are related to tasks.
@@ -129,11 +129,11 @@ void STasksPalette::CollectAllActions(FGraphActionListBuilderBase& OutAllActions
 				return false;
 			}
 
-			if(BlueprintAction.NodeSpawner->NodeClass->IsChildOf(UK2Node_Blueprint_Template::StaticClass())
-				|| BlueprintAction.NodeSpawner->NodeClass.Get() == UK2Node_Blueprint_Template::StaticClass())
+			if(BlueprintAction.NodeSpawner->NodeClass->IsChildOf(UBTF_TaskForge_K2Node::StaticClass())
+				|| BlueprintAction.NodeSpawner->NodeClass.Get() == UBTF_TaskForge_K2Node::StaticClass())
 			{
 				/**This filter will remove the static functions (ExtendConstructObject, etc) from
-				 * the UExtendConstructObject_FnLib library.
+				 * the UBTF_Utils_ExtendConstructObject library.
 				 * It appears that if you add BlueprintInternalUseOnly, then the UFunction will
 				 * become invalid. So we can filter it out based on if it's valid or not. */
 				const UFunction* Function = BlueprintAction.GetAssociatedFunction();
@@ -153,23 +153,23 @@ void STasksPalette::CollectAllActions(FGraphActionListBuilderBase& OutAllActions
 	OutAllActions.Append(PaletteBuilder);
 }
 
-void STasksPalette::RefreshActionsList(bool bPreserveExpansion)
+void SBTF_TaskPalette::RefreshActionsList(bool bPreserveExpansion)
 {
 	SGraphPalette::RefreshActionsList(bPreserveExpansion);
 }
 
-TSharedRef<SWidget> STasksPalette::OnCreateWidgetForAction(FCreateWidgetForActionData* const InCreateData)
+TSharedRef<SWidget> SBTF_TaskPalette::OnCreateWidgetForAction(FCreateWidgetForActionData* const InCreateData)
 {
 	return SGraphPalette::OnCreateWidgetForAction(InCreateData);
 }
 
-FReply STasksPalette::OnActionDragged(const TArray<TSharedPtr<FEdGraphSchemaAction>>& InActions,
+FReply SBTF_TaskPalette::OnActionDragged(const TArray<TSharedPtr<FEdGraphSchemaAction>>& InActions,
 	const FPointerEvent& MouseEvent)
 {
 	return SGraphPalette::OnActionDragged(InActions, MouseEvent);
 }
 
-TSharedRef<SVerticalBox> STasksPalette::ConstructHeadingWidget(FSlateBrush const* const Icon, FText const& TitleText,
+TSharedRef<SVerticalBox> SBTF_TaskPalette::ConstructHeadingWidget(FSlateBrush const* const Icon, FText const& TitleText,
 	FText const& ToolTipText)
 {
 	TSharedPtr<SToolTip> ToolTipWidget;
@@ -216,9 +216,9 @@ TSharedRef<SVerticalBox> STasksPalette::ConstructHeadingWidget(FSlateBrush const
 		];
 }
 
-void STasksPalette::OnDatabaseActionsUpdated(UObject* ActionsKey)
+void SBTF_TaskPalette::OnDatabaseActionsUpdated(UObject* ActionsKey)
 {
-	if(ActionsKey->IsA(UBlueprintTaskTemplate::StaticClass()))
+	if(ActionsKey->IsA(UBTF_TaskForge::StaticClass()))
 	{
 		if(GraphActionMenu.IsValid())
 		{
@@ -227,9 +227,9 @@ void STasksPalette::OnDatabaseActionsUpdated(UObject* ActionsKey)
 	}
 }
 
-void STasksPalette::OnDatabaseActionsRemoved(UObject* ActionsKey)
+void SBTF_TaskPalette::OnDatabaseActionsRemoved(UObject* ActionsKey)
 {
-	if(ActionsKey->IsA(UBlueprintTaskTemplate::StaticClass()))
+	if(ActionsKey->IsA(UBTF_TaskForge::StaticClass()))
 	{
 		ULevelScriptBlueprint* RemovedLevelScript = Cast<ULevelScriptBlueprint>(ActionsKey);
 		bool const bAssumeDestroyingWorld = (RemovedLevelScript != nullptr);
