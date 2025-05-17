@@ -1,13 +1,25 @@
 #pragma once
 
-#include <Subsystems/EngineSubsystem.h>
+#include "BTF_TaskForge.h"
 
-#include "BlueprintTask_Subsystem.generated.h"
+#include <Subsystems/EngineSubsystem.h>
+#include <Subsystems/WorldSubsystem.h>
+
+#include "BTF_Subsystem.generated.h"
+
+// --------------------------------------------------------------------------------------------------------------------
+USTRUCT()
+struct FOutersBlueprintTasksArrayWrapper
+{
+	GENERATED_BODY()
+
+	TArray<TWeakObjectPtr<class UBTF_TaskForge>> Tasks;
+};
 
 // --------------------------------------------------------------------------------------------------------------------
 
 UCLASS()
-class BLUEPRINTTASKFORGE_API UBlueprintTask_Subsystem_UE : public UWorldSubsystem
+class BLUEPRINTTASKFORGE_API UBTF_WorldSubsystem : public UWorldSubsystem
 {
     GENERATED_BODY()
 
@@ -16,41 +28,24 @@ class BLUEPRINTTASKFORGE_API UBlueprintTask_Subsystem_UE : public UWorldSubsyste
 public:
     auto
     Request_TrackTask(
-        class UBlueprintTaskTemplate* InTask) -> void;
+        UBTF_TaskForge* InTask) -> void;
 
     auto
     Request_UntrackTask(
-        class UBlueprintTaskTemplate* InTask) -> void;
+        UBTF_TaskForge* InTask) -> void;
 
 private:
     UPROPERTY(Transient)
-    TSet<TObjectPtr<class UBlueprintTaskTemplate>> _BlueprintTasks;
+    TSet<TObjectPtr<UBTF_TaskForge>> _BlueprintTasks;
+
+    UPROPERTY()
+    TMap<TWeakObjectPtr<UObject>, FOutersBlueprintTasksArrayWrapper> ObjectsAndTheirTasks;
 };
 
 // --------------------------------------------------------------------------------------------------------------------
 
-UCLASS(NotBlueprintable)
-class BLUEPRINTTASKFORGE_API UUtils_BlueprintTask_Subsystem_UE : public UBlueprintFunctionLibrary
-{
-    GENERATED_BODY()
-
-public:
-    using SubsystemType = UBlueprintTask_Subsystem_UE;
-
-public:
-    static auto
-    Request_TrackTask(
-        const UWorld* InWorld,
-        class UBlueprintTaskTemplate* Task) -> void;
-
-    static auto
-    Request_UntrackTask(
-        const UWorld* InWorld,
-        class UBlueprintTaskTemplate* Task) -> void;
-};
-
 UCLASS()
-class BLUEPRINTTASKFORGE_API UBlueprintTask_EngineSubsystem_UE : public UEngineSubsystem
+class BLUEPRINTTASKFORGE_API UBTF_EngineSubsystem : public UEngineSubsystem
 {
     GENERATED_BODY()
 
@@ -58,11 +53,11 @@ public:
     auto
     Request_Add(
         FGuid InTaskNodeGuid,
-        UBlueprintTaskTemplate* InTaskInstance) -> void;
+        UBTF_TaskForge* InTaskInstance) -> void;
 
     auto
     Request_Remove(
-        UBlueprintTaskTemplate* InTaskInstance) -> void;
+        UBTF_TaskForge* InTaskInstance) -> void;
 
     auto
     Request_Remove(
@@ -73,44 +68,16 @@ public:
 
     auto
     FindTaskInstanceWithGuid(
-        FGuid InTaskNodeGuid) -> UBlueprintTaskTemplate*;
+        FGuid InTaskNodeGuid) -> UBTF_TaskForge*;
 
 private:
 #if WITH_EDITORONLY_DATA
     UPROPERTY()
-    TMap<FGuid, TWeakObjectPtr<UBlueprintTaskTemplate>> _TaskNodeGuidToTaskInstance;
+    TMap<FGuid, TWeakObjectPtr<UBTF_TaskForge>> _TaskNodeGuidToTaskInstance;
 
     UPROPERTY()
-    TMap<TWeakObjectPtr<UBlueprintTaskTemplate>, FGuid> _TaskInstanceTaskNodeGuid;
+    TMap<TWeakObjectPtr<UBTF_TaskForge>, FGuid> _TaskInstanceTaskNodeGuid;
 # endif
-};
-
-// --------------------------------------------------------------------------------------------------------------------
-
-USTRUCT()
-struct FOutersBlueprintTasksArrayWrapper
-{
-	GENERATED_BODY()
-
-	TArray<TWeakObjectPtr<UBlueprintTaskTemplate>> Tasks;
-};
-
-/**
- * Helper subsystem for tracking all objects and what
- * tasks belong to them.
- * Ideally, should not be used for runtime usage. Only editor tools.
- */
-UCLASS()
-class BLUEPRINTTASKFORGE_API UBlueprintTaskTrackerSubsystem : public UEngineSubsystem
-{
-	GENERATED_BODY()
-
-public:
-
-	void AddTask(UBlueprintTaskTemplate* Task);
-	void RemoveTask(UBlueprintTaskTemplate* Task);
-
-	TMap<TWeakObjectPtr<UObject>, FOutersBlueprintTasksArrayWrapper> ObjectsAndTheirTasks;
 };
 
 // --------------------------------------------------------------------------------------------------------------------

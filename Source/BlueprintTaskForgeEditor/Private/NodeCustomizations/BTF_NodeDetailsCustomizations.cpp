@@ -1,18 +1,18 @@
-﻿#include "FBNTNodeDetailsCustomizations.h"
+﻿#include "NodeCustomizations/BTF_NodeDetailsCustomizations.h"
 
-#include "BlueprintTaskTemplate.h"
+#include "BTF_ExtendConstructObject_K2Node.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
-#include "DetailWidgetRow.h"
-#include "K2Node_ExtendConstructObject.h"
-#include "NodeDecorators/BNTNodeDecorator.h"
+#include "BTF_TaskForge.h"
 
-TSharedRef<IDetailCustomization> FBNTNodeDetailsCustomizations::MakeInstance()
+#include "NodeDecorators/Btf_NodeDecorator.h"
+
+TSharedRef<IDetailCustomization> FBTF_NodeDetailsCustomizations::MakeInstance()
 {
-	return MakeShareable(new FBNTNodeDetailsCustomizations);
+	return MakeShareable(new FBTF_NodeDetailsCustomizations);
 }
 
-void FBNTNodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
+void FBTF_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 {
 	TArray<TWeakObjectPtr<UObject>> CustomizedObjects;
 	DetailBuilder.GetObjectsBeingCustomized(CustomizedObjects);
@@ -34,10 +34,10 @@ void FBNTNodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Detai
 		SetupCategory.SetSortOrder(0);
 	}
 
-	UK2Node_ExtendConstructObject* TaskNode = Cast<UK2Node_ExtendConstructObject>(CustomizedObjects[0].Get());
+	auto* TaskNode = Cast<UBTF_ExtendConstructObject_K2Node>(CustomizedObjects[0].Get());
 
 	TaskNode->DetailsPanelBuilder = &DetailBuilder;
-	
+
 	if(TaskNode && TaskNode->ProxyClass && TaskNode->AllowInstance && TaskNode->TaskInstance)
 	{
 		//Set the filter function to exclude non-instance-editable properties before we add
@@ -53,7 +53,7 @@ void FBNTNodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Detai
 			/**Properties inside of structs aren't instance editable, even though the
 			 * struct itself may be. We need to check if the property is a child of a struct */
 			bool IsChildOfStruct = PropertyAndParent.ParentProperties.IsValidIndex(0);
-			
+
 			return (bIsPublic && bIsInstanceEditable) || IsChildOfStruct;
 		}));
 
@@ -70,7 +70,7 @@ void FBNTNodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Detai
 		/**Add the task instance as an external object, so we can edit its properties*/
 		SecondaryCategory.AddExternalObjects({TaskNode->TaskInstance}, EPropertyLocation::Default, AddPropertyParams);
 	}
-	
+
 	if(TaskNode->Decorator.IsValid())
 	{
 		/**Start adding any objects the decorator wants to include in the details panel*/

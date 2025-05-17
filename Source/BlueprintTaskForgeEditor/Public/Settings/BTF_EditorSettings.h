@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-#include "BNTEditorDeveloperSettings.generated.h"
+#include "BTF_EditorSettings.generated.h"
 
 /**
  *
  */
-UCLASS(Config = EditorPerProjectUserSettings, meta = (DisplayName = "Blueprint Tasks Editor Settings"))
-class BLUEPRINTTASKFORGEEDITOR_API UBNTEditorDeveloperSettings : public UDeveloperSettings
+UCLASS(Config = EditorPerProjectUserSettings, meta = (DisplayName = "Blueprint Task Forge Editor Settings"))
+class BLUEPRINTTASKFORGEEDITOR_API UBTF_EditorSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -24,7 +24,7 @@ public:
 
 	virtual FName GetSectionName() const override
 	{
-		return "Blueprint Tasks Editor Settings";
+		return "Blueprint Task Forge Editor Settings";
 	}
 
 	virtual FName GetCategoryName() const override

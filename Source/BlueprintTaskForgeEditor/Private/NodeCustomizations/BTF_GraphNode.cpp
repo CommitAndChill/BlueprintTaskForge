@@ -1,26 +1,25 @@
-﻿#include "SBNTNode.h"
+﻿#include "NodeCustomizations/BTF_GraphNode.h"
 
-#include "BlueprintTaskTemplate.h"
-#include "K2Node_Blueprint_Template.h"
+#include "BTF_TaskForge.h"
+#include "BTF_TaskForge_K2Node.h"
 #include "SGraphPanel.h"
 #include "Internationalization/BreakIterator.h"
-#include "NodeDecorators/BNTNodeDecorator.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 
 #define LOCTEXT_NAMESPACE "K2Node"
 
-void SBNTNode::Construct(const FArguments& InArgs, UEdGraphNode* InGraphNode, UClass* InTaskClass)
+void SBTF_Node::Construct(const FArguments& InArgs, UEdGraphNode* InGraphNode, UClass* InTaskClass)
 {
 	GraphNode = InGraphNode;
 	TaskClass = InTaskClass;
-	_BlueprintTaskNode = Cast<UK2Node_Blueprint_Template>(InGraphNode);
-	
+	_BlueprintTaskNode = Cast<UBTF_TaskForge_K2Node>(InGraphNode);
+
 	SetCursor(EMouseCursor::CardinalCross);
 	UpdateGraphNode();
 }
 
-TSharedRef<SWidget> SBNTNode::CreateNodeContentArea()
+TSharedRef<SWidget> SBTF_Node::CreateNodeContentArea()
 {
 	TSharedPtr<SWidget> TopContent;
 	TSharedPtr<SWidget> CenterContent;
@@ -32,9 +31,9 @@ TSharedRef<SWidget> SBNTNode::CreateNodeContentArea()
 		{
 			/**Make a new instance so things can be more dynamic. Also required for certain
 			 * Slate usages, like brushes that need to be stored as a class member. */
-			Decorator = NewObject<UBNTNodeDecorator>(_BlueprintTaskNode.Get(), _BlueprintTaskNode->GetInstanceOrDefaultObject()->Decorator);
+			Decorator = NewObject<UBTF_NodeDecorator>(_BlueprintTaskNode.Get(), _BlueprintTaskNode->GetInstanceOrDefaultObject()->Decorator);
 			_BlueprintTaskNode.Get()->Decorator = Decorator;
-			
+
 			/**V: Since decorators are UObject's and Slate REALLY cares about the
 			 * lifetime of things, and us storing a pointer to it inside a non-UCLASS
 			 * won't prevent it from being garbage collected.
@@ -45,7 +44,7 @@ TSharedRef<SWidget> SBNTNode::CreateNodeContentArea()
 			 * we remove it from root. */
 			Decorator->AddToRoot();
 		}
-		
+
 		TSharedPtr<SWidget> NodeOverride = Decorator->OverrideContentNodeArea(this);
 		if(NodeOverride != SNullWidget::NullWidget)
 		{
@@ -53,12 +52,12 @@ TSharedRef<SWidget> SBNTNode::CreateNodeContentArea()
 			 * exit out of this function. */
 			return NodeOverride.ToSharedRef();
 		}
-		
+
 		TopContent = Decorator->CreateTopContent(TaskClass, _BlueprintTaskNode.Get()->GetInstanceOrDefaultObject(), _BlueprintTaskNode.IsValid() ? _BlueprintTaskNode.Get() : nullptr);
 		CenterContent = Decorator->CreateCenterContent(TaskClass, _BlueprintTaskNode.Get()->GetInstanceOrDefaultObject(), _BlueprintTaskNode.IsValid() ? _BlueprintTaskNode.Get() : nullptr);
 		BottomContent = Decorator->CreateBottomContent(TaskClass, _BlueprintTaskNode.Get()->GetInstanceOrDefaultObject(), _BlueprintTaskNode.IsValid() ? _BlueprintTaskNode.Get() : nullptr);
 	}
-	
+
 	return SNew(SVerticalBox)
 		//Optional Top Content Slot that takes up the width of the node
 		+ SVerticalBox::Slot()
@@ -120,7 +119,7 @@ TSharedRef<SWidget> SBNTNode::CreateNodeContentArea()
 }
 
 auto
-	SBNTNode::
+	SBTF_Node::
 	GetNodeInfoPopups(
 		FNodeInfoContext* Context,
 		TArray<FGraphInformationPopupInfo>& Popups) const
@@ -128,7 +127,7 @@ auto
 {
 	if(!_BlueprintTaskNode.IsValid())
 	{ return; }
-	
+
 	if (const auto& Description = _BlueprintTaskNode->Get_NodeDescription();
 		Description.IsEmpty() == false)
 	{
@@ -151,7 +150,7 @@ auto
 }
 
 auto
-	SBNTNode::
+	SBTF_Node::
 	CreateBelowPinControls(
 		TSharedPtr<SVerticalBox> MainBox)
 	-> void
@@ -167,7 +166,7 @@ auto
 			SNew(SBorder)
 			.BorderImage(FAppStyle::GetBrush("Graph.StateNode.Body"))
 			.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.04f, 1.0f))
-			.Visibility(this, &SBNTNode::Get_NodeConfigTextVisibility)
+			.Visibility(this, &SBTF_Node::Get_NodeConfigTextVisibility)
 			[
 				SAssignNew(BelowPinsBox, SVerticalBox)
 			]
@@ -182,12 +181,12 @@ auto
 			SAssignNew(_ConfigTextBlock, STextBlock)
 			.AutoWrapText(true)
 			.LineBreakPolicy(FBreakIterator::CreateWordBreakIterator())
-			.Text(this, &SBNTNode::Get_NodeConfigText)
+			.Text(this, &SBTF_Node::Get_NodeConfigText)
 		];
 }
 
 auto
-	SBNTNode::
+	SBTF_Node::
 	Get_NodeConfigTextVisibility() const
 	-> EVisibility
 {
@@ -205,7 +204,7 @@ auto
 }
 
 auto
-	SBNTNode::
+	SBTF_Node::
 	Get_NodeConfigText() const
 	-> FText
 {

@@ -1,4 +1,5 @@
 ﻿#pragma once
+
 #include "SGraphPalette.h"
 #include "WorkflowOrientedApp/WorkflowTabFactory.h"
 
@@ -12,7 +13,7 @@ struct FTaskPaletteSummoner
 	virtual TSharedRef<SWidget> CreateTabBody(const FWorkflowTabSpawnInfo& Info) const override;
 
 protected:
-	
+
 	TWeakPtr<FBlueprintEditor> WeakBlueprintEditor;
 };
 
@@ -20,14 +21,13 @@ protected:
  * from the ActorSequenceEditorTabSummoner and SBlueprintLibraryPalette.
  * I would have made a child of SBlueprintLibraryPalette, but it's in a
  * private folder... yay... */
-class STasksPalette : public SGraphPalette
+class SBTF_TaskPalette : public SGraphPalette
 {
-	
 public:
-	SLATE_BEGIN_ARGS(STasksPalette) {}
+	SLATE_BEGIN_ARGS(SBTF_TaskPalette) {}
 	SLATE_END_ARGS()
 
-	bool bIsActiveTimerRegistered = false;
+	bool IsActiveTimerRegistered = false;
 
 	/** Pointer back to the blueprint editor that owns us */
 	TWeakPtr<FBlueprintEditor> BlueprintEditorPtr;
