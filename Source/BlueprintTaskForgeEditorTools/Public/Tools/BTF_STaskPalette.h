@@ -21,10 +21,10 @@ protected:
  * from the ActorSequenceEditorTabSummoner and SBlueprintLibraryPalette.
  * I would have made a child of SBlueprintLibraryPalette, but it's in a
  * private folder... yay... */
-class SBTF_TaskPalette : public SGraphPalette
+class SBtf_TaskPalette : public SGraphPalette
 {
 public:
-	SLATE_BEGIN_ARGS(SBTF_TaskPalette) {}
+	SLATE_BEGIN_ARGS(SBtf_TaskPalette) {}
 	SLATE_END_ARGS()
 
 	bool IsActiveTimerRegistered = false;

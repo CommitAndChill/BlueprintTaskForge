@@ -6,15 +6,15 @@
 #include "Engine/Blueprint.h"
 #include "BlueprintActionDatabase.h"
 #include "BlueprintActionDatabaseRegistrar.h"
-#include "BTF_TaskForge.h"
-#include "BTF_TaskForge_K2Node.h"
+#include "Btf_TaskForge.h"
+#include "Btf_TaskForge_K2Node.h"
 
 #include "PropertyEditorDelegates.h"
 #include "PropertyEditorModule.h"
 #include "AssetRegistry/ARFilter.h"
 
-#include "NodeCustomizations/BTF_NameSelectStructCustomization.h"
-#include "NodeCustomizations/BTF_NodeDetailsCustomizations.h"
+#include "NodeCustomizations/Btf_NameSelectStructCustomization.h"
+#include "NodeCustomizations/Btf_NodeDetailsCustomizations.h"
 
 #define LOCTEXT_NAMESPACE "FBlueprintTaskForgeEditorModule"
 
@@ -28,7 +28,7 @@ void FBlueprintTaskForgeEditorModule::StartupModule()
     FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
     PropertyModule.RegisterCustomPropertyTypeLayout(
         "NameSelect",
-        FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FBTF_NameSelectStructCustomization::MakeInstance));
+        FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FBtf_NameSelectStructCustomization::MakeInstance));
 //++CK
     _OnObjectPropertyChangedDelegateHandle = FCoreUObjectDelegates::OnObjectPropertyChanged.AddRaw(this, &FBlueprintTaskForgeEditorModule::OnObjectPropertyChanged);
 //--CK
@@ -36,7 +36,7 @@ void FBlueprintTaskForgeEditorModule::StartupModule()
 	//BNT node customization
 	PropertyModule.RegisterCustomClassLayout(
 		"K2Node_Blueprint_Template",
-		FOnGetDetailCustomizationInstance::CreateStatic(&FBTF_NodeDetailsCustomizations::MakeInstance)
+		FOnGetDetailCustomizationInstance::CreateStatic(&FBtf_NodeDetailsCustomizations::MakeInstance)
 	);
 
 	PropertyModule.NotifyCustomizationModuleChanged();
@@ -78,7 +78,7 @@ void FBlueprintTaskForgeEditorModule::RefreshClassActions() const
     const IAssetRegistry* AssetRegistry = &FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
 
 	FARFilter Filter;
-	Filter.ClassPaths.Add(FTopLevelAssetPath(UBTF_TaskForge::StaticClass()));
+	Filter.ClassPaths.Add(FTopLevelAssetPath(UBtf_TaskForge::StaticClass()));
 	Filter.bRecursiveClasses = true;
 
     AssetRegistry->GetAssets(Filter, AssetDataArr);
@@ -89,7 +89,7 @@ void FBlueprintTaskForgeEditorModule::RefreshClassActions() const
 		{
 			if (const UClass* TestClass = Blueprint->GeneratedClass)
 			{
-				if (TestClass->IsChildOf(UBTF_TaskForge::StaticClass()))
+				if (TestClass->IsChildOf(UBtf_TaskForge::StaticClass()))
 				{
 					if (const auto CDO = TestClass->GetDefaultObject(true))
 					{
@@ -106,8 +106,8 @@ void FBlueprintTaskForgeEditorModule::RefreshClassActions() const
 
 	if (FBlueprintActionDatabase* Bad = FBlueprintActionDatabase::TryGet())
 	{
-		Bad->RefreshClassActions(UBTF_TaskForge::StaticClass());
-		Bad->RefreshClassActions(UBTF_TaskForge_K2Node::StaticClass());
+		Bad->RefreshClassActions(UBtf_TaskForge::StaticClass());
+		Bad->RefreshClassActions(UBtf_TaskForge_K2Node::StaticClass());
 	}
 }
 
@@ -128,7 +128,7 @@ auto
     { return; }
 
     constexpr auto CreateIfNeeded = true;
-    if (auto* NodeTemplate = Cast<UBTF_TaskForge>(BlueprintParentClass->GetDefaultObject(CreateIfNeeded));
+    if (auto* NodeTemplate = Cast<UBtf_TaskForge>(BlueprintParentClass->GetDefaultObject(CreateIfNeeded));
         IsValid(NodeTemplate))
     {
         NodeTemplate->RefreshCollected();
@@ -147,7 +147,7 @@ void FBlueprintTaskForgeEditorModule::OnAssetAdded(const FAssetData& AssetData) 
 	{
 		if (const UClass* TestClass = Blueprint->GeneratedClass)
 		{
-			if (TestClass->IsChildOf(UBTF_TaskForge::StaticClass()))
+			if (TestClass->IsChildOf(UBtf_TaskForge::StaticClass()))
 			{
 				//TestClass->GetDefaultObject(true);
 				RefreshClassActions();
@@ -162,7 +162,7 @@ void FBlueprintTaskForgeEditorModule::HandleAssetDeleted(UObject* Object) const
 	{
 		if (const UClass* TestClass = Blueprint->ParentClass)
 		{
-			if (TestClass->IsChildOf(UBTF_TaskForge::StaticClass()))
+			if (TestClass->IsChildOf(UBtf_TaskForge::StaticClass()))
 			{
 				RefreshClassActions();
 			}

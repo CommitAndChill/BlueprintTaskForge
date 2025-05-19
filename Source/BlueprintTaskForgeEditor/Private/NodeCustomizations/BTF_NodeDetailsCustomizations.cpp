@@ -1,18 +1,18 @@
-﻿#include "NodeCustomizations/BTF_NodeDetailsCustomizations.h"
+﻿#include "NodeCustomizations/Btf_NodeDetailsCustomizations.h"
 
-#include "BTF_ExtendConstructObject_K2Node.h"
+#include "Btf_ExtendConstructObject_K2Node.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
-#include "BTF_TaskForge.h"
+#include "Btf_TaskForge.h"
 
 #include "NodeDecorators/Btf_NodeDecorator.h"
 
-TSharedRef<IDetailCustomization> FBTF_NodeDetailsCustomizations::MakeInstance()
+TSharedRef<IDetailCustomization> FBtf_NodeDetailsCustomizations::MakeInstance()
 {
-	return MakeShareable(new FBTF_NodeDetailsCustomizations);
+	return MakeShareable(new FBtf_NodeDetailsCustomizations);
 }
 
-void FBTF_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
+void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 {
 	TArray<TWeakObjectPtr<UObject>> CustomizedObjects;
 	DetailBuilder.GetObjectsBeingCustomized(CustomizedObjects);
@@ -34,7 +34,7 @@ void FBTF_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
 		SetupCategory.SetSortOrder(0);
 	}
 
-	auto* TaskNode = Cast<UBTF_ExtendConstructObject_K2Node>(CustomizedObjects[0].Get());
+	auto* TaskNode = Cast<UBtf_ExtendConstructObject_K2Node>(CustomizedObjects[0].Get());
 
 	TaskNode->DetailsPanelBuilder = &DetailBuilder;
 

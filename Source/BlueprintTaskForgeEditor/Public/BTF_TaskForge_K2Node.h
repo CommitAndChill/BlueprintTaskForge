@@ -2,17 +2,17 @@
 
 #include "CoreMinimal.h"
 
-#include "BTF_ExtendConstructObject_K2Node.h"
+#include "Btf_ExtendConstructObject_K2Node.h"
 
-#include "BTF_TaskForge_K2Node.generated.h"
+#include "Btf_TaskForge_K2Node.generated.h"
 
 /** */
 UCLASS()
-class BLUEPRINTTASKFORGE_API UBTF_TaskForge_K2Node : public UBTF_ExtendConstructObject_K2Node
+class BLUEPRINTTASKFORGE_API UBtf_TaskForge_K2Node : public UBtf_ExtendConstructObject_K2Node
 {
     GENERATED_BODY()
 public:
-    UBTF_TaskForge_K2Node(const FObjectInitializer& ObjectInitializer);
+    UBtf_TaskForge_K2Node(const FObjectInitializer& ObjectInitializer);
 
 	virtual void PinDefaultValueChanged(UEdGraphPin* Pin) override
 	{

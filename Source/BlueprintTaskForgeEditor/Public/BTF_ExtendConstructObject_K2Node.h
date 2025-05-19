@@ -4,14 +4,14 @@
 #include "K2Node.h"
 #include "Engine/MemberReference.h"
 #include "UObject/ObjectMacros.h"
-#include "BTF_NameSelect.h"
+#include "Btf_NameSelect.h"
 
 #include "K2Node_DynamicCast.h"
 
-#include "BTF_ExtendConstructObject_K2Node.generated.h"
+#include "Btf_ExtendConstructObject_K2Node.generated.h"
 
-class UBTF_NodeDecorator;
-class UBTF_TaskForge;
+class UBtf_NodeDecorator;
+class UBtf_TaskForge;
 struct FCustomOutputPin;
 class FBlueprintActionDatabaseRegistrar;
 class UEdGraph;
@@ -20,11 +20,11 @@ class UEdGraphSchema;
 class UEdGraphSchema_K2;
 
 UCLASS()
-class BLUEPRINTTASKFORGE_API UBTF_ExtendConstructObject_K2Node : public UK2Node
+class BLUEPRINTTASKFORGE_API UBtf_ExtendConstructObject_K2Node : public UK2Node
 {
     GENERATED_BODY()
 public:
-    UBTF_ExtendConstructObject_K2Node(const FObjectInitializer& ObjectInitializer);
+    UBtf_ExtendConstructObject_K2Node(const FObjectInitializer& ObjectInitializer);
 
 	// - UEdGraphNode interface			// UK2Node_BaseAsyncTask
 	virtual void AllocateDefaultPins() override;
@@ -57,7 +57,7 @@ public:
 	/**Used for scenarios where we need to run a function or retrieve
 	 * a value from the CDO, but if we are using a instance, we will
 	 * return the instance instead. */
-	UBTF_TaskForge* GetInstanceOrDefaultObject() const;
+	UBtf_TaskForge* GetInstanceOrDefaultObject() const;
 
 	// - UK2Node interface
 	virtual void ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
@@ -121,15 +121,15 @@ public:
     bool bSelfContext = false;
 
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FBTF_NameSelect> SpawnParam;
+    TArray<FBtf_NameSelect> SpawnParam;
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FBTF_NameSelect> AutoCallFunction;
+    TArray<FBtf_NameSelect> AutoCallFunction;
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FBTF_NameSelect> ExecFunction;
+    TArray<FBtf_NameSelect> ExecFunction;
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FBTF_NameSelect> InDelegate;
+    TArray<FBtf_NameSelect> InDelegate;
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
-    TArray<FBTF_NameSelect> OutDelegate;
+    TArray<FBtf_NameSelect> OutDelegate;
 
     UPROPERTY(EditAnywhere, Category = "ExposeOptions")
     bool bOwnerContextPin = false;
@@ -138,7 +138,7 @@ public:
 	bool AllowInstance = false;
 
 	UPROPERTY()
-	UBTF_TaskForge* TaskInstance = nullptr;
+	UBtf_TaskForge* TaskInstance = nullptr;
 
 	/**V: For some extra details panel customization, I'm using the
 	 * decorator as a proxy class to simplify the API.
@@ -147,7 +147,7 @@ public:
 	 * extra reference in here until Epic provide a true way
 	 * of retrieving the node widget. */
     UPROPERTY()
-	TWeakObjectPtr<UBTF_NodeDecorator> Decorator = nullptr;
+	TWeakObjectPtr<UBtf_NodeDecorator> Decorator = nullptr;
 
 	UPROPERTY()
 	TArray<FCustomOutputPin> CustomPins;
@@ -173,8 +173,8 @@ protected:
     UEdGraphPin* FindParamPin(const FString& ContextName, FName NativePinName, EEdGraphPinDirection Direction = EGPD_MAX) const;
 
     void ResetPinByNames(TSet<FName>& NameArray);
-    void ResetPinByNames(TArray<FBTF_NameSelect>& NameArray);
-    void RefreshNames(TArray<FBTF_NameSelect>& NameArray, bool bRemoveNone = true) const;
+    void ResetPinByNames(TArray<FBtf_NameSelect>& NameArray);
+    void RefreshNames(TArray<FBtf_NameSelect>& NameArray, bool bRemoveNone = true) const;
 
     void RemoveNodePin(FName PinName);
     void AddAutoCallFunction(FName PinName);

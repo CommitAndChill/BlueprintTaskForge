@@ -2,22 +2,22 @@
 
 #include "CoreMinimal.h"
 
-#include "BTF_NameSelect.generated.h"
+#include "Btf_NameSelect.generated.h"
 
 USTRUCT(BlueprintType)
-struct FBTF_NameSelect
+struct FBtf_NameSelect
 {
 	GENERATED_BODY()
 
-	FBTF_NameSelect() : Name(NAME_None) {}
-	FBTF_NameSelect(FName InName) : Name(InName) {}
+	FBtf_NameSelect() : Name(NAME_None) {}
+	FBtf_NameSelect(FName InName) : Name(InName) {}
 
 	UPROPERTY(EditAnywhere, Category = "NameSelect")
 	FName Name;
 
 	FORCEINLINE operator FName() const { return Name; }
-	FORCEINLINE friend uint32 GetTypeHash(const FBTF_NameSelect& Node) { return GetTypeHash(Node.Name); }
-	friend FArchive& operator<<(FArchive& Ar, FBTF_NameSelect& Node)
+	FORCEINLINE friend uint32 GetTypeHash(const FBtf_NameSelect& Node) { return GetTypeHash(Node.Name); }
+	friend FArchive& operator<<(FArchive& Ar, FBtf_NameSelect& Node)
 	{
 		Ar << Node.Name;
 		return Ar;
@@ -25,25 +25,25 @@ struct FBTF_NameSelect
 
 #if WITH_EDITORONLY_DATA
 	TSet<FName>* All = nullptr;
-	TArray<FBTF_NameSelect>* Exclude = nullptr;
+	TArray<FBtf_NameSelect>* Exclude = nullptr;
 
-	FORCEINLINE FBTF_NameSelect& operator=(const FBTF_NameSelect& Other)
+	FORCEINLINE FBtf_NameSelect& operator=(const FBtf_NameSelect& Other)
 	{
 		Name = Other.Name;
 		All = Other.All;
 		Exclude = Other.Exclude;
 		return *this;
 	}
-	FORCEINLINE FBTF_NameSelect& operator=(const FName& Other)
+	FORCEINLINE FBtf_NameSelect& operator=(const FName& Other)
 	{
 		Name = Other;
 		return *this;
 	}
 
-	FORCEINLINE bool operator==(const FBTF_NameSelect& Other) const { return Name == Other.Name; }
+	FORCEINLINE bool operator==(const FBtf_NameSelect& Other) const { return Name == Other.Name; }
 	FORCEINLINE bool operator==(const FName& Other) const { return Name == Other; }
 
-	FORCEINLINE void SetAllExclude(TSet<FName>& InAll, TArray<FBTF_NameSelect>& InExclude)
+	FORCEINLINE void SetAllExclude(TSet<FName>& InAll, TArray<FBtf_NameSelect>& InExclude)
 	{
 		All = &InAll;
 		Exclude = &InExclude;

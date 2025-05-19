@@ -2,7 +2,7 @@
 #include "IDetailCustomization.h"
 #include "DetailLayoutBuilder.h"
 
-class FBTF_NodeDetailsCustomizations : public IDetailCustomization
+class FBtf_NodeDetailsCustomizations : public IDetailCustomization
 {
 public:
 	static TSharedRef<IDetailCustomization> MakeInstance();

@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-#include "BTF_EditorSettings.generated.h"
+#include "Btf_EditorSettings.generated.h"
 
 /**
  *
  */
 UCLASS(Config = EditorPerProjectUserSettings, meta = (DisplayName = "Blueprint Task Forge Editor Settings"))
-class BLUEPRINTTASKFORGEEDITOR_API UBTF_EditorSettings : public UDeveloperSettings
+class BLUEPRINTTASKFORGEEDITOR_API UBtf_EditorSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 

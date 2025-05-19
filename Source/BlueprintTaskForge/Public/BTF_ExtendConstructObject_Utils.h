@@ -1,29 +1,29 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BTF_NameSelect.h"
+#include "Btf_NameSelect.h"
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Engine/EngineTypes.h"
 
-#include "BTF_ExtendConstructObject_Utils.generated.h"
+#include "Btf_ExtendConstructObject_Utils.generated.h"
 
 class UObject;
 class UUserWidget;
 
 #if WITH_EDITORONLY_DATA
-struct FBTF_SpawnParam
+struct FBtf_SpawnParam
 {
-	TArray<FBTF_NameSelect> SpawnParam;
-	TArray<FBTF_NameSelect> AutoCallFunction;
-	TArray<FBTF_NameSelect> ExecFunction;
-	TArray<FBTF_NameSelect> InDelegate;
-	TArray<FBTF_NameSelect> OutDelegate;
+	TArray<FBtf_NameSelect> SpawnParam;
+	TArray<FBtf_NameSelect> AutoCallFunction;
+	TArray<FBtf_NameSelect> ExecFunction;
+	TArray<FBtf_NameSelect> InDelegate;
+	TArray<FBtf_NameSelect> OutDelegate;
 };
 #endif
 
 UCLASS()
-class BLUEPRINTTASKFORGE_API UBTF_ExtendConstructObject_Utils : public UBlueprintFunctionLibrary
+class BLUEPRINTTASKFORGE_API UBtf_ExtendConstructObject_Utils : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:
@@ -34,7 +34,7 @@ public:
 	static bool LessSuffix(const FName& A, const FString& AStr, const FName& B, const FString& BStr);
 
 #if WITH_EDITOR
-	static FBTF_SpawnParam
+	static FBtf_SpawnParam
     CollectSpawnParam(
 		const UClass* InClass,
 		const TSet<FName>& AllDelegates,

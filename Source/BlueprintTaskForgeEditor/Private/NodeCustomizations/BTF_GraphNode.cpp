@@ -1,7 +1,7 @@
-﻿#include "NodeCustomizations/BTF_GraphNode.h"
+﻿#include "NodeCustomizations/Btf_GraphNode.h"
 
-#include "BTF_TaskForge.h"
-#include "BTF_TaskForge_K2Node.h"
+#include "Btf_TaskForge.h"
+#include "Btf_TaskForge_K2Node.h"
 #include "SGraphPanel.h"
 #include "Internationalization/BreakIterator.h"
 #include "Widgets/SBoxPanel.h"
@@ -9,17 +9,17 @@
 
 #define LOCTEXT_NAMESPACE "K2Node"
 
-void SBTF_Node::Construct(const FArguments& InArgs, UEdGraphNode* InGraphNode, UClass* InTaskClass)
+void SBtf_Node::Construct(const FArguments& InArgs, UEdGraphNode* InGraphNode, UClass* InTaskClass)
 {
 	GraphNode = InGraphNode;
 	TaskClass = InTaskClass;
-	_BlueprintTaskNode = Cast<UBTF_TaskForge_K2Node>(InGraphNode);
+	_BlueprintTaskNode = Cast<UBtf_TaskForge_K2Node>(InGraphNode);
 
 	SetCursor(EMouseCursor::CardinalCross);
 	UpdateGraphNode();
 }
 
-TSharedRef<SWidget> SBTF_Node::CreateNodeContentArea()
+TSharedRef<SWidget> SBtf_Node::CreateNodeContentArea()
 {
 	TSharedPtr<SWidget> TopContent;
 	TSharedPtr<SWidget> CenterContent;
@@ -31,7 +31,7 @@ TSharedRef<SWidget> SBTF_Node::CreateNodeContentArea()
 		{
 			/**Make a new instance so things can be more dynamic. Also required for certain
 			 * Slate usages, like brushes that need to be stored as a class member. */
-			Decorator = NewObject<UBTF_NodeDecorator>(_BlueprintTaskNode.Get(), _BlueprintTaskNode->GetInstanceOrDefaultObject()->Decorator);
+			Decorator = NewObject<UBtf_NodeDecorator>(_BlueprintTaskNode.Get(), _BlueprintTaskNode->GetInstanceOrDefaultObject()->Decorator);
 			_BlueprintTaskNode.Get()->Decorator = Decorator;
 
 			/**V: Since decorators are UObject's and Slate REALLY cares about the
@@ -119,7 +119,7 @@ TSharedRef<SWidget> SBTF_Node::CreateNodeContentArea()
 }
 
 auto
-	SBTF_Node::
+	SBtf_Node::
 	GetNodeInfoPopups(
 		FNodeInfoContext* Context,
 		TArray<FGraphInformationPopupInfo>& Popups) const
@@ -150,7 +150,7 @@ auto
 }
 
 auto
-	SBTF_Node::
+	SBtf_Node::
 	CreateBelowPinControls(
 		TSharedPtr<SVerticalBox> MainBox)
 	-> void
@@ -166,7 +166,7 @@ auto
 			SNew(SBorder)
 			.BorderImage(FAppStyle::GetBrush("Graph.StateNode.Body"))
 			.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.04f, 1.0f))
-			.Visibility(this, &SBTF_Node::Get_NodeConfigTextVisibility)
+			.Visibility(this, &SBtf_Node::Get_NodeConfigTextVisibility)
 			[
 				SAssignNew(BelowPinsBox, SVerticalBox)
 			]
@@ -181,12 +181,12 @@ auto
 			SAssignNew(_ConfigTextBlock, STextBlock)
 			.AutoWrapText(true)
 			.LineBreakPolicy(FBreakIterator::CreateWordBreakIterator())
-			.Text(this, &SBTF_Node::Get_NodeConfigText)
+			.Text(this, &SBtf_Node::Get_NodeConfigText)
 		];
 }
 
 auto
-	SBTF_Node::
+	SBtf_Node::
 	Get_NodeConfigTextVisibility() const
 	-> EVisibility
 {
@@ -204,7 +204,7 @@ auto
 }
 
 auto
-	SBTF_Node::
+	SBtf_Node::
 	Get_NodeConfigText() const
 	-> FText
 {
