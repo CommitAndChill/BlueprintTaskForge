@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-#include "Btf_RuntimeSettings.generated.h"
+#include "BtfRuntimeSettings.generated.h"
 
 UCLASS(Config = Game, DefaultConfig, DisplayName = "Blueprint Task Forge Runtime Settings")
 class BLUEPRINTTASKFORGE_API UBtf_RuntimeSettings : public UDeveloperSettings

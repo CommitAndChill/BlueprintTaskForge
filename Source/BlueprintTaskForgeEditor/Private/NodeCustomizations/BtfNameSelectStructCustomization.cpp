@@ -1,4 +1,4 @@
-#include "NodeCustomizations/Btf_NameSelectStructCustomization.h"
+#include "NodeCustomizations/BtfNameSelectStructCustomization.h"
 
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Engine/GameViewportClient.h"

@@ -1,12 +1,12 @@
-﻿#include "Tools/Btf_STaskPalette.h"
+﻿#include "Tools/BtfSTaskPalette.h"
 
-#include "Settings/Btf_EditorSettings.h"
+#include "Settings/BtfEditorSettings.h"
 
 #include "BlueprintActionMenuBuilder.h"
 #include "BlueprintEditor.h"
 #include "BlueprintNodeSpawner.h"
-#include "Btf_TaskForge.h"
-#include "Btf_TaskForge_K2Node.h"
+#include "BtfTaskForge.h"
+#include "BtfTaskForge_K2Node.h"
 #include "EditorWidgetsModule.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/LevelScriptBlueprint.h"

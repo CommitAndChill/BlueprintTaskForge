@@ -1,5 +1,5 @@
-#include "Btf_ExtendConstructObject_K2Node.h"
-#include "Btf_ExtendConstructObject_Utils.h"
+#include "BtfExtendConstructObject_K2Node.h"
+#include "BtfExtendConstructObject_Utils.h"
 
 #include "Misc/AssertionMacros.h"
 #include "Algo/Unique.h"
@@ -34,14 +34,14 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "BlueprintNodeSpawner.h"
 #include "BlueprintActionDatabaseRegistrar.h"
-#include "Btf_TaskForge.h"
+#include "BtfTaskForge.h"
 #include "DetailLayoutBuilder.h"
 #include "Framework/Commands/UIAction.h"
 #include "ToolMenu.h"
 #include "K2Node_SwitchName.h"
 #include "ObjectTools.h"
 
-#include "NodeCustomizations/Btf_GraphNode.h"
+#include "NodeCustomizations/BtfGraphNode.h"
 
 #include "StructUtils/InstancedStruct.h"
 

@@ -1,18 +1,18 @@
-#include "Btf_TaskForge_K2Node.h"
+#include "BtfTaskForge_K2Node.h"
 
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintFunctionNodeSpawner.h"
 #include "BlueprintNodeSpawner.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 
-#include "BlueprintTaskForge/Public/Btf_TaskForge.h"
-#include "BlueprintTaskForge/Public/Subsystem/Btf_Subsystem.h"
+#include "BlueprintTaskForge/Public/BtfTaskForge.h"
+#include "BlueprintTaskForge/Public/Subsystem/BtfSubsystem.h"
 
 #define LOCTEXT_NAMESPACE "K2Node"
 
 UBtf_TaskForge_K2Node::UBtf_TaskForge_K2Node(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-    ProxyFactoryFunctionName = GET_FUNCTION_NAME_CHECKED(UBtf_TaskForge, BlueprintTaskTemplate);
+    ProxyFactoryFunctionName = GET_FUNCTION_NAME_CHECKED(UBtf_TaskForge, BlueprintTaskForge);
     ProxyFactoryClass = UBtf_TaskForge::StaticClass();
     OutPutObjectPinName = FName(TEXT("TaskObject"));
     //AutoCallFunctions.Add(GET_FUNCTION_NAME_CHECKED(UBtf_TaskForge, Init_Activate));
@@ -139,13 +139,13 @@ void UBtf_TaskForge_K2Node::AllocateDefaultPins()
     check(GetWorldContextPin());
     HideClassPin();
 
-	FindPin(NodeGuidStrName)->DefaultValue = ProxyClass->GetName() + NodeGuid.ToString();
-	FindPin(NodeGuidStrName)->bHidden = true; //Why isn't this working?
-	FindPin(NodeGuidStrName)->Modify();
+    FindPin(NodeGuidStrName)->DefaultValue = ProxyClass->GetName() + NodeGuid.ToString();
+    FindPin(NodeGuidStrName)->bHidden = true; //Why isn't this working?
+    FindPin(NodeGuidStrName)->Modify();
 
-	UK2Node::AllocateDefaultPins();
-	GetGraph()->NotifyGraphChanged();
-	FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
+    UK2Node::AllocateDefaultPins();
+    GetGraph()->NotifyGraphChanged();
+    FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
 }
 
 void UBtf_TaskForge_K2Node::ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins)
@@ -182,20 +182,20 @@ FText UBtf_TaskForge_K2Node::GetNodeTitle(ENodeTitleType::Type TitleType) const
     if (ProxyClass)
     {
 //++CK
-		if (const auto* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
-			IsValid(TargetClassAsBlueprintTask))
-		{
-			const auto& MenuDisplayName = TargetClassAsBlueprintTask->MenuDisplayName;
-		    if (MenuDisplayName != NAME_None)
-			{ return FText::FromName(MenuDisplayName); }
-		}
+        if (const auto* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
+            IsValid(TargetClassAsBlueprintTask))
+        {
+            const auto& MenuDisplayName = TargetClassAsBlueprintTask->MenuDisplayName;
+            if (MenuDisplayName != NAME_None)
+            { return FText::FromName(MenuDisplayName); }
+        }
 //--CK
         const FString Str = ProxyClass->GetName();
         TArray<FString> ParseNames;
         Str.ParseIntoArray(ParseNames, *FNames_Helper::CompiledFromBlueprintSuffix);
         return FText::FromString(ParseNames[0]);
     }
-    return FText(LOCTEXT("UBtf_TaskForge_K2Node", "Node_Blueprint_Template Function"));
+    return FText(LOCTEXT("UBtf_TaskForge_K2Node", "Node_Blueprint_Task Function"));
 }
 
 FText UBtf_TaskForge_K2Node::GetMenuCategory() const
@@ -214,10 +214,10 @@ auto
 {
     if (IsValid(GEditor->PlayWorld) == false && IsValid(ProxyClass))
     {
-    	if(TaskInstance)
-    	{
-    		return TaskInstance->Get_NodeDescription_Implementation();
-    	}
+        if(TaskInstance)
+        {
+            return TaskInstance->Get_NodeDescription_Implementation();
+        }
 
         if (const auto& TaskCDO = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
             IsValid(TaskCDO))

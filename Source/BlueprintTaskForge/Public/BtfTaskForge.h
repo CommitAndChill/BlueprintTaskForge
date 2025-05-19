@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Templates/SubclassOf.h"
-#include "Btf_NameSelect.h"
+#include "BtfNameSelect.h"
 
 #include "Blueprint/BlueprintExtension.h"
 #include "StructUtils/InstancedStruct.h"
 #include "UObject/Object.h"
 
-#include "Btf_TaskForge.generated.h"
+#include "BtfTaskForge.generated.h"
 
 #if WITH_EDITOR
 class UBtf_NodeDecorator;
@@ -20,24 +20,24 @@ class UWorld;
 USTRUCT(BlueprintType)
 struct FCustomOutputPin
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FString PinName;
+    UPROPERTY(BlueprintReadWrite, EditAnywhere)
+    FString PinName;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FString Tooltip;
+    UPROPERTY(BlueprintReadWrite, EditAnywhere)
+    FString Tooltip;
 };
 
 USTRUCT(BlueprintType)
 struct FCustomOutputPinData
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCustomPinDelegate, FName, PinName, TInstancedStruct<FCustomOutputPinData>, Data);
 
-/** BlueprintTaskTemplate */
+/** BlueprintTaskForge */
 UCLASS(Abstract, Blueprintable, BlueprintType, EditInlineNew)
 class BLUEPRINTTASKFORGE_API UBtf_TaskForge : public UBlueprintExtension
 {
@@ -45,43 +45,43 @@ class BLUEPRINTTASKFORGE_API UBtf_TaskForge : public UBlueprintExtension
 public:
     UBtf_TaskForge(const FObjectInitializer& ObjectInitializer);
 
-	UPROPERTY(BlueprintAssignable)
-	FCustomPinDelegate OnCustomPinTriggered;
+    UPROPERTY(BlueprintAssignable)
+    FCustomPinDelegate OnCustomPinTriggered;
 
-	UFUNCTION(
-		BlueprintCallable,
-		Category = "BlueprintTaskForge",
-		meta =
-			(DisplayName = "BlueprintTaskTemplate",
-			 DefaultToSelf = "Outer",
-			 BlueprintInternalUseOnly = "TRUE",
-			 DeterminesOutputType = "Class",
-			 Keywords = "BP Blueprint Task Template"))
-	static UBtf_TaskForge* BlueprintTaskTemplate(UObject* Outer, TSubclassOf<UBtf_TaskForge> Class, FString NodeGuidStr);
+    UFUNCTION(
+        BlueprintCallable,
+        Category = "BlueprintTaskForge",
+        meta =
+            (DisplayName = "BlueprintTaskForge",
+             DefaultToSelf = "Outer",
+             BlueprintInternalUseOnly = "TRUE",
+             DeterminesOutputType = "Class",
+             Keywords = "BP Blueprint Task Forge"))
+    static UBtf_TaskForge* BlueprintTaskForge(UObject* Outer, TSubclassOf<UBtf_TaskForge> Class, FString NodeGuidStr);
 
-	/**Returns the task template that is attached to the @Outer's blueprint.*/
-	static UBtf_TaskForge* GetTaskTemplateByNodeGUID(UObject* Outer, FString NodeGUID);
+    /**Returns the task template that is attached to the @Outer's blueprint.*/
+    static UBtf_TaskForge* GetTaskByNodeGUID(UObject* Outer, FString NodeGUID);
 
-    UFUNCTION(BlueprintCallable, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Activate", ExposeAutoCall = "true"))
-	void Activate();
+    UFUNCTION(BlueprintCallable, Category = "BlueprintTaskForge", meta = (DisplayName = "Activate", ExposeAutoCall = "true"))
+    void Activate();
 
-	UFUNCTION(BlueprintCallable, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Deactivate", ExposeAutoCall = "false"))
-	void Deactivate();
+    UFUNCTION(BlueprintCallable, Category = "BlueprintTaskForge", meta = (DisplayName = "Deactivate", ExposeAutoCall = "false"))
+    void Deactivate();
 
     UFUNCTION(BlueprintCallable,
-              Category = "BlueprintTaskTemplate",
-              DisplayName = "[BlueprintNodeTemp] Add Task To Deactivate On  Deactivate",
+              Category = "BlueprintTaskForge",
+              DisplayName = "[BTF] Add Task To Deactivate On  Deactivate",
               meta = (CompactNodeTitle="TaskToDeactivate_OnDeactivate", HideSelfPin = true, Keywords = "Register, Track"))
     void
     DoRequest_AddTaskToDeactivateOnDeactivate(
         class UBtf_TaskForge* InTask);
 
-	virtual UWorld* GetWorld() const override
-	{
-		//++V
-		return IsTemplate() ? nullptr : GetOuter() ? GetOuter()->GetWorld() : nullptr;
-		//--V
-	}
+    virtual UWorld* GetWorld() const override
+    {
+        //++V
+        return IsTemplate() ? nullptr : GetOuter() ? GetOuter()->GetWorld() : nullptr;
+        //--V
+    }
 
 //++CK
     virtual void OnDestroy();
@@ -91,63 +91,63 @@ public:
 
 //++V
 
-	/**Gets all objects that have @Object assigned as their outer
-	 * and recursively deactivates all tasks it finds.
-	 * This includes nested objects, so for example; if @Object is
-	 * an actor and its actor components have a task active and the
-	 * component is its outer, this will also deactivate those tasks. */
-	UFUNCTION(Category = "BlueprintTaskTemplate", BlueprintCallable, meta = (DefaultToSelf = "Object"))
-	static void DeactivateAllTasksRelatedToObject(UObject* Object);
+    /**Gets all objects that have @Object assigned as their outer
+     * and recursively deactivates all tasks it finds.
+     * This includes nested objects, so for example; if @Object is
+     * an actor and its actor components have a task active and the
+     * component is its outer, this will also deactivate those tasks. */
+    UFUNCTION(Category = "BlueprintTaskForge", BlueprintCallable, meta = (DefaultToSelf = "Object"))
+    static void DeactivateAllTasksRelatedToObject(UObject* Object);
 
 #if WITH_EDITORONLY_DATA
-	UPROPERTY(Category = "Decorator", EditDefaultsOnly)
-	TSubclassOf<UBtf_NodeDecorator> Decorator = nullptr;
+    UPROPERTY(Category = "Decorator", EditDefaultsOnly)
+    TSubclassOf<UBtf_NodeDecorator> Decorator = nullptr;
 #endif
 
-	/**Triggers a output pin that was generated by @GetCustomOutputPins.
-	 * This does NOT trigger the other output pins that are generated
-	 * by delegates on the node. */
-	UFUNCTION(Category = "BlueprintTaskTemplate", BlueprintCallable)
-	virtual void TriggerCustomOutputPin(UPARAM(Meta=(GetOptions = "GetCustomOutputPinNames")) FName OutputPin, TInstancedStruct<FCustomOutputPinData> Data);
+    /**Triggers a output pin that was generated by @GetCustomOutputPins.
+     * This does NOT trigger the other output pins that are generated
+     * by delegates on the node. */
+    UFUNCTION(Category = "BlueprintTaskForge", BlueprintCallable)
+    virtual void TriggerCustomOutputPin(UPARAM(Meta=(GetOptions = "GetCustomOutputPinNames")) FName OutputPin, TInstancedStruct<FCustomOutputPinData> Data);
 
-	/**Each index from this function will generate a custom output pin
-	 * on the node, which can then be triggered by calling @TriggerCustomOutputPin */
-	UFUNCTION(BlueprintNativeEvent, Category = "BlueprintTaskTemplate")
-	TArray<FCustomOutputPin> GetCustomOutputPins();
+    /**Each index from this function will generate a custom output pin
+     * on the node, which can then be triggered by calling @TriggerCustomOutputPin */
+    UFUNCTION(BlueprintNativeEvent, Category = "BlueprintTaskForge")
+    TArray<FCustomOutputPin> GetCustomOutputPins();
 
-	/**Called when the parent blueprint this node is inside is compiled.
-	 * If any errors are returned, the blueprint will not compile
-	 * and report each error in the output log. */
-	UFUNCTION(BlueprintNativeEvent, Category = "Editor", meta = (DevelopmentOnly, DisplayName = "Validate Node During Compilation (Editor Only)"))
-	TArray<FString> ValidateNodeDuringCompilation();
+    /**Called when the parent blueprint this node is inside is compiled.
+     * If any errors are returned, the blueprint will not compile
+     * and report each error in the output log. */
+    UFUNCTION(BlueprintNativeEvent, Category = "Editor", meta = (DevelopmentOnly, DisplayName = "Validate Node During Compilation (Editor Only)"))
+    TArray<FString> ValidateNodeDuringCompilation();
 
-	/**If returned true, the title color will adopt the returned @Color*/
-	UFUNCTION(BlueprintNativeEvent, Category = "Editor", meta = (DevelopmentOnly))
-	bool GetNodeTitleColor(FLinearColor& Color);
+    /**If returned true, the title color will adopt the returned @Color*/
+    UFUNCTION(BlueprintNativeEvent, Category = "Editor", meta = (DevelopmentOnly))
+    bool GetNodeTitleColor(FLinearColor& Color);
 
-	/**Returns whether this instance is an extension
-	 * attached to the blueprint.
-	 * This is NOT the CDO, this is NOT the runtime instance.
-	 * If true, this instance is an instance that is attached
-	 * to the blueprint the node is inside. */
-	UFUNCTION(Category = "BlueprintTaskTemplate", BlueprintCallable, BlueprintPure)
-	bool IsExtension() const;
+    /**Returns whether this instance is an extension
+     * attached to the blueprint.
+     * This is NOT the CDO, this is NOT the runtime instance.
+     * If true, this instance is an instance that is attached
+     * to the blueprint the node is inside. */
+    UFUNCTION(Category = "BlueprintTaskForge", BlueprintCallable, BlueprintPure)
+    bool IsExtension() const;
 
-	/**For each element returned by this, the node will generate a output
-	 * pin that can be triggered by calling @TriggerCustomOutputPin */
-	UFUNCTION(Category = "BlueprintTaskTemplate", BlueprintCallable)
-	TArray<FName> GetCustomOutputPinNames();
+    /**For each element returned by this, the node will generate a output
+     * pin that can be triggered by calling @TriggerCustomOutputPin */
+    UFUNCTION(Category = "BlueprintTaskForge", BlueprintCallable)
+    TArray<FName> GetCustomOutputPinNames();
 //--V
 
 protected:
-	UFUNCTION(BlueprintImplementableEvent, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Activate"))
-	void Activate_BP();
-	virtual void Activate_Internal()
-	{
-		QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Activate_Internal)
-		//++CK
-		if (IsBeingDestroyed)
-		{ return; }
+    UFUNCTION(BlueprintImplementableEvent, Category = "BlueprintTaskForge", meta = (DisplayName = "Activate"))
+    void Activate_BP();
+    virtual void Activate_Internal()
+    {
+        QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Activate_Internal)
+        //++CK
+        if (IsBeingDestroyed)
+        { return; }
 
         if (IsValid(GetOuter()))
 //--CK
@@ -158,20 +158,20 @@ protected:
     }
 
 //++CK
-    UFUNCTION(BlueprintImplementableEvent, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Deactivate"))
+    UFUNCTION(BlueprintImplementableEvent, Category = "BlueprintTaskForge", meta = (DisplayName = "Deactivate"))
     void Deactivate_BP();
     virtual void Deactivate_Internal();
 
-	// Short summary of node's content - displayed over node as NodeInfoPopup
-	UFUNCTION(BlueprintNativeEvent, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Get Node Description"))
-	FString Get_NodeDescription() const;
+    // Short summary of node's content - displayed over node as NodeInfoPopup
+    UFUNCTION(BlueprintNativeEvent, Category = "BlueprintTaskForge", meta = (DisplayName = "Get Node Description"))
+    FString Get_NodeDescription() const;
 
-	// Information displayed while node is working - displayed over node as NodeInfoPopup
-	UFUNCTION(BlueprintNativeEvent, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Get Status String"))
-	FString Get_StatusString() const;
+    // Information displayed while node is working - displayed over node as NodeInfoPopup
+    UFUNCTION(BlueprintNativeEvent, Category = "BlueprintTaskForge", meta = (DisplayName = "Get Status String"))
+    FString Get_StatusString() const;
 
-	UFUNCTION(BlueprintNativeEvent, Category = "BlueprintTaskTemplate", meta = (DisplayName = "Get Status Background Color"))
-	bool Get_StatusBackgroundColor(FLinearColor& OutColor) const;
+    UFUNCTION(BlueprintNativeEvent, Category = "BlueprintTaskForge", meta = (DisplayName = "Get Status Background Color"))
+    bool Get_StatusBackgroundColor(FLinearColor& OutColor) const;
 //--CK
 
 private:
@@ -185,22 +185,22 @@ private:
 
 public:
 
-	//++V
-	/**These three options don't seem to ever be used for runtime logic.
-	 * Think this safely can be wrapped with #if WITH_EDITORONLY_DATA
-	 * to reduce tasks size 36 bytes. Tiny optimization though */
-	//--V
+    //++V
+    /**These three options don't seem to ever be used for runtime logic.
+     * Think this safely can be wrapped with #if WITH_EDITORONLY_DATA
+     * to reduce tasks size 36 bytes. Tiny optimization though */
+    //--V
 
 #if WITH_EDITORONLY_DATA
 
-	UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions")
-	FName Category = NAME_None;
+    UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions")
+    FName Category = NAME_None;
 
-	UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions", meta = (MultiLine = true))
-	FName Tooltip = NAME_None;
+    UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions", meta = (MultiLine = true))
+    FName Tooltip = NAME_None;
 
-	UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions")
-	FName MenuDisplayName = NAME_None;
+    UPROPERTY(EditDefaultsOnly, Category = "DisplayOptions")
+    FName MenuDisplayName = NAME_None;
 
 #endif
 
@@ -213,8 +213,8 @@ public:
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
 //++CK
-	auto
-	Get_IsActive() const -> bool;
+    auto
+    Get_IsActive() const -> bool;
 //--CK
 
 protected:
@@ -236,26 +236,26 @@ public:
     UPROPERTY(VisibleDefaultsOnly, Category = "ExposeOptions")
     TSet<FName> AllParam;
 
-	UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
-	TArray<FBtf_NameSelect> SpawnParam;
-	UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
-	TArray<FBtf_NameSelect> AutoCallFunction;
-	UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
-	TArray<FBtf_NameSelect> ExecFunction;
-	UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
-	TArray<FBtf_NameSelect> InDelegate;
-	UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
-	TArray<FBtf_NameSelect> OutDelegate;
+    UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
+    TArray<FBtf_NameSelect> SpawnParam;
+    UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
+    TArray<FBtf_NameSelect> AutoCallFunction;
+    UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
+    TArray<FBtf_NameSelect> ExecFunction;
+    UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
+    TArray<FBtf_NameSelect> InDelegate;
+    UPROPERTY(EditDefaultsOnly, Category = "ExposeOptions")
+    TArray<FBtf_NameSelect> OutDelegate;
 
-	/**If filled, this node will only be permitted to be placed into
-	 * these classes. This is mostly used for nodes that are
-	 * limited to specific regions of code, for example
-	 * quest designers and dialogue being limited to specific graphs. */
-	UPROPERTY(EditDefaultsOnly, Category = "Developer Settings")
-	TArray<TSoftClassPtr<UObject>> ClassLimitations;
+    /**If filled, this node will only be permitted to be placed into
+     * these classes. This is mostly used for nodes that are
+     * limited to specific regions of code, for example
+     * quest designers and dialogue being limited to specific graphs. */
+    UPROPERTY(EditDefaultsOnly, Category = "Developer Settings")
+    TArray<TSoftClassPtr<UObject>> ClassLimitations;
 
-	FOnPostPropertyChanged OnPostPropertyChanged;
-	//--V
+    FOnPostPropertyChanged OnPostPropertyChanged;
+    //--V
 
 #endif
 

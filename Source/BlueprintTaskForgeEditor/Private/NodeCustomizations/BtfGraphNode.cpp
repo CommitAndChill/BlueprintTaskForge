@@ -1,7 +1,7 @@
-﻿#include "NodeCustomizations/Btf_GraphNode.h"
+﻿#include "NodeCustomizations/BtfGraphNode.h"
 
-#include "Btf_TaskForge.h"
-#include "Btf_TaskForge_K2Node.h"
+#include "BtfTaskForge.h"
+#include "BtfTaskForge_K2Node.h"
 #include "SGraphPanel.h"
 #include "Internationalization/BreakIterator.h"
 #include "Widgets/SBoxPanel.h"

@@ -2,7 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-#include "Btf_EditorSettings.generated.h"
+
+#include "BtfEditorSettings.generated.h"
 
 /**
  *

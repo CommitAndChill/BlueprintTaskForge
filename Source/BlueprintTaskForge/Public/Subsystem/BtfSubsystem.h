@@ -1,15 +1,15 @@
 #pragma once
 
-#include "Btf_TaskForge.h"
+#include "BtfTaskForge.h"
 
 #include <Subsystems/EngineSubsystem.h>
 #include <Subsystems/WorldSubsystem.h>
 
-#include "Btf_Subsystem.generated.h"
+#include "BtfSubsystem.generated.h"
 
 // --------------------------------------------------------------------------------------------------------------------
 USTRUCT()
-struct FOutersBlueprintTasksArrayWrapper
+struct FBtf_OutersBlueprintTasksArrayWrapper
 {
 	GENERATED_BODY()
 
@@ -39,7 +39,7 @@ private:
     TSet<TObjectPtr<UBtf_TaskForge>> _BlueprintTasks;
 
     UPROPERTY()
-    TMap<TWeakObjectPtr<UObject>, FOutersBlueprintTasksArrayWrapper> ObjectsAndTheirTasks;
+    TMap<TWeakObjectPtr<UObject>, FBtf_OutersBlueprintTasksArrayWrapper> ObjectsAndTheirTasks;
 };
 
 // --------------------------------------------------------------------------------------------------------------------

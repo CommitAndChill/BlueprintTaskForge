@@ -1,12 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Btf_NameSelect.h"
+#include "BtfNameSelect.h"
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Engine/EngineTypes.h"
 
-#include "Btf_ExtendConstructObject_Utils.generated.h"
+#include "BtfExtendConstructObject_Utils.generated.h"
 
 class UObject;
 class UUserWidget;

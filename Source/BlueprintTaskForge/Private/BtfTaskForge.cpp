@@ -1,16 +1,16 @@
-#include "Btf_TaskForge.h"
+#include "BtfTaskForge.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
 #include "UObject/Package.h"
 #include "BlueprintTaskForge_Module.h"
-#include "Btf_ExtendConstructObject_Utils.h"
-#include "Subsystem/Btf_Subsystem.h"
+#include "BtfExtendConstructObject_Utils.h"
+#include "Subsystem/BtfSubsystem.h"
 
-#include "Settings/Btf_RuntimeSettings.h"
+#include "Settings/BtfRuntimeSettings.h"
 
 #if WITH_EDITOR
 #include "ObjectEditorUtils.h"
-#include "Subsystem/Btf_Subsystem.h"
+#include "Subsystem/BtfSubsystem.h"
 #endif // WITH_EDITOR
 
 
@@ -19,19 +19,19 @@ UBtf_TaskForge::UBtf_TaskForge(const FObjectInitializer& ObjectInitializer) : Su
 }
 
 //++CK
-//UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskTemplate(UObject* Outer, const TSubclassOf<UBtf_TaskForge> Class)
-UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskTemplate(UObject* Outer, const TSubclassOf<UBtf_TaskForge> Class, FString NodeGuidStr)
+//UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskForge(UObject* Outer, const TSubclassOf<UBtf_TaskForge> Class)
+UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskForge(UObject* Outer, const TSubclassOf<UBtf_TaskForge> Class, FString NodeGuidStr)
 //--CK
 {
-	if (IsValid(Outer) && Class && !Class->HasAnyClassFlags(CLASS_Abstract))
-	{
-		UBtf_TaskForge* TaskTemplate = GetTaskTemplateByNodeGUID(Outer, NodeGuidStr);
+    if (IsValid(Outer) && Class && !Class->HasAnyClassFlags(CLASS_Abstract))
+    {
+        UBtf_TaskForge* TaskTemplate = GetTaskByNodeGUID(Outer, NodeGuidStr);
 
 //++CK
         //const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName()); //Class->GetFName();//
         const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName(), EUniqueObjectNameOptions::GloballyUnique); //Class->GetFName();//
 //--CK
-		const auto Task = NewObject<UBtf_TaskForge>(Outer, Class, TaskObjName, RF_NoFlags, TaskTemplate ? TaskTemplate : nullptr);
+        const auto Task = NewObject<UBtf_TaskForge>(Outer, Class, TaskObjName, RF_NoFlags, TaskTemplate ? TaskTemplate : nullptr);
 
 //++CK
         if (IsValid(Task) == false)
@@ -44,34 +44,34 @@ UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskTemplate(UObject* Outer, const TSub
         }
 //--CK
 
-		return Task;
-	}
-	return nullptr;
+        return Task;
+    }
+    return nullptr;
 }
 
-UBtf_TaskForge* UBtf_TaskForge::GetTaskTemplateByNodeGUID(UObject* Outer, FString NodeGUID)
+UBtf_TaskForge* UBtf_TaskForge::GetTaskByNodeGUID(UObject* Outer, FString NodeGUID)
 {
-	for (UClass* TemplateOwnerClass = (Outer != nullptr) ? Outer->GetClass() : Outer->GetClass()
-		; TemplateOwnerClass
-		; TemplateOwnerClass = TemplateOwnerClass->GetSuperClass())
-	{
-		if (UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass))
-		{
-			if(UBlueprint* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy))
-			{
-				for(TObjectPtr<UBlueprintExtension> Extension : Blueprint->GetExtensions())
-				{
-					if(Extension)
-					{
-						if(Extension->IsA<UBtf_TaskForge>() && Extension->GetFName().ToString().Contains(NodeGUID))
-						{
-							return Cast<UBtf_TaskForge>(Extension);
-						}
-					}
-				}
-			}
-		}
-	}
+    for (UClass* TemplateOwnerClass = (Outer != nullptr) ? Outer->GetClass() : Outer->GetClass()
+        ; TemplateOwnerClass
+        ; TemplateOwnerClass = TemplateOwnerClass->GetSuperClass())
+    {
+        if (UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass))
+        {
+            if(UBlueprint* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy))
+            {
+                for(TObjectPtr<UBlueprintExtension> Extension : Blueprint->GetExtensions())
+                {
+                    if(Extension)
+                    {
+                        if(Extension->IsA<UBtf_TaskForge>() && Extension->GetFName().ToString().Contains(NodeGUID))
+                        {
+                            return Cast<UBtf_TaskForge>(Extension);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     return nullptr;
 }
@@ -82,12 +82,12 @@ void
     QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Activate)
 
     if (const auto World = GetWorld();
-		IsValid(World))
-	{
-		World->GetSubsystem<UBtf_WorldSubsystem>()->Request_TrackTask(this);
-	}
+        IsValid(World))
+    {
+        World->GetSubsystem<UBtf_WorldSubsystem>()->Request_TrackTask(this);
+    }
 
-	Activate_Internal();
+    Activate_Internal();
 }
 
 void
@@ -95,26 +95,26 @@ void
 {
     QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Deactivate)
 
-	if(!IsActive)
-	{
-		return;
-	}
+    if(!IsActive)
+    {
+        return;
+    }
 
-	for (const auto& Task : _TasksToDeactivateOnDeactivate)
-	{
-		if (Task.IsValid())
-		{
-			Task->Deactivate();
-		}
-	}
+    for (const auto& Task : _TasksToDeactivateOnDeactivate)
+    {
+        if (Task.IsValid())
+        {
+            Task->Deactivate();
+        }
+    }
 
-	if (const auto World = GetWorld();
-		IsValid(World))
-	{
-		World->GetSubsystem<UBtf_WorldSubsystem>()->Request_UntrackTask(this);
-	}
+    if (const auto World = GetWorld();
+        IsValid(World))
+    {
+        World->GetSubsystem<UBtf_WorldSubsystem>()->Request_UntrackTask(this);
+    }
 
-	Deactivate_Internal();
+    Deactivate_Internal();
 }
 
 //++CK
@@ -201,85 +201,85 @@ void
 
 bool UBtf_TaskForge::Get_StatusBackgroundColor_Implementation(FLinearColor& OutColor) const
 {
-	OutColor = FLinearColor();
-	return false;
+    OutColor = FLinearColor();
+    return false;
 }
 
 FString UBtf_TaskForge::Get_NodeDescription_Implementation() const
 {
-	return FString();
+    return FString();
 }
 
 //--CK
 
 TArray<FString> UBtf_TaskForge::ValidateNodeDuringCompilation_Implementation()
 {
-	return TArray<FString>();
+    return TArray<FString>();
 }
 
 void UBtf_TaskForge::DeactivateAllTasksRelatedToObject(UObject* Object)
 {
-	TArray<UObject*> SubObjects;
-	GetObjectsWithOuter(Object, SubObjects);
+    TArray<UObject*> SubObjects;
+    GetObjectsWithOuter(Object, SubObjects);
 
-	for(auto& CurrentObject : SubObjects)
-	{
-		if(UBtf_TaskForge* TaskTemplate = Cast<UBtf_TaskForge>(CurrentObject))
-		{
-			TaskTemplate->Deactivate();
-		}
-	}
+    for(auto& CurrentObject : SubObjects)
+    {
+        if(UBtf_TaskForge* TaskTemplate = Cast<UBtf_TaskForge>(CurrentObject))
+        {
+            TaskTemplate->Deactivate();
+        }
+    }
 }
 
 void UBtf_TaskForge::TriggerCustomOutputPin(FName OutputPin, TInstancedStruct<FCustomOutputPinData> Data)
 {
-	/**For now, this is just broadcasting the event. Future changes could include adding
-	 * logging into this function or validation. */
-	OnCustomPinTriggered.Broadcast(OutputPin, Data);
+    /**For now, this is just broadcasting the event. Future changes could include adding
+     * logging into this function or validation. */
+    OnCustomPinTriggered.Broadcast(OutputPin, Data);
 }
 
 TArray<FCustomOutputPin> UBtf_TaskForge::GetCustomOutputPins_Implementation()
 {
-	return TArray<FCustomOutputPin>();
+    return TArray<FCustomOutputPin>();
 }
 
 TArray<FName> UBtf_TaskForge::GetCustomOutputPinNames()
 {
-	TArray<FName> Result;
-	for(auto& CurrentPin : GetCustomOutputPins())
-	{
-		Result.Add(FName(CurrentPin.PinName));
-	}
-	return Result;
+    TArray<FName> Result;
+    for(auto& CurrentPin : GetCustomOutputPins())
+    {
+        Result.Add(FName(CurrentPin.PinName));
+    }
+    return Result;
 }
 
 bool UBtf_TaskForge::GetNodeTitleColor_Implementation(FLinearColor& Color)
 {
-	Color = FLinearColor();
-	return false;
+    Color = FLinearColor();
+    return false;
 }
 
 bool UBtf_TaskForge::IsExtension() const
 {
-	for (UObject* TemplateOwnerClass = (GetOuter() != nullptr) ? GetOuter() : nullptr
-	; TemplateOwnerClass
-	; TemplateOwnerClass = TemplateOwnerClass->GetOuter())
-	{
-		if(UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass))
-		{
-			if(UBlueprint* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy))
-			{
-				return Blueprint->GetExtensions().Contains(this);
-			}
-		}
+    for (UObject* TemplateOwnerClass = (GetOuter() != nullptr) ? GetOuter() : nullptr
+    ; TemplateOwnerClass
+    ; TemplateOwnerClass = TemplateOwnerClass->GetOuter())
+    {
+        if(UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass))
+        {
+            if(UBlueprint* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy))
+            {
+                return Blueprint->GetExtensions().Contains(this);
+            }
+        }
 
-		if(UBlueprint* Blueprint = Cast<UBlueprint>(TemplateOwnerClass))
-		{
-			return Blueprint->GetExtensions().Contains(this);
-		}
-	}
+        if(UBlueprint* Blueprint = Cast<UBlueprint>(TemplateOwnerClass))
+        {
+            return Blueprint->GetExtensions().Contains(this);
+        }
+    }
 
-	return false;
+    return false;
 }
 
 #if WITH_EDITOR
@@ -390,13 +390,13 @@ void UBtf_TaskForge::CollectDelegates(const UClass* InClass, TSet<FName>& Out)
 }
 void UBtf_TaskForge::CleanInvalidParams(TArray<FBtf_NameSelect>& Arr, const TSet<FName>& ArrRef)
 {
-	for (int32 i = Arr.Num() - 1; i >= 0; --i)
-	{
-		if ((Arr[i].Name != NAME_None && !ArrRef.Contains(Arr[i])) || Arr[i].Name == GET_MEMBER_NAME_CHECKED(UBtf_TaskForge, OnCustomPinTriggered))
-		{
-			Arr.RemoveAt(i, 1, EAllowShrinking::No);
-		}
-	}
+    for (int32 i = Arr.Num() - 1; i >= 0; --i)
+    {
+        if ((Arr[i].Name != NAME_None && !ArrRef.Contains(Arr[i])) || Arr[i].Name == GET_MEMBER_NAME_CHECKED(UBtf_TaskForge, OnCustomPinTriggered))
+        {
+            Arr.RemoveAt(i, 1, EAllowShrinking::No);
+        }
+    }
 }
 
 void UBtf_TaskForge::RefreshCollected()
@@ -442,16 +442,16 @@ void UBtf_TaskForge::RefreshCollected()
         AutoCallFunction.AddUnique(FName(TEXT("Activate")));
 
 //++CK
-		AutoCallFunction.Remove(FName(TEXT("Deactivate")));
-		//++V ExecFunction.AddUnique was added by CK, I am adding the developer settings logic to optionally disable this behavior
-		if(const UBtf_RuntimeSettings* DeveloperSettings = GetDefault<UBtf_RuntimeSettings>())
-		{
-			if(DeveloperSettings->EnforceDeactivateExecFunction)
-			{
-				ExecFunction.AddUnique(FName(TEXT("Deactivate")));
-			}
-		}
-		//--V
+        AutoCallFunction.Remove(FName(TEXT("Deactivate")));
+        //++V ExecFunction.AddUnique was added by CK, I am adding the developer settings logic to optionally disable this behavior
+        if(const UBtf_RuntimeSettings* DeveloperSettings = GetDefault<UBtf_RuntimeSettings>())
+        {
+            if(DeveloperSettings->EnforceDeactivateExecFunction)
+            {
+                ExecFunction.AddUnique(FName(TEXT("Deactivate")));
+            }
+        }
+        //--V
 //--CK
     }
     #endif // WITH_EDITORONLY_DATA
@@ -459,10 +459,10 @@ void UBtf_TaskForge::RefreshCollected()
 
 void UBtf_TaskForge::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
-	RefreshCollected();
-	Super::PostEditChangeProperty(PropertyChangedEvent);
+    RefreshCollected();
+    Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	OnPostPropertyChanged.ExecuteIfBound(PropertyChangedEvent);
+    OnPostPropertyChanged.ExecuteIfBound(PropertyChangedEvent);
 }
 
 //++CK
@@ -470,7 +470,7 @@ void UBtf_TaskForge::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 
 FString UBtf_TaskForge::Get_StatusString_Implementation() const
 {
-	return FString();
+    return FString();
 }
 
 auto

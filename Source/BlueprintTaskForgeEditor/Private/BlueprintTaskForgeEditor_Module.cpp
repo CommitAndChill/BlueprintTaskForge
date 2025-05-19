@@ -6,15 +6,15 @@
 #include "Engine/Blueprint.h"
 #include "BlueprintActionDatabase.h"
 #include "BlueprintActionDatabaseRegistrar.h"
-#include "Btf_TaskForge.h"
-#include "Btf_TaskForge_K2Node.h"
+#include "BtfTaskForge.h"
+#include "BtfTaskForge_K2Node.h"
 
 #include "PropertyEditorDelegates.h"
 #include "PropertyEditorModule.h"
 #include "AssetRegistry/ARFilter.h"
 
-#include "NodeCustomizations/Btf_NameSelectStructCustomization.h"
-#include "NodeCustomizations/Btf_NodeDetailsCustomizations.h"
+#include "NodeCustomizations/BtfNameSelectStructCustomization.h"
+#include "NodeCustomizations/BtfNodeDetailsCustomizations.h"
 
 #define LOCTEXT_NAMESPACE "FBlueprintTaskForgeEditorModule"
 
@@ -27,7 +27,7 @@ void FBlueprintTaskForgeEditorModule::StartupModule()
 
     FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
     PropertyModule.RegisterCustomPropertyTypeLayout(
-        "NameSelect",
+        FBtf_NameSelect::StaticStruct()->GetFName(),
         FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FBtf_NameSelectStructCustomization::MakeInstance));
 //++CK
     _OnObjectPropertyChangedDelegateHandle = FCoreUObjectDelegates::OnObjectPropertyChanged.AddRaw(this, &FBlueprintTaskForgeEditorModule::OnObjectPropertyChanged);

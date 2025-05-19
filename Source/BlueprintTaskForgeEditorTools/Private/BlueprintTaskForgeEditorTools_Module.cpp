@@ -2,13 +2,13 @@
 
 #include "BlueprintActionDatabase.h"
 #include "BlueprintEditorModule.h"
-#include "Btf_TaskForge.h"
-#include "Btf_TaskForge_K2Node.h"
+#include "BtfTaskForge.h"
+#include "BtfTaskForge_K2Node.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
 
-#include "Tools/Btf_STaskPalette.h"
+#include "Tools/BtfSTaskPalette.h"
 #include "WorkflowOrientedApp/WorkflowTabManager.h"
 
 #define LOCTEXT_NAMESPACE "FBlueprintTaskForgeEditorToolsModule"

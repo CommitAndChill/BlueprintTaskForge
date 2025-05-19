@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Btf_NameSelect.h"
+#include "BtfNameSelect.h"
 #include "IPropertyTypeCustomization.h"
 
 class IPropertyHandle;

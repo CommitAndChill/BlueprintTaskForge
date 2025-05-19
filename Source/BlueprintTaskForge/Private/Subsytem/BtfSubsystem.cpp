@@ -1,6 +1,6 @@
-#include "Subsystem/Btf_Subsystem.h"
+#include "Subsystem/BtfSubsystem.h"
 
-#include "Btf_TaskForge.h"
+#include "BtfTaskForge.h"
 
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -36,16 +36,16 @@ auto
 
     _BlueprintTasks.Add(Task);
 
-    if(FOutersBlueprintTasksArrayWrapper* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
-	{
-		TasksWrapper->Tasks.AddUnique(Task);
-	}
-	else
-	{
-		FOutersBlueprintTasksArrayWrapper TasksArrayWrapper;
-		TasksArrayWrapper.Tasks.Add(Task);
-		ObjectsAndTheirTasks.Add(Task->GetOuter(), TasksArrayWrapper);
-	}
+    if(FBtf_OutersBlueprintTasksArrayWrapper* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
+    {
+        TasksWrapper->Tasks.AddUnique(Task);
+    }
+    else
+    {
+        FBtf_OutersBlueprintTasksArrayWrapper TasksArrayWrapper;
+        TasksArrayWrapper.Tasks.Add(Task);
+        ObjectsAndTheirTasks.Add(Task->GetOuter(), TasksArrayWrapper);
+    }
 }
 
 auto
@@ -61,14 +61,14 @@ auto
 
     _BlueprintTasks.Remove(Task);
 
-    if(FOutersBlueprintTasksArrayWrapper* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
-	{
-		TasksWrapper->Tasks.RemoveSingle(Task);
-		if(TasksWrapper->Tasks.IsEmpty())
-		{
-			ObjectsAndTheirTasks.Remove(Task->GetOuter());
-		}
-	}
+    if(FBtf_OutersBlueprintTasksArrayWrapper* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
+    {
+        TasksWrapper->Tasks.RemoveSingle(Task);
+        if(TasksWrapper->Tasks.IsEmpty())
+        {
+            ObjectsAndTheirTasks.Remove(Task->GetOuter());
+        }
+    }
 }
 
 auto
