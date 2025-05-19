@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "Btf_NodeDecorator.generated.h"
+#include "BtfNodeDecorator.generated.h"
 
 class SBtf_Node;
 class UBtf_TaskForge;

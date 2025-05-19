@@ -2,7 +2,7 @@
 
 #include "KismetNodes/SGraphNodeK2Base.h"
 
-#include "NodeDecorators/Btf_NodeDecorator.h"
+#include "NodeDecorators/BtfNodeDecorator.h"
 
 class UBtf_NodeDecorator;
 class UBtf_TaskForge_K2Node;

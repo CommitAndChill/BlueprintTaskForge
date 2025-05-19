@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-#include "Btf_NameSelect.generated.h"
+#include "BtfNameSelect.generated.h"
 
 USTRUCT(BlueprintType)
 struct FBtf_NameSelect

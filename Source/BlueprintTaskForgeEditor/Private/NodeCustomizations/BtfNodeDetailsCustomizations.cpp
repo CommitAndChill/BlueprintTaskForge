@@ -1,11 +1,11 @@
-﻿#include "NodeCustomizations/Btf_NodeDetailsCustomizations.h"
+﻿#include "NodeCustomizations/BtfNodeDetailsCustomizations.h"
 
-#include "Btf_ExtendConstructObject_K2Node.h"
+#include "BtfExtendConstructObject_K2Node.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
-#include "Btf_TaskForge.h"
+#include "BtfTaskForge.h"
 
-#include "NodeDecorators/Btf_NodeDecorator.h"
+#include "NodeDecorators/BtfNodeDecorator.h"
 
 TSharedRef<IDetailCustomization> FBtf_NodeDetailsCustomizations::MakeInstance()
 {

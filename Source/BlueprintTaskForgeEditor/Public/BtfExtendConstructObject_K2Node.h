@@ -4,11 +4,11 @@
 #include "K2Node.h"
 #include "Engine/MemberReference.h"
 #include "UObject/ObjectMacros.h"
-#include "Btf_NameSelect.h"
+#include "BtfNameSelect.h"
 
 #include "K2Node_DynamicCast.h"
 
-#include "Btf_ExtendConstructObject_K2Node.generated.h"
+#include "BtfExtendConstructObject_K2Node.generated.h"
 
 class UBtf_NodeDecorator;
 class UBtf_TaskForge;
@@ -20,7 +20,7 @@ class UEdGraphSchema;
 class UEdGraphSchema_K2;
 
 UCLASS()
-class BLUEPRINTTASKFORGE_API UBtf_ExtendConstructObject_K2Node : public UK2Node
+class BLUEPRINTTASKFORGEEDITOR_API UBtf_ExtendConstructObject_K2Node : public UK2Node
 {
     GENERATED_BODY()
 public:
