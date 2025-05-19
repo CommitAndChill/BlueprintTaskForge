@@ -4,22 +4,22 @@
 
 #include "NodeDecorators/Btf_NodeDecorator.h"
 
-class UBTF_NodeDecorator;
-class UBTF_TaskForge_K2Node;
-class UBTF_TaskForge;
+class UBtf_NodeDecorator;
+class UBtf_TaskForge_K2Node;
+class UBtf_TaskForge;
 
-class SBTF_Node : public SGraphNodeK2Base
+class SBtf_Node : public SGraphNodeK2Base
 {
 public:
 
-	SLATE_BEGIN_ARGS(SBTF_Node) {}
+	SLATE_BEGIN_ARGS(SBtf_Node) {}
 	SLATE_END_ARGS()
 
 	UClass* TaskClass = nullptr;
 
-	TObjectPtr<UBTF_NodeDecorator> Decorator = nullptr;
+	TObjectPtr<UBtf_NodeDecorator> Decorator = nullptr;
 
-	virtual ~SBTF_Node()
+	virtual ~SBtf_Node()
 	{
 		if(Decorator)
 		{
@@ -39,6 +39,6 @@ public:
 	auto Get_NodeConfigText() const -> FText;
 
 protected:
-	TWeakObjectPtr<UBTF_TaskForge_K2Node> _BlueprintTaskNode;
+	TWeakObjectPtr<UBtf_TaskForge_K2Node> _BlueprintTaskNode;
 	TSharedPtr<STextBlock> _ConfigTextBlock;
 };

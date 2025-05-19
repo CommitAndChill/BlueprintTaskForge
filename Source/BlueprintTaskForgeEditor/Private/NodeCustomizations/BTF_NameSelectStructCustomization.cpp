@@ -1,4 +1,4 @@
-#include "NodeCustomizations/BTF_NameSelectStructCustomization.h"
+#include "NodeCustomizations/Btf_NameSelectStructCustomization.h"
 
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Engine/GameViewportClient.h"
@@ -13,7 +13,7 @@
 #include "Widgets/Input/SEditableTextBox.h"
 #include "EditorStyleSet.h"
 
-void FBTF_NameSelectStructCustomization::CustomizeHeader(
+void FBtf_NameSelectStructCustomization::CustomizeHeader(
 	TSharedRef<IPropertyHandle> StructPropertyHandle,
 	FDetailWidgetRow& HeaderRow,
 	IPropertyTypeCustomizationUtils& CustomizationUtils)
@@ -46,7 +46,7 @@ void FBTF_NameSelectStructCustomization::CustomizeHeader(
 				{
 					FMenuBuilder MenuBuilder(false, nullptr);
 					{
-						const FUIAction ItemAction(FExecuteAction::CreateRaw(this, &FBTF_NameSelectStructCustomization::OnValueCommitted, FName(NAME_None)));
+						const FUIAction ItemAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, FName(NAME_None)));
 						MenuBuilder.AddMenuEntry(
 							FText::FromName(FName(NAME_None)),
 							FText(),
@@ -63,7 +63,7 @@ void FBTF_NameSelectStructCustomization::CustomizeHeader(
 							if (GT.Exclude == nullptr || !GT.Exclude->Contains(It))
 							{
 
-								FUIAction ItemAction(FExecuteAction::CreateRaw(this, &FBTF_NameSelectStructCustomization::OnValueCommitted, It)/*, FCanExecuteAction(), FIsActionChecked()*/); //,  FIsActionChecked::CreateLambda([this]() -> bool { return true; })
+								FUIAction ItemAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, It)/*, FCanExecuteAction(), FIsActionChecked()*/); //,  FIsActionChecked::CreateLambda([this]() -> bool { return true; })
 								MenuBuilder.AddMenuEntry(
 									FText::FromName(It),
 									FText(),
@@ -81,7 +81,7 @@ void FBTF_NameSelectStructCustomization::CustomizeHeader(
 	// clang-format on
 }
 
-void FBTF_NameSelectStructCustomization::CustomizeChildren(
+void FBtf_NameSelectStructCustomization::CustomizeChildren(
 	TSharedRef<IPropertyHandle> StructPropertyHandle,
 	IDetailChildrenBuilder& ChildBuilder,
 	IPropertyTypeCustomizationUtils& CustomizationUtils)
@@ -89,12 +89,12 @@ void FBTF_NameSelectStructCustomization::CustomizeChildren(
 	/* do nothing */
 }
 
-void FBTF_NameSelectStructCustomization::OnValueChanged(FName Val)
+void FBtf_NameSelectStructCustomization::OnValueChanged(FName Val)
 {
 	GT.Name = Val;
 }
 
-void FBTF_NameSelectStructCustomization::OnValueCommitted(FName Val)
+void FBtf_NameSelectStructCustomization::OnValueCommitted(FName Val)
 {
 	if (PropertyHandle.IsValid())
 	{
@@ -106,7 +106,7 @@ void FBTF_NameSelectStructCustomization::OnValueCommitted(FName Val)
 
 		for (const auto RawDataInstance : RawData)
 		{
-			*static_cast<FBTF_NameSelect*>(RawDataInstance) = GT;
+			*static_cast<FBtf_NameSelect*>(RawDataInstance) = GT;
 		}
 
 		PropertyHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
@@ -118,22 +118,22 @@ void FBTF_NameSelectStructCustomization::OnValueCommitted(FName Val)
 	}
 }
 
-FBTF_NameSelect FBTF_NameSelectStructCustomization::FromProperty() const
+FBtf_NameSelect FBtf_NameSelectStructCustomization::FromProperty() const
 {
 	TArray<void*> RawData;
 	PropertyHandle->AccessRawData(RawData);
 
 	if (RawData.Num() != 1)
 	{
-		return FBTF_NameSelect();
+		return FBtf_NameSelect();
 	}
-	const FBTF_NameSelect* DataPtr = static_cast<const FBTF_NameSelect*>(RawData[0]);
+	const FBtf_NameSelect* DataPtr = static_cast<const FBtf_NameSelect*>(RawData[0]);
 	if (DataPtr == nullptr)
 	{
-		return FBTF_NameSelect();
+		return FBtf_NameSelect();
 	}
 	return *DataPtr;
 }
 
-FBTF_NameSelectStructCustomization::FBTF_NameSelectStructCustomization()
+FBtf_NameSelectStructCustomization::FBtf_NameSelectStructCustomization()
 {}

@@ -22,7 +22,7 @@ struct FBlueprintTaskForgeCustomVersion
 		BeforeCustomVersionWasAdded = 0,
 		ExposeOnSpawnInClass = 1,
 		// -----<new versions can be added above this line>-------------------------------------------------
-		BTF_UE5_1,
+		Btf_UE5_1,
 		VersionPlusOne,
 		LatestVersion = VersionPlusOne - 1
 	};

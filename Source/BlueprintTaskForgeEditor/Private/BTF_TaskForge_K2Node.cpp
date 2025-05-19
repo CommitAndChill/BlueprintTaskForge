@@ -1,24 +1,24 @@
-#include "BTF_TaskForge_K2Node.h"
+#include "Btf_TaskForge_K2Node.h"
 
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintFunctionNodeSpawner.h"
 #include "BlueprintNodeSpawner.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 
-#include "BlueprintTaskForge/Public/BTF_TaskForge.h"
-#include "BlueprintTaskForge/Public/Subsystem/BTF_Subsystem.h"
+#include "BlueprintTaskForge/Public/Btf_TaskForge.h"
+#include "BlueprintTaskForge/Public/Subsystem/Btf_Subsystem.h"
 
 #define LOCTEXT_NAMESPACE "K2Node"
 
-UBTF_TaskForge_K2Node::UBTF_TaskForge_K2Node(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UBtf_TaskForge_K2Node::UBtf_TaskForge_K2Node(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-    ProxyFactoryFunctionName = GET_FUNCTION_NAME_CHECKED(UBTF_TaskForge, BlueprintTaskTemplate);
-    ProxyFactoryClass = UBTF_TaskForge::StaticClass();
+    ProxyFactoryFunctionName = GET_FUNCTION_NAME_CHECKED(UBtf_TaskForge, BlueprintTaskTemplate);
+    ProxyFactoryClass = UBtf_TaskForge::StaticClass();
     OutPutObjectPinName = FName(TEXT("TaskObject"));
-    //AutoCallFunctions.Add(GET_FUNCTION_NAME_CHECKED(UBTF_TaskForge, Init_Activate));
+    //AutoCallFunctions.Add(GET_FUNCTION_NAME_CHECKED(UBtf_TaskForge, Init_Activate));
 }
 
-void UBTF_TaskForge_K2Node::HideClassPin() const
+void UBtf_TaskForge_K2Node::HideClassPin() const
 {
     UEdGraphPin* ClassPin = FindPinChecked(ClassPinName);
     ClassPin->DefaultObject = ProxyClass;
@@ -28,7 +28,7 @@ void UBTF_TaskForge_K2Node::HideClassPin() const
     ClassPin->bHidden = true;
 }
 
-void UBTF_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
+void UBtf_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
 {
     const FString Name = TargetClass->GetName();
 
@@ -40,7 +40,7 @@ void UBTF_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBluepr
         {
             auto CustomizeTimelineNodeLambda = [TargetClass](UEdGraphNode* NewNode, bool bIsTemplateNode, const TWeakObjectPtr<UFunction> FunctionPtr)
             {
-                UBTF_TaskForge_K2Node* AsyncTaskNode = CastChecked<UBTF_TaskForge_K2Node>(NewNode);
+                UBtf_TaskForge_K2Node* AsyncTaskNode = CastChecked<UBtf_TaskForge_K2Node>(NewNode);
                 if (FunctionPtr.IsValid())
                 {
                     UFunction* Func = FunctionPtr.Get();
@@ -66,7 +66,7 @@ void UBTF_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBluepr
                 FString LocName = TargetClass->GetName();
                 LocName.RemoveFromEnd(FNames_Helper::CompiledFromBlueprintSuffix);
 
-                if (const UBTF_TaskForge* TargetClassAsBlueprintTask = Cast<UBTF_TaskForge>(TargetClass->ClassDefaultObject))
+                if (const UBtf_TaskForge* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(TargetClass->ClassDefaultObject))
                 {
                     if (TargetClassAsBlueprintTask->Category != NAME_None)
                     {
@@ -133,7 +133,7 @@ void UBTF_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBluepr
     }
 }
 
-void UBTF_TaskForge_K2Node::AllocateDefaultPins()
+void UBtf_TaskForge_K2Node::AllocateDefaultPins()
 {
     Super::AllocateDefaultPins();
     check(GetWorldContextPin());
@@ -148,7 +148,7 @@ void UBTF_TaskForge_K2Node::AllocateDefaultPins()
 	FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
 }
 
-void UBTF_TaskForge_K2Node::ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins)
+void UBtf_TaskForge_K2Node::ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins)
 {
     Super::ReallocatePinsDuringReconstruction(OldPins);
     check(GetWorldContextPin());
@@ -160,7 +160,7 @@ void UBTF_TaskForge_K2Node::ReallocatePinsDuringReconstruction(TArray<UEdGraphPi
 }
 
 
-void UBTF_TaskForge_K2Node::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
+void UBtf_TaskForge_K2Node::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
 {
     for (TObjectIterator<UClass> It; It; ++It)
     {
@@ -172,17 +172,17 @@ void UBTF_TaskForge_K2Node::GetMenuActions(FBlueprintActionDatabaseRegistrar& Ac
     }
 }
 
-void UBTF_TaskForge_K2Node::ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
+void UBtf_TaskForge_K2Node::ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
 {
     Super::ExpandNode(CompilerContext, SourceGraph);
 }
 
-FText UBTF_TaskForge_K2Node::GetNodeTitle(ENodeTitleType::Type TitleType) const
+FText UBtf_TaskForge_K2Node::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
     if (ProxyClass)
     {
 //++CK
-		if (const auto* TargetClassAsBlueprintTask = Cast<UBTF_TaskForge>(ProxyClass->ClassDefaultObject);
+		if (const auto* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
 			IsValid(TargetClassAsBlueprintTask))
 		{
 			const auto& MenuDisplayName = TargetClassAsBlueprintTask->MenuDisplayName;
@@ -195,10 +195,10 @@ FText UBTF_TaskForge_K2Node::GetNodeTitle(ENodeTitleType::Type TitleType) const
         Str.ParseIntoArray(ParseNames, *FNames_Helper::CompiledFromBlueprintSuffix);
         return FText::FromString(ParseNames[0]);
     }
-    return FText(LOCTEXT("UBTF_TaskForge_K2Node", "Node_Blueprint_Template Function"));
+    return FText(LOCTEXT("UBtf_TaskForge_K2Node", "Node_Blueprint_Template Function"));
 }
 
-FText UBTF_TaskForge_K2Node::GetMenuCategory() const
+FText UBtf_TaskForge_K2Node::GetMenuCategory() const
 {
     if (ProxyClass && ProxyClass->HasMetaData(TEXT("Category")))
     {
@@ -208,7 +208,7 @@ FText UBTF_TaskForge_K2Node::GetMenuCategory() const
 }
 
 auto
-    UBTF_TaskForge_K2Node::
+    UBtf_TaskForge_K2Node::
     Get_NodeDescription() const
     -> FString
 {
@@ -219,7 +219,7 @@ auto
     		return TaskInstance->Get_NodeDescription_Implementation();
     	}
 
-        if (const auto& TaskCDO = Cast<UBTF_TaskForge>(ProxyClass->ClassDefaultObject);
+        if (const auto& TaskCDO = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
             IsValid(TaskCDO))
         {
             const auto& NodeDescription = TaskCDO->Get_NodeDescription_Implementation();
@@ -234,7 +234,7 @@ auto
         ShowNodeDescriptionWhilePlaying == false)
     { return {}; }
 
-    if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBTF_EngineSubsystem>();
+    if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
         IsValid(Subsystem))
     {
         if (const auto FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
@@ -249,11 +249,11 @@ auto
 }
 
 auto
-    UBTF_TaskForge_K2Node::
+    UBtf_TaskForge_K2Node::
     Get_StatusString() const
     -> FString
 {
-    if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBTF_EngineSubsystem>();
+    if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
         IsValid(Subsystem))
     {
         if (const auto FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
@@ -271,11 +271,11 @@ auto
 }
 
 auto
-    UBTF_TaskForge_K2Node::
+    UBtf_TaskForge_K2Node::
     Get_StatusBackgroundColor() const
     -> FLinearColor
 {
-    if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBTF_EngineSubsystem>();
+    if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
         IsValid(Subsystem))
     {
         if (const auto FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
@@ -295,11 +295,11 @@ auto
 }
 
 auto
-    UBTF_TaskForge_K2Node::
+    UBtf_TaskForge_K2Node::
     Get_NodeConfigText() const
     -> FText
 {
-    if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBTF_EngineSubsystem>();
+    if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
         IsValid(Subsystem))
     {
         if (const auto FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
@@ -316,7 +316,7 @@ auto
 }
 
 auto
-    UBTF_TaskForge_K2Node::
+    UBtf_TaskForge_K2Node::
     Get_PinsHiddenByDefault()
     -> TSet<FName>
 {
@@ -328,11 +328,11 @@ auto
 //--CK
 
 #if WITH_EDITORONLY_DATA
-void UBTF_TaskForge_K2Node::ResetToDefaultExposeOptions_Impl()
+void UBtf_TaskForge_K2Node::ResetToDefaultExposeOptions_Impl()
 {
     if (ProxyClass)
     {
-        if (const auto CDO = ProxyClass->GetDefaultObject<UBTF_TaskForge>())
+        if (const auto CDO = ProxyClass->GetDefaultObject<UBtf_TaskForge>())
         {
             AllDelegates = CDO->AllDelegates;
             AllFunctions = CDO->AllFunctions;
@@ -350,11 +350,11 @@ void UBTF_TaskForge_K2Node::ResetToDefaultExposeOptions_Impl()
 }
 #endif
 
-void UBTF_TaskForge_K2Node::CollectSpawnParam(UClass* InClass, const bool bFullRefresh)
+void UBtf_TaskForge_K2Node::CollectSpawnParam(UClass* InClass, const bool bFullRefresh)
 {
     if (InClass)
     {
-        if (const UBTF_TaskForge* CDO = InClass->GetDefaultObject<UBTF_TaskForge>())
+        if (const UBtf_TaskForge* CDO = InClass->GetDefaultObject<UBtf_TaskForge>())
         {
             AllDelegates = CDO->AllDelegates;
             AllFunctions = CDO->AllFunctions;

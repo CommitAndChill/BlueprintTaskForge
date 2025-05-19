@@ -1,18 +1,18 @@
-#include "Subsystem/BTF_Subsystem.h"
+#include "Subsystem/Btf_Subsystem.h"
 
-#include "BTF_TaskForge.h"
+#include "Btf_TaskForge.h"
 
 // --------------------------------------------------------------------------------------------------------------------
 
 auto
-    UBTF_WorldSubsystem::
+    UBtf_WorldSubsystem::
     Deinitialize()
     -> void
 {
 #if WITH_EDITOR
     if (IsValid(GEngine))
     {
-        if (const auto& BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBTF_EngineSubsystem>();
+        if (const auto& BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
             IsValid(BlueprintTaskEngineSubsystem))
         {
             BlueprintTaskEngineSubsystem->Request_Clear();
@@ -24,9 +24,9 @@ auto
 }
 
 auto
-    UBTF_WorldSubsystem::
+    UBtf_WorldSubsystem::
     Request_TrackTask(
-        UBTF_TaskForge* Task)
+        UBtf_TaskForge* Task)
     -> void
 {
     QUICK_SCOPE_CYCLE_COUNTER(Request_TrackTask)
@@ -49,9 +49,9 @@ auto
 }
 
 auto
-    UBTF_WorldSubsystem::
+    UBtf_WorldSubsystem::
     Request_UntrackTask(
-        UBTF_TaskForge* Task)
+        UBtf_TaskForge* Task)
     -> void
 {
     QUICK_SCOPE_CYCLE_COUNTER(Request_UntrackTask)
@@ -72,22 +72,22 @@ auto
 }
 
 auto
-    UBTF_EngineSubsystem::
+    UBtf_EngineSubsystem::
     Request_Add(
         FGuid InTaskNodeGuid,
-        UBTF_TaskForge* InTaskInstance)
+        UBtf_TaskForge* InTaskInstance)
     -> void
 {
 #if WITH_EDITOR
-    _TaskNodeGuidToTaskInstance.Add(InTaskNodeGuid, TWeakObjectPtr<UBTF_TaskForge>(InTaskInstance));
+    _TaskNodeGuidToTaskInstance.Add(InTaskNodeGuid, TWeakObjectPtr<UBtf_TaskForge>(InTaskInstance));
     _TaskInstanceTaskNodeGuid.Add(InTaskInstance, InTaskNodeGuid);
 #endif
 }
 
 auto
-    UBTF_EngineSubsystem::
+    UBtf_EngineSubsystem::
     Request_Remove(
-        UBTF_TaskForge* InTaskInstance)
+        UBtf_TaskForge* InTaskInstance)
     -> void
 {
 #if WITH_EDITOR
@@ -101,7 +101,7 @@ auto
 }
 
 auto
-    UBTF_EngineSubsystem::
+    UBtf_EngineSubsystem::
     Request_Remove(
         FGuid InTaskNodeGuid)
     -> void
@@ -118,7 +118,7 @@ auto
 }
 
 auto
-    UBTF_EngineSubsystem::
+    UBtf_EngineSubsystem::
     Request_Clear()
     -> void
 {
@@ -129,10 +129,10 @@ auto
 }
 
 auto
-    UBTF_EngineSubsystem::
+    UBtf_EngineSubsystem::
     FindTaskInstanceWithGuid(
         FGuid InTaskNodeGuid)
-    -> UBTF_TaskForge*
+    -> UBtf_TaskForge*
 {
 #if WITH_EDITOR
     if (const auto& FoundTaskInstance = _TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);

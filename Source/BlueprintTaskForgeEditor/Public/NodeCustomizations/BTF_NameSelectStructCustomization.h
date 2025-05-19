@@ -1,16 +1,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BTF_NameSelect.h"
+#include "Btf_NameSelect.h"
 #include "IPropertyTypeCustomization.h"
 
 class IPropertyHandle;
 
 /** */
-class FBTF_NameSelectStructCustomization : public IPropertyTypeCustomization //, public FEditorUndoClient
+class FBtf_NameSelectStructCustomization : public IPropertyTypeCustomization //, public FEditorUndoClient
 {
 public:
-	static TSharedRef<IPropertyTypeCustomization> MakeInstance() { return MakeShareable(new FBTF_NameSelectStructCustomization()); }
+	static TSharedRef<IPropertyTypeCustomization> MakeInstance() { return MakeShareable(new FBtf_NameSelectStructCustomization()); }
 
 	virtual void CustomizeHeader(
 		TSharedRef<IPropertyHandle> StructPropertyHandle,
@@ -24,8 +24,8 @@ public:
 	void OnValueChanged(FName Val);
 	void OnValueCommitted(FName Val);
 
-	FBTF_NameSelect GT;
-	FBTF_NameSelect FromProperty() const;
+	FBtf_NameSelect GT;
+	FBtf_NameSelect FromProperty() const;
 
 private:
 	/** Holds a handle to the property being edited. */
@@ -33,5 +33,5 @@ private:
 	TSharedPtr<class SComboButton> ComboButton;
 
 public:
-	FBTF_NameSelectStructCustomization();
+	FBtf_NameSelectStructCustomization();
 };

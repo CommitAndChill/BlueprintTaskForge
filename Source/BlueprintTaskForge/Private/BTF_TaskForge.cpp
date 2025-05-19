@@ -3,41 +3,41 @@
 #include "UObject/UObjectGlobals.h"
 #include "UObject/Package.h"
 #include "BlueprintTaskForge_Module.h"
-#include "BTF_ExtendConstructObject_Utils.h"
-#include "Subsystem/BTF_Subsystem.h"
+#include "Btf_ExtendConstructObject_Utils.h"
+#include "Subsystem/Btf_Subsystem.h"
 
-#include "Settings/BTF_RuntimeSettings.h"
+#include "Settings/Btf_RuntimeSettings.h"
 
 #if WITH_EDITOR
 #include "ObjectEditorUtils.h"
-#include "Subsystem/BTF_Subsystem.h"
+#include "Subsystem/Btf_Subsystem.h"
 #endif // WITH_EDITOR
 
 
-UBTF_TaskForge::UBTF_TaskForge(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UBtf_TaskForge::UBtf_TaskForge(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 }
 
 //++CK
-//UBTF_TaskForge* UBTF_TaskForge::BlueprintTaskTemplate(UObject* Outer, const TSubclassOf<UBTF_TaskForge> Class)
-UBTF_TaskForge* UBTF_TaskForge::BlueprintTaskTemplate(UObject* Outer, const TSubclassOf<UBTF_TaskForge> Class, FString NodeGuidStr)
+//UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskTemplate(UObject* Outer, const TSubclassOf<UBtf_TaskForge> Class)
+UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskTemplate(UObject* Outer, const TSubclassOf<UBtf_TaskForge> Class, FString NodeGuidStr)
 //--CK
 {
 	if (IsValid(Outer) && Class && !Class->HasAnyClassFlags(CLASS_Abstract))
 	{
-		UBTF_TaskForge* TaskTemplate = GetTaskTemplateByNodeGUID(Outer, NodeGuidStr);
+		UBtf_TaskForge* TaskTemplate = GetTaskTemplateByNodeGUID(Outer, NodeGuidStr);
 
 //++CK
         //const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName()); //Class->GetFName();//
         const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName(), EUniqueObjectNameOptions::GloballyUnique); //Class->GetFName();//
 //--CK
-		const auto Task = NewObject<UBTF_TaskForge>(Outer, Class, TaskObjName, RF_NoFlags, TaskTemplate ? TaskTemplate : nullptr);
+		const auto Task = NewObject<UBtf_TaskForge>(Outer, Class, TaskObjName, RF_NoFlags, TaskTemplate ? TaskTemplate : nullptr);
 
 //++CK
         if (IsValid(Task) == false)
         { return Task; }
 
-        if (const auto& BlueprintTaskEngineSystem = GEngine->GetEngineSubsystem<UBTF_EngineSubsystem>();
+        if (const auto& BlueprintTaskEngineSystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
             IsValid(BlueprintTaskEngineSystem))
         {
             BlueprintTaskEngineSystem->Request_Add(FGuid(NodeGuidStr), Task);
@@ -49,7 +49,7 @@ UBTF_TaskForge* UBTF_TaskForge::BlueprintTaskTemplate(UObject* Outer, const TSub
 	return nullptr;
 }
 
-UBTF_TaskForge* UBTF_TaskForge::GetTaskTemplateByNodeGUID(UObject* Outer, FString NodeGUID)
+UBtf_TaskForge* UBtf_TaskForge::GetTaskTemplateByNodeGUID(UObject* Outer, FString NodeGUID)
 {
 	for (UClass* TemplateOwnerClass = (Outer != nullptr) ? Outer->GetClass() : Outer->GetClass()
 		; TemplateOwnerClass
@@ -63,9 +63,9 @@ UBTF_TaskForge* UBTF_TaskForge::GetTaskTemplateByNodeGUID(UObject* Outer, FStrin
 				{
 					if(Extension)
 					{
-						if(Extension->IsA<UBTF_TaskForge>() && Extension->GetFName().ToString().Contains(NodeGUID))
+						if(Extension->IsA<UBtf_TaskForge>() && Extension->GetFName().ToString().Contains(NodeGUID))
 						{
-							return Cast<UBTF_TaskForge>(Extension);
+							return Cast<UBtf_TaskForge>(Extension);
 						}
 					}
 				}
@@ -77,21 +77,21 @@ UBTF_TaskForge* UBTF_TaskForge::GetTaskTemplateByNodeGUID(UObject* Outer, FStrin
 }
 
 void
-    UBTF_TaskForge::Activate()
+    UBtf_TaskForge::Activate()
 {
     QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Activate)
 
     if (const auto World = GetWorld();
 		IsValid(World))
 	{
-		World->GetSubsystem<UBTF_WorldSubsystem>()->Request_TrackTask(this);
+		World->GetSubsystem<UBtf_WorldSubsystem>()->Request_TrackTask(this);
 	}
 
 	Activate_Internal();
 }
 
 void
-    UBTF_TaskForge::Deactivate()
+    UBtf_TaskForge::Deactivate()
 {
     QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Deactivate)
 
@@ -111,7 +111,7 @@ void
 	if (const auto World = GetWorld();
 		IsValid(World))
 	{
-		World->GetSubsystem<UBTF_WorldSubsystem>()->Request_UntrackTask(this);
+		World->GetSubsystem<UBtf_WorldSubsystem>()->Request_UntrackTask(this);
 	}
 
 	Deactivate_Internal();
@@ -119,9 +119,9 @@ void
 
 //++CK
 auto
-    UBTF_TaskForge::
+    UBtf_TaskForge::
     DoRequest_AddTaskToDeactivateOnDeactivate(
-        UBTF_TaskForge* InTask)
+        UBtf_TaskForge* InTask)
     -> void
 {
     _TasksToDeactivateOnDeactivate.Emplace(InTask);
@@ -130,7 +130,7 @@ auto
 
 //++CK
 auto
-    UBTF_TaskForge::
+    UBtf_TaskForge::
     OnDestroy()
     -> void
 {
@@ -139,7 +139,7 @@ auto
 }
 //--CK
 
-void UBTF_TaskForge::Serialize(FArchive& Ar)
+void UBtf_TaskForge::Serialize(FArchive& Ar)
 {
     Super::Serialize(Ar);
 #if WITH_EDITOR
@@ -147,7 +147,7 @@ void UBTF_TaskForge::Serialize(FArchive& Ar)
     if (Ar.IsLoading() && GetLinkerCustomVersion(FBlueprintTaskForgeCustomVersion::GUID) < FBlueprintTaskForgeCustomVersion::ExposeOnSpawnInClass)
     {
         RefreshCollected();
-        const FBTF_SpawnParam Spawn = UBTF_ExtendConstructObject_Utils::CollectSpawnParam(GetClass(), AllDelegates, AllFunctions, AllFunctionsExec, AllParam);
+        const FBtf_SpawnParam Spawn = UBtf_ExtendConstructObject_Utils::CollectSpawnParam(GetClass(), AllDelegates, AllFunctions, AllFunctionsExec, AllParam);
         for (const auto& It : Spawn.AutoCallFunction)
         {
             AutoCallFunction.AddUnique(It);
@@ -174,7 +174,7 @@ void UBTF_TaskForge::Serialize(FArchive& Ar)
 
 //++CK
 void
-    UBTF_TaskForge::Deactivate_Internal()
+    UBtf_TaskForge::Deactivate_Internal()
 {
     QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Deactivate_Internal)
     if (IsBeingDestroyed)
@@ -189,7 +189,7 @@ void
 
     if (IsValid(GEngine))
     {
-        if (const auto& BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBTF_EngineSubsystem>();
+        if (const auto& BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
             IsValid(BlueprintTaskEngineSubsystem))
         {
             BlueprintTaskEngineSubsystem->Request_Remove(this);
@@ -199,51 +199,51 @@ void
     OnDestroy();
 }
 
-bool UBTF_TaskForge::Get_StatusBackgroundColor_Implementation(FLinearColor& OutColor) const
+bool UBtf_TaskForge::Get_StatusBackgroundColor_Implementation(FLinearColor& OutColor) const
 {
 	OutColor = FLinearColor();
 	return false;
 }
 
-FString UBTF_TaskForge::Get_NodeDescription_Implementation() const
+FString UBtf_TaskForge::Get_NodeDescription_Implementation() const
 {
 	return FString();
 }
 
 //--CK
 
-TArray<FString> UBTF_TaskForge::ValidateNodeDuringCompilation_Implementation()
+TArray<FString> UBtf_TaskForge::ValidateNodeDuringCompilation_Implementation()
 {
 	return TArray<FString>();
 }
 
-void UBTF_TaskForge::DeactivateAllTasksRelatedToObject(UObject* Object)
+void UBtf_TaskForge::DeactivateAllTasksRelatedToObject(UObject* Object)
 {
 	TArray<UObject*> SubObjects;
 	GetObjectsWithOuter(Object, SubObjects);
 
 	for(auto& CurrentObject : SubObjects)
 	{
-		if(UBTF_TaskForge* TaskTemplate = Cast<UBTF_TaskForge>(CurrentObject))
+		if(UBtf_TaskForge* TaskTemplate = Cast<UBtf_TaskForge>(CurrentObject))
 		{
 			TaskTemplate->Deactivate();
 		}
 	}
 }
 
-void UBTF_TaskForge::TriggerCustomOutputPin(FName OutputPin, TInstancedStruct<FCustomOutputPinData> Data)
+void UBtf_TaskForge::TriggerCustomOutputPin(FName OutputPin, TInstancedStruct<FCustomOutputPinData> Data)
 {
 	/**For now, this is just broadcasting the event. Future changes could include adding
 	 * logging into this function or validation. */
 	OnCustomPinTriggered.Broadcast(OutputPin, Data);
 }
 
-TArray<FCustomOutputPin> UBTF_TaskForge::GetCustomOutputPins_Implementation()
+TArray<FCustomOutputPin> UBtf_TaskForge::GetCustomOutputPins_Implementation()
 {
 	return TArray<FCustomOutputPin>();
 }
 
-TArray<FName> UBTF_TaskForge::GetCustomOutputPinNames()
+TArray<FName> UBtf_TaskForge::GetCustomOutputPinNames()
 {
 	TArray<FName> Result;
 	for(auto& CurrentPin : GetCustomOutputPins())
@@ -253,13 +253,13 @@ TArray<FName> UBTF_TaskForge::GetCustomOutputPinNames()
 	return Result;
 }
 
-bool UBTF_TaskForge::GetNodeTitleColor_Implementation(FLinearColor& Color)
+bool UBtf_TaskForge::GetNodeTitleColor_Implementation(FLinearColor& Color)
 {
 	Color = FLinearColor();
 	return false;
 }
 
-bool UBTF_TaskForge::IsExtension() const
+bool UBtf_TaskForge::IsExtension() const
 {
 	for (UObject* TemplateOwnerClass = (GetOuter() != nullptr) ? GetOuter() : nullptr
 	; TemplateOwnerClass
@@ -283,7 +283,7 @@ bool UBTF_TaskForge::IsExtension() const
 }
 
 #if WITH_EDITOR
-void UBTF_TaskForge::CollectSpawnParam(const UClass* InClass, TSet<FName>& Out)
+void UBtf_TaskForge::CollectSpawnParam(const UClass* InClass, TSet<FName>& Out)
 {
     Out.Reset();
     for (TFieldIterator<FProperty> PropertyIt(InClass, EFieldIteratorFlags::IncludeSuper); PropertyIt; ++PropertyIt)
@@ -321,7 +321,7 @@ void UBTF_TaskForge::CollectSpawnParam(const UClass* InClass, TSet<FName>& Out)
         }
     }
 }
-void UBTF_TaskForge::CollectFunctions(const UClass* InClass, TSet<FName>& Out)
+void UBtf_TaskForge::CollectFunctions(const UClass* InClass, TSet<FName>& Out)
 {
     Out.Reset();
     for (TFieldIterator<UField> It(InClass, EFieldIteratorFlags::IncludeSuper); It; ++It)
@@ -352,7 +352,7 @@ void UBTF_TaskForge::CollectFunctions(const UClass* InClass, TSet<FName>& Out)
         }
     }
 }
-void UBTF_TaskForge::CollectDelegates(const UClass* InClass, TSet<FName>& Out)
+void UBtf_TaskForge::CollectDelegates(const UClass* InClass, TSet<FName>& Out)
 {
     Out.Reset();
     for (TFieldIterator<FProperty> PropertyIt(InClass, EFieldIteratorFlags::IncludeSuper); PropertyIt; ++PropertyIt)
@@ -388,18 +388,18 @@ void UBTF_TaskForge::CollectDelegates(const UClass* InClass, TSet<FName>& Out)
         }
     }
 }
-void UBTF_TaskForge::CleanInvalidParams(TArray<FBTF_NameSelect>& Arr, const TSet<FName>& ArrRef)
+void UBtf_TaskForge::CleanInvalidParams(TArray<FBtf_NameSelect>& Arr, const TSet<FName>& ArrRef)
 {
 	for (int32 i = Arr.Num() - 1; i >= 0; --i)
 	{
-		if ((Arr[i].Name != NAME_None && !ArrRef.Contains(Arr[i])) || Arr[i].Name == GET_MEMBER_NAME_CHECKED(UBTF_TaskForge, OnCustomPinTriggered))
+		if ((Arr[i].Name != NAME_None && !ArrRef.Contains(Arr[i])) || Arr[i].Name == GET_MEMBER_NAME_CHECKED(UBtf_TaskForge, OnCustomPinTriggered))
 		{
 			Arr.RemoveAt(i, 1, EAllowShrinking::No);
 		}
 	}
 }
 
-void UBTF_TaskForge::RefreshCollected()
+void UBtf_TaskForge::RefreshCollected()
 {
 
     #if WITH_EDITORONLY_DATA
@@ -444,7 +444,7 @@ void UBTF_TaskForge::RefreshCollected()
 //++CK
 		AutoCallFunction.Remove(FName(TEXT("Deactivate")));
 		//++V ExecFunction.AddUnique was added by CK, I am adding the developer settings logic to optionally disable this behavior
-		if(const UBTF_RuntimeSettings* DeveloperSettings = GetDefault<UBTF_RuntimeSettings>())
+		if(const UBtf_RuntimeSettings* DeveloperSettings = GetDefault<UBtf_RuntimeSettings>())
 		{
 			if(DeveloperSettings->EnforceDeactivateExecFunction)
 			{
@@ -457,7 +457,7 @@ void UBTF_TaskForge::RefreshCollected()
     #endif // WITH_EDITORONLY_DATA
 }
 
-void UBTF_TaskForge::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void UBtf_TaskForge::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	RefreshCollected();
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -468,13 +468,13 @@ void UBTF_TaskForge::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 //++CK
 
 
-FString UBTF_TaskForge::Get_StatusString_Implementation() const
+FString UBtf_TaskForge::Get_StatusString_Implementation() const
 {
 	return FString();
 }
 
 auto
-    UBTF_TaskForge::
+    UBtf_TaskForge::
     Get_IsActive() const
     -> bool
 {
