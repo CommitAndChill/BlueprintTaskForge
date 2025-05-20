@@ -36,6 +36,9 @@ void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
 
 	auto* TaskNode = Cast<UBtf_ExtendConstructObject_K2Node>(CustomizedObjects[0].Get());
 
+	if (!IsValid(TaskNode))
+	{ return; }
+
 	TaskNode->DetailsPanelBuilder = &DetailBuilder;
 
 	if(TaskNode && TaskNode->ProxyClass && TaskNode->AllowInstance && TaskNode->TaskInstance)
