@@ -11,9 +11,9 @@
 USTRUCT()
 struct FBtf_OutersBlueprintTasksArrayWrapper
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	TArray<TWeakObjectPtr<class UBtf_TaskForge>> Tasks;
+    TArray<TWeakObjectPtr<class UBtf_TaskForge>> Tasks;
 };
 
 // --------------------------------------------------------------------------------------------------------------------
