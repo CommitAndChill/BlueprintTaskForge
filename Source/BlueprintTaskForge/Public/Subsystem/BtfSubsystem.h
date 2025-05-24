@@ -34,6 +34,11 @@ public:
     Request_UntrackTask(
         UBtf_TaskForge* InTask) -> void;
 
+    TMap<TWeakObjectPtr<UObject>, FBtf_OutersBlueprintTasksArrayWrapper> GetTaskTree()
+    {
+        return ObjectsAndTheirTasks;
+    }
+
 private:
     UPROPERTY(Transient)
     TSet<TObjectPtr<UBtf_TaskForge>> _BlueprintTasks;
