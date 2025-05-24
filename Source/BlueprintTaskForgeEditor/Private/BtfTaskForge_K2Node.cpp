@@ -61,35 +61,34 @@ void UBtf_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBluepr
             FBlueprintActionUiSpec& MenuSignature = NodeSpawner->DefaultMenuSignature;
 
 //++CK
-            if (TargetClass->HasAnyClassFlags(CLASS_CompiledFromBlueprint))
+            
+            FString LocName = TargetClass->GetName();
+            LocName.RemoveFromEnd(FNames_Helper::CompiledFromBlueprintSuffix);
+
+            if (const UBtf_TaskForge* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(TargetClass->ClassDefaultObject))
             {
-                FString LocName = TargetClass->GetName();
-                LocName.RemoveFromEnd(FNames_Helper::CompiledFromBlueprintSuffix);
-
-                if (const UBtf_TaskForge* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(TargetClass->ClassDefaultObject))
+                if (TargetClassAsBlueprintTask->Category != NAME_None)
                 {
-                    if (TargetClassAsBlueprintTask->Category != NAME_None)
-                    {
-                        MenuSignature.Category = FText::FromName(TargetClassAsBlueprintTask->Category);
-                    }
-
-                    if (TargetClassAsBlueprintTask->Tooltip != NAME_None)
-                    {
-                        MenuSignature.Tooltip = FText::FromName(TargetClassAsBlueprintTask->Tooltip);
-                    }
-
-                    MenuSignature.MenuName = TargetClassAsBlueprintTask->MenuDisplayName != NAME_None
-                                                ? FText::FromName(TargetClassAsBlueprintTask->MenuDisplayName)
-                                                : FText::FromString(LocName);
-
-                    MenuSignature.Keywords = MenuSignature.MenuName;
+                    MenuSignature.Category = FText::FromName(TargetClassAsBlueprintTask->Category);
                 }
-                else
+
+                if (TargetClassAsBlueprintTask->Tooltip != NAME_None)
                 {
-                    MenuSignature.MenuName = FText::FromString(LocName);
-                    MenuSignature.Keywords = FText::FromString(LocName);
+                    MenuSignature.Tooltip = FText::FromName(TargetClassAsBlueprintTask->Tooltip);
                 }
+
+                MenuSignature.MenuName = TargetClassAsBlueprintTask->MenuDisplayName != NAME_None
+                                            ? FText::FromName(TargetClassAsBlueprintTask->MenuDisplayName)
+                                            : FText::FromString(LocName);
+
+                MenuSignature.Keywords = MenuSignature.MenuName;
             }
+            else
+            {
+                MenuSignature.MenuName = FText::FromString(LocName);
+                MenuSignature.Keywords = FText::FromString(LocName);
+            }
+            
 //--CK
 
             NodeSpawner->CustomizeNodeDelegate = UBlueprintNodeSpawner::FCustomizeNodeDelegate::CreateLambda(CustomizeTimelineNodeLambda, FunctionPtr);
