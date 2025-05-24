@@ -35,7 +35,7 @@ void FBlueprintTaskForgeEditorModule::StartupModule()
 
 	//BNT node customization
 	PropertyModule.RegisterCustomClassLayout(
-		"K2Node_Blueprint_Template",
+		UBtf_TaskForge_K2Node::StaticClass()->GetFName(),
 		FOnGetDetailCustomizationInstance::CreateStatic(&FBtf_NodeDetailsCustomizations::MakeInstance)
 	);
 

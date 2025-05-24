@@ -120,17 +120,6 @@ void
 //++CK
 auto
     UBtf_TaskForge::
-    DoRequest_AddTaskToDeactivateOnDeactivate(
-        UBtf_TaskForge* InTask)
-    -> void
-{
-    _TasksToDeactivateOnDeactivate.Emplace(InTask);
-}
-//--CK
-
-//++CK
-auto
-    UBtf_TaskForge::
     OnDestroy()
     -> void
 {
@@ -170,6 +159,31 @@ void UBtf_TaskForge::Serialize(FArchive& Ar)
         }
     }
 #endif
+}
+
+void UBtf_TaskForge::SetupAutomaticCleanup()
+{
+    if(GetOuter() == nullptr)
+    {
+        return;
+    }
+
+    if(GetOuter()->IsA<AActor>())
+    {
+        if(AActor* Actor = Cast<AActor>(GetOuter()))
+        {
+            Actor->OnDestroyed.AddDynamic(this, &UBtf_TaskForge::OnActorOuterDestroyed);
+            return;
+        }
+    }
+
+    if(GetOuter()->IsA<UBtf_TaskForge>())
+    {
+        if(UBtf_TaskForge* TaskTemplate = Cast<UBtf_TaskForge>(GetOuter()))
+        {
+            TaskTemplate->TrackTaskForAutomaticDeactivation(this);
+        }
+    }
 }
 
 //++CK

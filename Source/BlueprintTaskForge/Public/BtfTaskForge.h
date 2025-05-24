@@ -68,14 +68,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "BlueprintTaskForge", meta = (DisplayName = "Deactivate", ExposeAutoCall = "false"))
     void Deactivate();
 
-    UFUNCTION(BlueprintCallable,
-              Category = "BlueprintTaskForge",
-              DisplayName = "[BTF] Add Task To Deactivate On  Deactivate",
-              meta = (CompactNodeTitle="TaskToDeactivate_OnDeactivate", HideSelfPin = true, Keywords = "Register, Track"))
-    void
-    DoRequest_AddTaskToDeactivateOnDeactivate(
-        class UBtf_TaskForge* InTask);
-
     virtual UWorld* GetWorld() const override
     {
         //++V
@@ -152,12 +144,46 @@ protected:
         if (IsValid(GetOuter()))
 //--CK
         {
+//++V
+            SetupAutomaticCleanup();
+//--V 
+            
             IsActive = true;
             Activate_BP();
         }
     }
+    
+//++V
+    
+    /**Called on @Activate. Will do one of two things:
+     * 1. If the outer is an actor, bind to the Destroyed
+     * event and when triggered, automatically call Deactivate
+     * 2. If the outer is another task, add this task
+     * to that task's @_TasksToDeactivateOnDeactivate array,
+     * so if the owning task is deactivated, this will
+     * also deactivate.
+     * 
+     * This is virtual for those projects that might already
+     * have some kind of project-wide core parent, like a
+     * widget that has a delegate for when it's removed
+     * from its parent.
+     *
+     * Technically, we can bind to an actor component
+     * but only on the Deactivate event. There is no bindable
+     * Destroyed event. I don't like the idea of binding
+     * to the Deactivate event, since there are many scenarios
+     * where you'd deactivate a component but don't want
+     * to end the component's tasks */
+    virtual void SetupAutomaticCleanup();
 
-//++CK
+    UFUNCTION()
+    void OnActorOuterDestroyed(AActor* Actor)
+    {
+        Deactivate();
+    }
+//--V
+
+    //++CK
     UFUNCTION(BlueprintImplementableEvent, Category = "BlueprintTaskForge", meta = (DisplayName = "Deactivate"))
     void Deactivate_BP();
     virtual void Deactivate_Internal();
@@ -258,6 +284,22 @@ public:
     //--V
 
 #endif
+
+    virtual void TrackTaskForAutomaticDeactivation(UBtf_TaskForge* Task)
+    {
+        if(Task && !_TasksToDeactivateOnDeactivate.Contains(Task))
+        {
+            _TasksToDeactivateOnDeactivate.Add(Task);
+        }
+    }
+
+    virtual void UntrackTaskForAutomaticDeactivation(UBtf_TaskForge* Task)
+    {
+        if(Task && _TasksToDeactivateOnDeactivate.Contains(Task))
+        {
+            _TasksToDeactivateOnDeactivate.RemoveSingle(Task);
+        }
+    }
 
 //++CK
 private:
