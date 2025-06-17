@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 #include "Modules/ModuleInterface.h"
+#include "BftMacros.h"
 
 class FBlueprintEditor;
 class FWorkflowAllowedTabSet;
@@ -13,26 +14,20 @@ struct FAssetData;
 class FBlueprintTaskForgeEditorModule : public IModuleInterface
 {
 public:
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
 
-	FDelegateHandle BlueprintEditorTabSpawnerHandle, BlueprintEditorLayoutExtensionHandle;
-
-private:
-
-	void OnBlueprintCompiled();
-
-	void OnFilesLoaded();
-
-	void OnAssetAdded(const FAssetData& AssetData) const;
-	void OnAssetRenamed(const FAssetData& AssetData, const FString& Str) const;
-	void HandleAssetDeleted(UObject* Object) const;
-	void RefreshClassActions() const;
-
-//++CK
-	void OnObjectPropertyChanged(UObject* ObjectBeingModified, FPropertyChangedEvent& PropertyChangedEvent) const;
+    FDelegateHandle BlueprintEditorTabSpawnerHandle, BlueprintEditorLayoutExtensionHandle;
 
 private:
-	FDelegateHandle _OnObjectPropertyChangedDelegateHandle;
-//--CK
+    void OnBlueprintCompiled();
+    void OnFilesLoaded();
+    void OnAssetAdded(const FAssetData& AssetData) const;
+    void OnAssetRenamed(const FAssetData& AssetData, const FString& Str) const;
+    void HandleAssetDeleted(UObject* Object) const;
+    void RefreshClassActions() const;
+    void OnObjectPropertyChanged(UObject* ObjectBeingModified, FPropertyChangedEvent& PropertyChangedEvent) const;
+
+private:
+    FDelegateHandle OnObjectPropertyChangedDelegateHandle;
 };
