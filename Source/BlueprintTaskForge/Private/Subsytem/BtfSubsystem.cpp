@@ -1,6 +1,7 @@
 #include "Subsystem/BtfSubsystem.h"
-
 #include "BtfTaskForge.h"
+
+// --------------------------------------------------------------------------------------------------------------------
 
 void UBtf_WorldSubsystem::Deinitialize()
 {
@@ -14,18 +15,19 @@ void UBtf_WorldSubsystem::Deinitialize()
     if (const auto* BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
         IsValid(BlueprintTaskEngineSubsystem))
     {
-        BlueprintTaskEngineSubsystem->Request_Clear();
+        BlueprintTaskEngineSubsystem->Clear();
     }
 #endif
 
     Super::Deinitialize();
 }
 
-void UBtf_WorldSubsystem::Request_TrackTask(UBtf_TaskForge* Task)
+void UBtf_WorldSubsystem::TrackTask(UBtf_TaskForge* Task)
 {
-    QUICK_SCOPE_CYCLE_COUNTER(Request_TrackTask)
+    QUICK_SCOPE_CYCLE_COUNTER(TrackTask)
 
-    if (NOT IsValid(Task)) { return; }
+    if (NOT IsValid(Task))
+    { return; }
 
     BlueprintTasks.Add(Task);
 
@@ -41,16 +43,18 @@ void UBtf_WorldSubsystem::Request_TrackTask(UBtf_TaskForge* Task)
     ObjectsAndTheirTasks.Add(Task->GetOuter(), TasksArrayWrapper);
 }
 
-void UBtf_WorldSubsystem::Request_UntrackTask(UBtf_TaskForge* Task)
+void UBtf_WorldSubsystem::UntrackTask(UBtf_TaskForge* Task)
 {
-    QUICK_SCOPE_CYCLE_COUNTER(Request_UntrackTask)
+    QUICK_SCOPE_CYCLE_COUNTER(UntrackTask)
 
-    if (NOT IsValid(Task)) { return; }
+    if (NOT IsValid(Task))
+    { return; }
 
     BlueprintTasks.Remove(Task);
 
     auto* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter());
-    if (NOT TasksWrapper) { return; }
+    if (NOT TasksWrapper)
+    { return; }
 
     TasksWrapper->Tasks.RemoveSingle(Task);
     if (TasksWrapper->Tasks.IsEmpty())
@@ -59,7 +63,9 @@ void UBtf_WorldSubsystem::Request_UntrackTask(UBtf_TaskForge* Task)
     }
 }
 
-void UBtf_EngineSubsystem::Request_Add(FGuid InTaskNodeGuid, UBtf_TaskForge* InTaskInstance)
+// --------------------------------------------------------------------------------------------------------------------
+
+void UBtf_EngineSubsystem::Add(FGuid InTaskNodeGuid, UBtf_TaskForge* InTaskInstance)
 {
 #if WITH_EDITOR
     TaskNodeGuidToTaskInstance.Add(InTaskNodeGuid, TWeakObjectPtr<UBtf_TaskForge>(InTaskInstance));
@@ -67,28 +73,24 @@ void UBtf_EngineSubsystem::Request_Add(FGuid InTaskNodeGuid, UBtf_TaskForge* InT
 #endif
 }
 
-void UBtf_EngineSubsystem::Request_Remove(UBtf_TaskForge* InTaskInstance)
+void UBtf_EngineSubsystem::Remove(UBtf_TaskForge* InTaskInstance)
 {
 #if WITH_EDITOR
     const auto* FoundTaskNodeGuid = TaskInstanceTaskNodeGuid.Find(InTaskInstance);
     if (NOT FoundTaskNodeGuid)
-    {
-        return;
-    }
+    { return; }
 
     TaskNodeGuidToTaskInstance.Remove(*FoundTaskNodeGuid);
     TaskInstanceTaskNodeGuid.Remove(InTaskInstance);
 #endif
 }
 
-void UBtf_EngineSubsystem::Request_Remove(FGuid InTaskNodeGuid)
+void UBtf_EngineSubsystem::Remove(FGuid InTaskNodeGuid)
 {
 #if WITH_EDITOR
     const auto* FoundTaskInstance = TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
     if (NOT FoundTaskInstance)
-    {
-        return;
-    }
+    { return; }
 
     const auto& TaskInstance = *FoundTaskInstance;
     TaskInstanceTaskNodeGuid.Remove(TaskInstance);
@@ -96,7 +98,7 @@ void UBtf_EngineSubsystem::Request_Remove(FGuid InTaskNodeGuid)
 #endif
 }
 
-void UBtf_EngineSubsystem::Request_Clear()
+void UBtf_EngineSubsystem::Clear()
 {
 #if WITH_EDITOR
     TaskNodeGuidToTaskInstance.Empty();
@@ -109,12 +111,12 @@ UBtf_TaskForge* UBtf_EngineSubsystem::FindTaskInstanceWithGuid(FGuid InTaskNodeG
 #if WITH_EDITOR
     const auto* FoundTaskInstance = TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
     if (NOT FoundTaskInstance)
-    {
-        return nullptr;
-    }
+    { return nullptr; }
 
     return FoundTaskInstance->Get();
 #else
     return nullptr;
 #endif
 }
+
+// --------------------------------------------------------------------------------------------------------------------

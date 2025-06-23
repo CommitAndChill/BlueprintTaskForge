@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "BftMacros.h"
-
 #include "BtfExtendConstructObject_K2Node.h"
-
 #include "BtfTaskForge_K2Node.generated.h"
+
+// --------------------------------------------------------------------------------------------------------------------
 
 UCLASS()
 class BLUEPRINTTASKFORGEEDITOR_API UBtf_TaskForge_K2Node : public UBtf_ExtendConstructObject_K2Node
@@ -15,18 +15,7 @@ class BLUEPRINTTASKFORGEEDITOR_API UBtf_TaskForge_K2Node : public UBtf_ExtendCon
 public:
     UBtf_TaskForge_K2Node(const FObjectInitializer& ObjectInitializer);
 
-    virtual void PinDefaultValueChanged(UEdGraphPin* Pin) override
-    {
-        if (Decorator.IsValid())
-        {
-            FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float DeltaTime) -> bool
-            {
-                ReconstructNode();
-                return false;
-            }));
-        }
-    }
-    
+    // Core Overrides
     virtual void AllocateDefaultPins() override;
     virtual void ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins) override;
     virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
@@ -34,6 +23,9 @@ public:
     virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
     virtual FText GetMenuCategory() const override;
 
+    virtual void PinDefaultValueChanged(UEdGraphPin* Pin) override;
+
+    // Status and Display
     FString Get_NodeDescription() const;
     FString Get_StatusString() const;
     FLinearColor Get_StatusBackgroundColor() const;
@@ -48,6 +40,7 @@ public:
 protected:
     void HideClassPin() const;
     void RegisterBlueprintAction(UClass* TargetClass, FBlueprintActionDatabaseRegistrar& ActionRegistrar) const;
-
     virtual void CollectSpawnParam(UClass* InClass, const bool FullRefresh) override;
 };
+
+// --------------------------------------------------------------------------------------------------------------------

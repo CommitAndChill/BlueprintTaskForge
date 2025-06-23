@@ -1,5 +1,4 @@
 #include "NodeCustomizations/BtfGraphNode.h"
-
 #include "BtfTaskForge.h"
 #include "BtfTaskForge_K2Node.h"
 #include "SGraphPanel.h"
@@ -7,7 +6,17 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 
+// --------------------------------------------------------------------------------------------------------------------
+
 #define LOCTEXT_NAMESPACE "K2Node"
+
+SBtf_Node::~SBtf_Node()
+{
+    if (Decorator)
+    {
+        Decorator->RemoveFromRoot();
+    }
+}
 
 void SBtf_Node::Construct(const FArguments& InArgs, UEdGraphNode* InGraphNode, UClass* InTaskClass)
 {
@@ -127,7 +136,8 @@ TSharedRef<SWidget> SBtf_Node::CreateDefaultNodeContent(TSharedPtr<SWidget> TopC
 
 void SBtf_Node::GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformationPopupInfo>& Popups) const
 {
-    if (NOT BlueprintTaskNode.IsValid()) { return; }
+    if (NOT BlueprintTaskNode.IsValid())
+    { return; }
 
     if (const auto Description = BlueprintTaskNode->Get_NodeDescription(); 
         NOT Description.IsEmpty())
@@ -139,7 +149,8 @@ void SBtf_Node::GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInform
         Popups.Add(DescriptionPopup);
     }
 
-    if (NOT GEditor->PlayWorld) { return; }
+    if (NOT GEditor->PlayWorld)
+    { return; }
 
     if (const auto Status = BlueprintTaskNode->Get_StatusString(); 
         NOT Status.IsEmpty())
@@ -198,9 +209,12 @@ EVisibility SBtf_Node::Get_NodeConfigTextVisibility() const
 
 FText SBtf_Node::Get_NodeConfigText() const
 {
-    if (NOT IsValid(BlueprintTaskNode.Get())) { return FText::GetEmpty(); }
+    if (NOT IsValid(BlueprintTaskNode.Get()))
+    { return FText::GetEmpty(); }
 
     return BlueprintTaskNode->Get_NodeConfigText();
 }
 
 #undef LOCTEXT_NAMESPACE
+
+// --------------------------------------------------------------------------------------------------------------------

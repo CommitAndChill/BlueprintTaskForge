@@ -1,6 +1,5 @@
 #include "NodeCustomizations/BtfNameSelectStructCustomization.h"
 #include "BftMacros.h"
-
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Engine/GameViewportClient.h"
 #include "PropertyHandle.h"
@@ -14,8 +13,15 @@
 #include "Widgets/Input/SEditableTextBox.h"
 #include "EditorStyleSet.h"
 
+// --------------------------------------------------------------------------------------------------------------------
+
 FBtf_NameSelectStructCustomization::FBtf_NameSelectStructCustomization()
 {
+}
+
+TSharedRef<IPropertyTypeCustomization> FBtf_NameSelectStructCustomization::MakeInstance()
+{
+    return MakeShareable(new FBtf_NameSelectStructCustomization());
 }
 
 void FBtf_NameSelectStructCustomization::CustomizeHeader(
@@ -59,11 +65,13 @@ void FBtf_NameSelectStructCustomization::CustomizeHeader(
                             EUserInterfaceActionType::Button);
                     }
 
-                    if (NOT GT.Get_All()) { return MenuBuilder.MakeWidget(); }
+                    if (NOT GT.Get_All())
+                    { return MenuBuilder.MakeWidget(); }
 
                     for (const auto& It : *GT.Get_All())
                     {
-                        if (GT.Get_Exclude() != nullptr && GT.Get_Exclude()->Contains(It)) { continue; }
+                        if (GT.Get_Exclude() != nullptr && GT.Get_Exclude()->Contains(It))
+                        { continue; }
 
                         const auto ItemAction = FUIAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, It));
                         MenuBuilder.AddMenuEntry(
@@ -130,10 +138,14 @@ FBtf_NameSelect FBtf_NameSelectStructCustomization::FromProperty() const
     auto RawData = TArray<void*>{};
     PropertyHandle->AccessRawData(RawData);
 
-    if (RawData.Num() != 1) { return FBtf_NameSelect(); }
+    if (RawData.Num() != 1)
+    { return FBtf_NameSelect(); }
     
     const auto* DataPtr = static_cast<const FBtf_NameSelect*>(RawData[0]);
-    if (NOT DataPtr) { return FBtf_NameSelect(); }
+    if (NOT DataPtr)
+    { return FBtf_NameSelect(); }
     
     return *DataPtr;
 }
+
+// --------------------------------------------------------------------------------------------------------------------

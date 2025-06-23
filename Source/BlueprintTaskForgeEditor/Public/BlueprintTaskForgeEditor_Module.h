@@ -11,13 +11,13 @@ class FString;
 class UObject;
 struct FAssetData;
 
+// --------------------------------------------------------------------------------------------------------------------
+
 class FBlueprintTaskForgeEditorModule : public IModuleInterface
 {
 public:
     virtual void StartupModule() override;
     virtual void ShutdownModule() override;
-
-    FDelegateHandle BlueprintEditorTabSpawnerHandle, BlueprintEditorLayoutExtensionHandle;
 
 private:
     void OnBlueprintCompiled();
@@ -33,4 +33,8 @@ private:
     FDelegateHandle OnAssetRenamedDelegateHandle;
     FDelegateHandle OnInMemoryAssetDeletedDelegateHandle;
     FDelegateHandle OnFilesLoadedDelegateHandle;
+    FDelegateHandle BlueprintEditorTabSpawnerHandle;
+    FDelegateHandle BlueprintEditorLayoutExtensionHandle;
 };
+
+// --------------------------------------------------------------------------------------------------------------------

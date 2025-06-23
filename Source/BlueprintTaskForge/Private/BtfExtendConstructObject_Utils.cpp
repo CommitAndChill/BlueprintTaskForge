@@ -1,5 +1,4 @@
 #include "BtfExtendConstructObject_Utils.h"
-
 #include "UObject/Object.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/Engine.h"
@@ -7,15 +6,16 @@
 #include "GameFramework/Actor.h"
 #include "Kismet/GameplayStatics.h"
 
+// --------------------------------------------------------------------------------------------------------------------
+
 UObject* UBtf_ExtendConstructObject_Utils::ExtendConstructObject(UObject* Outer, const TSubclassOf<UObject> Class)
 {
-    if (IsValid(Outer) && Class && NOT Class->HasAnyClassFlags(CLASS_Abstract))
-    {
-        const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName());
-        const auto& Task = NewObject<UObject>(Outer, Class, TaskObjName, RF_NoFlags);
-        return Task;
-    }
-    return nullptr;
+    if (NOT IsValid(Outer) || NOT Class || Class->HasAnyClassFlags(CLASS_Abstract))
+    { return nullptr; }
+
+    const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName());
+    const auto& Task = NewObject<UObject>(Outer, Class, TaskObjName, RF_NoFlags);
+    return Task;
 }
 
 bool UBtf_ExtendConstructObject_Utils::GetNumericSuffix(const FString& InStr, int32& Suffix)
@@ -138,3 +138,5 @@ FBtf_SpawnParam UBtf_ExtendConstructObject_Utils::CollectSpawnParam(
     return Out;
 }
 #endif
+
+// --------------------------------------------------------------------------------------------------------------------

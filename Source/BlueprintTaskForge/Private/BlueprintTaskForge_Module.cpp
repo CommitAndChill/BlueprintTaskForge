@@ -1,5 +1,7 @@
 #include "BlueprintTaskForge_Module.h"
 
+// --------------------------------------------------------------------------------------------------------------------
+
 #define LOCTEXT_NAMESPACE "FBlueprintTaskForgeModule"
 
 const FGuid FBlueprintTaskForgeCustomVersion::GUID = FGuid(
@@ -7,6 +9,8 @@ const FGuid FBlueprintTaskForgeCustomVersion::GUID = FGuid(
     GetTypeHash(FString(TEXT("Task"))),
     GetTypeHash(FString(TEXT("Forge"))),
     GetTypeHash(FString(TEXT("Plugin"))));
+
+// --------------------------------------------------------------------------------------------------------------------
 
 void FBlueprintTaskForgeModule::StartupModule()
 {
@@ -26,5 +30,7 @@ FCustomVersionRegistration GRegisterBlueprintTaskForgeVersion(
     TEXT("BlueprintTaskForge"));
 
 #undef LOCTEXT_NAMESPACE
+
+// --------------------------------------------------------------------------------------------------------------------
 
 IMPLEMENT_MODULE(FBlueprintTaskForgeModule, BlueprintTaskForge)

@@ -2,14 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "BftMacros.h"
-
 #include "BtfNameSelect.generated.h"
+
+// --------------------------------------------------------------------------------------------------------------------
 
 USTRUCT(BlueprintType)
 struct FBtf_NameSelect
 {
     GENERATED_BODY()
 
+public:
     FBtf_NameSelect();
     FBtf_NameSelect(FName InName);
 
@@ -40,3 +42,5 @@ public:
     BFT_PROPERTY_GET(Exclude)
 #endif
 };
+
+// --------------------------------------------------------------------------------------------------------------------

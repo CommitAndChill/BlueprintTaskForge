@@ -1,7 +1,6 @@
 #include "BtfExtendConstructObject_K2Node.h"
 #include "BftMacros.h"
 #include "BtfExtendConstructObject_Utils.h"
-
 #include "Misc/AssertionMacros.h"
 #include "Algo/Unique.h"
 #include "UObject/Class.h"
@@ -11,7 +10,6 @@
 #include "UObject/FrameworkObjectVersion.h"
 #include "ObjectEditorUtils.h"
 #include "Delegates/DelegateSignatureImpl.inl"
-
 #include "EdGraphSchema_K2.h"
 #include "EdGraph/EdGraphNode.h"
 #include "K2Node.h"
@@ -29,7 +27,6 @@
 #include "K2Node_Self.h"
 #include "K2Node_CreateDelegate.h"
 #include "K2Node_EditablePinBase.h"
-
 #include "KismetCompiler.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -41,21 +38,22 @@
 #include "ToolMenu.h"
 #include "K2Node_SwitchName.h"
 #include "ObjectTools.h"
-
 #include "NodeCustomizations/BtfGraphNode.h"
 #include "StructUtils/InstancedStruct.h"
+
+// --------------------------------------------------------------------------------------------------------------------
 
 #define LOCTEXT_NAMESPACE "K2Node"
 
 FString UBtf_ExtendConstructObject_K2Node::FNames_Helper::InPrefix = FString::Printf(TEXT("In_"));
 FString UBtf_ExtendConstructObject_K2Node::FNames_Helper::OutPrefix = FString::Printf(TEXT("Out_"));
 FString UBtf_ExtendConstructObject_K2Node::FNames_Helper::InitPrefix = FString::Printf(TEXT("Init_"));
-
 FString UBtf_ExtendConstructObject_K2Node::FNames_Helper::SkelPrefix = FString::Printf(TEXT("SKEL_"));
 FString UBtf_ExtendConstructObject_K2Node::FNames_Helper::ReinstPrefix = FString::Printf(TEXT("REINST_"));
 FString UBtf_ExtendConstructObject_K2Node::FNames_Helper::DeadclassPrefix = FString::Printf(TEXT("DEADCLASS_"));
-
 FString UBtf_ExtendConstructObject_K2Node::FNames_Helper::CompiledFromBlueprintSuffix = FString::Printf(TEXT("_C"));
+
+// --------------------------------------------------------------------------------------------------------------------
 
 UBtf_ExtendConstructObject_K2Node::UBtf_ExtendConstructObject_K2Node(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
@@ -162,10 +160,10 @@ void UBtf_ExtendConstructObject_K2Node::PostEditChangeProperty(FPropertyChangedE
 
             if (NOT InstanceFound)
             {
-				/**IMPORTANT: The outer seems to be important. If it wasn't the parent blueprint, it would always
-				 * remove the extension during packaging/standalone mode.
-				 * If you're getting weird issues with the extension getting "lost", then this might be the
-				 * first place to investigate. */
+                /**IMPORTANT: The outer seems to be important. If it wasn't the parent blueprint, it would always
+                 * remove the extension during packaging/standalone mode.
+                 * If you're getting weird issues with the extension getting "lost", then this might be the
+                 * first place to investigate. */
                 TaskInstance = NewObject<UBtf_TaskForge>(GetBlueprint(), ProxyClass, GetTemplateInstanceName());
                 GetBlueprint()->AddExtension(TaskInstance);
                 std::ignore = GetBlueprint()->MarkPackageDirty();
@@ -253,7 +251,8 @@ void UBtf_ExtendConstructObject_K2Node::Serialize(FArchive& Ar)
 void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const
 {
     Super::GetNodeContextMenuActions(Menu, Context);
-    if (Context->bIsDebugging) return;
+    if (Context->bIsDebugging)
+    { return; }
 
     if (Context->Node != nullptr && Context->Node->GetClass()->IsChildOf(UBtf_ExtendConstructObject_K2Node::StaticClass()) && Context->Pin == nullptr)
     {
@@ -411,7 +410,8 @@ void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(class UToolMen
         Context->Node->GetClass()->IsChildOf(UBtf_ExtendConstructObject_K2Node::StaticClass()) &&
         Context->Pin != nullptr)
     {
-        if (Context->Pin->PinName == UEdGraphSchema_K2::PN_Execute || Context->Pin->PinName == UEdGraphSchema_K2::PN_Then) return;
+        if (Context->Pin->PinName == UEdGraphSchema_K2::PN_Execute || Context->Pin->PinName == UEdGraphSchema_K2::PN_Then)
+        { return; }
 
         const auto& SpawnParamPin = SpawnParam.Contains(Context->Pin->PinName);
 
@@ -860,6 +860,11 @@ void UBtf_ExtendConstructObject_K2Node::PinDefaultValueChanged(UEdGraphPin* Pin)
     Super::PinDefaultValueChanged(Pin);
 }
 
+void UBtf_ExtendConstructObject_K2Node::InvalidatePinTooltips() const
+{
+    PinTooltipsValid = false;
+}
+
 UK2Node::ERedirectType UBtf_ExtendConstructObject_K2Node::DoPinsMatchForReconstruction(
     const UEdGraphPin* NewPin,
     const int32 NewPinIndex,
@@ -1239,9 +1244,7 @@ void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* InCl
             auto* const Property = *PropIt;
             const auto& IsFunctionInput = NOT Property->HasAnyPropertyFlags(CPF_OutParm) || Property->HasAnyPropertyFlags(CPF_ReferenceParm);
             if (NOT IsFunctionInput)
-            {
-                continue;
-            }
+            { continue; }
 
             FCreatePinParams PinParams;
             PinParams.bIsReference = Property->HasAnyPropertyFlags(CPF_ReferenceParm) && IsFunctionInput;
@@ -1497,6 +1500,11 @@ void UBtf_ExtendConstructObject_K2Node::GenerateOutputDelegatePins(UClass* InCla
     }
 }
 
+TSet<FName> UBtf_ExtendConstructObject_K2Node::Get_PinsHiddenByDefault()
+{
+    return {};
+}
+
 void UBtf_ExtendConstructObject_K2Node::CreatePinsForClass(UClass* InClass, const bool FullRefresh)
 {
     if (FullRefresh || InClass == nullptr)
@@ -1520,9 +1528,7 @@ void UBtf_ExtendConstructObject_K2Node::CreatePinsForClass(UClass* InClass, cons
     GenerateFactoryFunctionPins(InClass);
 
     if (InClass == nullptr)
-    {
-        return;
-    }
+    { return; }
 
     const auto& ClassDefaultObject = InClass->GetDefaultObject(true);
     check(ClassDefaultObject);
@@ -1716,7 +1722,8 @@ void UBtf_ExtendConstructObject_K2Node::CreatePinsForClassFunction(UClass* InCla
                 NOT Param->HasAnyPropertyFlags(CPF_ReturnParm) && (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
             const auto& Direction = IsFunctionInput ? EGPD_Input : EGPD_Output;
 
-            if (Direction == EGPD_Output && NOT RetValPins) continue;
+            if (Direction == EGPD_Output && NOT RetValPins)
+            { continue; }
 
             UEdGraphNode::FCreatePinParams PinParams;
 
@@ -1770,773 +1777,6 @@ void UBtf_ExtendConstructObject_K2Node::CreatePinsForClassFunction(UClass* InCla
         }
         check(AllPinsGood);
     }
-}
-
-void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
-{
-    Super::ExpandNode(CompilerContext, SourceGraph);
-    if (ProxyClass == nullptr)
-    {
-        CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: ProxyClass nullptr error. @@"), this);
-        return;
-    }
-
-    const auto& Schema = CompilerContext.GetSchema();
-    check(SourceGraph && Schema);
-    auto IsErrorFree = true;
-
-    auto* const CreateProxyObject_Node = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-    CreateProxyObject_Node->FunctionReference.SetExternalMember(ProxyFactoryFunctionName, ProxyFactoryClass);
-    CreateProxyObject_Node->AllocateDefaultPins();
-    if (CreateProxyObject_Node->GetTargetFunction() == nullptr)
-    {
-        const auto& ClassName = ProxyFactoryClass ? FText::FromString(ProxyFactoryClass->GetName()) : LOCTEXT("MissingClassString", "Unknown Class");
-        const auto& FormattedMessage =
-            FText::Format(
-                LOCTEXT("AsyncTaskErrorFmt", "BaseAsyncTask: Missing function {0} from class {1} for async task @@"),
-                FText::FromString(ProxyFactoryFunctionName.GetPlainNameString()),
-                ClassName)
-                .ToString();
-
-        CompilerContext.MessageLog.Error(*FormattedMessage, this);
-        return;
-    }
-
-    IsErrorFree &= CompilerContext
-                        .MovePinLinksToIntermediate(
-                            *FindPinChecked(UEdGraphSchema_K2::PN_Execute),
-                            *CreateProxyObject_Node->FindPinChecked(UEdGraphSchema_K2::PN_Execute))
-                        .CanSafeConnect();
-    if (SelfContext)
-    {
-        auto* const Self_Node = CompilerContext.SpawnIntermediateNode<UK2Node_Self>(this, SourceGraph);
-        Self_Node->AllocateDefaultPins();
-        auto* SelfPin = Self_Node->FindPinChecked(UEdGraphSchema_K2::PN_Self);
-        IsErrorFree &= Schema->TryCreateConnection(SelfPin, CreateProxyObject_Node->FindPinChecked(WorldContextPinName));
-        if (NOT IsErrorFree)
-        {
-            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Pin Self Context Error. @@"), this);
-        }
-    }
-
-    for (auto* CurrentPin : Pins)
-    {
-        if (CurrentPin->PinName != UEdGraphSchema_K2::PSC_Self && FNodeHelper::ValidDataPin(CurrentPin, EGPD_Input))
-        {
-            if (auto* DestPin = CreateProxyObject_Node->FindPin(CurrentPin->PinName))
-            {
-                IsErrorFree &= CompilerContext.CopyPinLinksToIntermediate(*CurrentPin, *DestPin).CanSafeConnect();
-                if (NOT IsErrorFree)
-                {
-                    CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to factory the proxy object error. @@"), this);
-                }
-            }
-        }
-    }
-
-    CreateProxyObject_Node->FindPin(NodeGuidStrName)->DefaultValue = NodeGuid.ToString();
-
-    const auto& PinProxyObject = CreateProxyObject_Node->GetReturnValuePin();
-    auto* Cast_Output = PinProxyObject;
-    if (PinProxyObject->PinType.PinSubCategoryObject.Get() != ProxyClass)
-    {
-        auto* CastNode = CompilerContext.SpawnIntermediateNode<UK2Node_DynamicCast>(this, SourceGraph);
-        CastNode->SetPurity(true);
-        CastNode->TargetType = ProxyClass;
-        CastNode->AllocateDefaultPins();
-        IsErrorFree &= Schema->TryCreateConnection(PinProxyObject, CastNode->GetCastSourcePin());
-        Cast_Output = CastNode->GetCastResultPin();
-        check(Cast_Output);
-    }
-    const auto& OutputObjectPin = FindPinChecked(OutPutObjectPinName, EGPD_Output);
-    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*OutputObjectPin, *Cast_Output).CanSafeConnect();
-    if (NOT IsErrorFree)
-    {
-        CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: OutObjectPin Error. @@"), this);
-    }
-
-    TArray<FNodeHelper::FOutputPinAndLocalVariable> VariableOutputs;
-    for (auto* CurrentPin : Pins)
-    {
-        if (OutputObjectPin != CurrentPin && FNodeHelper::ValidDataPin(CurrentPin, EGPD_Output))
-        {
-            const auto& PinType = CurrentPin->PinType;
-
-            auto* TempVarOutput =
-                CompilerContext.SpawnInternalVariable(
-                    this,
-                    PinType.PinCategory,
-                    PinType.PinSubCategory,
-                    PinType.PinSubCategoryObject.Get(),
-                    PinType.ContainerType,
-                    PinType.PinValueType);
-
-            IsErrorFree &= TempVarOutput->GetVariablePin() != nullptr;
-            IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*CurrentPin, *TempVarOutput->GetVariablePin()).CanSafeConnect();
-            VariableOutputs.Add(FNodeHelper::FOutputPinAndLocalVariable(CurrentPin, TempVarOutput));
-        }
-    }
-
-    const auto& IsValidFuncName = GET_FUNCTION_NAME_CHECKED(UKismetSystemLibrary, IsValid);
-
-    auto* OriginalThenPin = FindPinChecked(UEdGraphSchema_K2::PN_Then);
-    auto* LastThenPin = CreateProxyObject_Node->FindPinChecked(UEdGraphSchema_K2::PN_Then);
-    auto* ValidateProxyNode = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>(this, SourceGraph);
-    ValidateProxyNode->AllocateDefaultPins();
-    {
-        auto* IsValidFuncNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-
-        IsValidFuncNode->FunctionReference.SetExternalMember(IsValidFuncName, UKismetSystemLibrary::StaticClass());
-        IsValidFuncNode->AllocateDefaultPins();
-        auto* IsValidInputPin = IsValidFuncNode->FindPinChecked(TEXT("Object"));
-
-        IsErrorFree &= Schema->TryCreateConnection(PinProxyObject, IsValidInputPin);
-        IsErrorFree &= Schema->TryCreateConnection(IsValidFuncNode->GetReturnValuePin(), ValidateProxyNode->GetConditionPin());
-        IsErrorFree &= Schema->TryCreateConnection(LastThenPin, ValidateProxyNode->GetExecPin());
-        IsErrorFree &= CompilerContext.CopyPinLinksToIntermediate(*OriginalThenPin, *ValidateProxyNode->GetElsePin()).CanSafeConnect();
-
-        LastThenPin = ValidateProxyNode->GetThenPin();
-    }
-
-    for (const auto& DelegateName : InDelegate)
-    {
-        if (DelegateName == NAME_None) continue;
-
-        if (auto* Property = ProxyClass->FindPropertyByName(DelegateName))
-        {
-            auto* CurrentProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
-            if (CurrentProperty && CurrentProperty->GetFName() == DelegateName)
-            {
-                auto* InDelegatePin = FindPinChecked(DelegateName, EGPD_Input);
-                if (InDelegatePin->LinkedTo.Num() != 0)
-                {
-                    auto* AssignDelegate = CompilerContext.SpawnIntermediateNode<UK2Node_AssignDelegate>(this, SourceGraph);
-                    AssignDelegate->SetFromProperty(CurrentProperty, false, CurrentProperty->GetOwnerClass());
-                    AssignDelegate->AllocateDefaultPins();
-
-                    IsErrorFree &= Schema->TryCreateConnection(AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Self), Cast_Output);
-                    IsErrorFree &= Schema->TryCreateConnection(LastThenPin, AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
-                    auto* DelegatePin = AssignDelegate->GetDelegatePin();
-
-                    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*InDelegatePin, *DelegatePin).CanSafeConnect();
-                    if (NOT IsErrorFree)
-                    {
-                        CompilerContext.MessageLog.Error(*LOCTEXT("Invalid_DelegateProperties", "Error @@").ToString(), this);
-                    }
-                    LastThenPin = AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Then);
-                }
-            }
-        }
-        else
-        {
-            IsErrorFree = false;
-            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
-            continue;
-        }
-    }
-
-    for (const auto& DelegateName : OutDelegate)
-    {
-        if (DelegateName == NAME_None) continue;
-
-        if (auto* Property = ProxyClass->FindPropertyByName(DelegateName))
-        {
-            auto* CurrentProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
-            if (CurrentProperty && CurrentProperty->GetFName() == DelegateName)
-            {
-                auto* DelegateProperty = FindPin(CurrentProperty->GetFName());
-                if (DelegateProperty)
-                {
-                    IsErrorFree &= FNodeHelper::HandleDelegateImplementation(
-                        CurrentProperty,
-                        VariableOutputs,
-                        Cast_Output,
-                        LastThenPin,
-                        this,
-                        SourceGraph,
-                        CompilerContext);
-                }
-                else
-                {
-                    IsErrorFree = false;
-                }
-                if (NOT IsErrorFree)
-                {
-                    CompilerContext.MessageLog.Error(*LOCTEXT("Invalid_DelegateProperties", "@@").ToString(), this);
-                }
-            }
-        }
-        else
-        {
-            IsErrorFree = false;
-            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
-            continue;
-        }
-    }
-
-    if (NOT IsErrorFree)
-    {
-        CompilerContext.MessageLog.Error(
-            TEXT("ExtendConstructObject: For each delegate define event, connect it to delegate and implement a chain of assignments error. @@"),
-            this);
-    }
-    if (CreateProxyObject_Node->FindPinChecked(UEdGraphSchema_K2::PN_Then) == LastThenPin)
-    {
-        CompilerContext.MessageLog.Error(*LOCTEXT("MissingDelegateProperties", "ExtendConstructObject: Proxy has no delegates defined. @@").ToString(), this);
-        return;
-    }
-
-    IsErrorFree &= ConnectSpawnProperties(ProxyClass, Schema, CompilerContext, SourceGraph, LastThenPin, PinProxyObject);
-    if (NOT IsErrorFree)
-    {
-        CompilerContext.MessageLog.Error(TEXT("ConnectSpawnProperties error. @@"), this);
-    }
-
-    if (NOT CustomPins.IsEmpty())
-    {
-        auto* DelegateProperty = ProxyClass->FindPropertyByName(GET_MEMBER_NAME_CHECKED(UBtf_TaskForge, OnCustomPinTriggered));
-        auto* MulticastDelegateProperty = CastField<FMulticastDelegateProperty>(DelegateProperty);
-
-        if (NOT MulticastDelegateProperty)
-        {
-            CompilerContext.MessageLog.Error(*FString::Printf(TEXT("Failed to find delegate property for %s."), *GetNodeTitle(ENodeTitleType::FullTitle).ToString()));
-            BreakAllNodeLinks();
-            return;
-        }
-
-        TArray<FNodeHelper::FOutputPinAndLocalVariable> VariableOutputs2;
-        for (auto* Pin : Pins)
-        {
-            if (Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-            {
-                FNodeHelper::FOutputPinAndLocalVariable OutputMapping;
-                OutputMapping.OutputPin = Pin;
-                OutputMapping.TempVar = nullptr;
-                VariableOutputs2.Add(OutputMapping);
-            }
-        }
-
-        const auto& Success = FNodeHelper::HandleCustomPinsImplementation(
-            MulticastDelegateProperty,
-            VariableOutputs2,
-            Cast_Output,
-            LastThenPin,
-            this,
-            SourceGraph,
-            CustomPins,
-            CompilerContext
-        );
-
-        if (NOT Success)
-        {
-            CompilerContext.MessageLog.Error(*FString::Printf(TEXT("Failed to handle delegate for %s."), *GetNodeTitle(ENodeTitleType::FullTitle).ToString()));
-        }
-    }
-
-    for (const auto& FunctionName : AutoCallFunction)
-    {
-        if (FunctionName == NAME_None) continue;
-        {
-            const auto& FindFunc = ProxyClass->FindFunctionByName(FunctionName);
-            if (FindFunc == nullptr)
-            {
-                IsErrorFree = false;
-                CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
-                continue;
-            }
-        }
-
-        auto* const CallFunction_Node = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-        CallFunction_Node->FunctionReference.SetExternalMember(FunctionName, ProxyClass);
-        CallFunction_Node->AllocateDefaultPins();
-
-        auto* ActivateCallSelfPin = Schema->FindSelfPin(*CallFunction_Node, EGPD_Input);
-        check(ActivateCallSelfPin);
-        IsErrorFree &= Schema->TryCreateConnection(Cast_Output, ActivateCallSelfPin);
-        if (NOT IsErrorFree)
-        {
-            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this);
-        }
-
-        const auto& IsPureFunc = CallFunction_Node->IsNodePure();
-        if (NOT IsPureFunc)
-        {
-            auto* ActivateExecPin = CallFunction_Node->FindPinChecked(UEdGraphSchema_K2::PN_Execute);
-            auto* ActivateThenPin = CallFunction_Node->FindPinChecked(UEdGraphSchema_K2::PN_Then);
-            IsErrorFree &= Schema->TryCreateConnection(LastThenPin, ActivateExecPin);
-            if (NOT IsErrorFree)
-            {
-                CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this);
-            }
-            LastThenPin = ActivateThenPin;
-        }
-
-        auto* EventSignature = CallFunction_Node->GetTargetFunction();
-        check(EventSignature);
-        for (TFieldIterator<FProperty> PropIt(EventSignature); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
-        {
-            const auto& Param = *PropIt;
-
-            const auto& IsFunctionInput =
-                NOT Param->HasAnyPropertyFlags(CPF_ReturnParm) &&
-                (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
-
-            const auto& Direction = IsFunctionInput ? EGPD_Input : EGPD_Output;
-            auto* InNodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), Direction);
-
-            if (InNodePin)
-            {
-                auto* InFunctionPin = CallFunction_Node->FindPinChecked(Param->GetFName(), Direction);
-                if (IsFunctionInput)
-                {
-                    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*InNodePin, *InFunctionPin).CanSafeConnect();
-                }
-                else
-                {
-                    auto* OutputPair = VariableOutputs.FindByKey(InNodePin);
-                    check(OutputPair);
-
-                    auto* AssignNode = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>(this, SourceGraph);
-                    AssignNode->AllocateDefaultPins();
-                    IsErrorFree &= Schema->TryCreateConnection(LastThenPin, AssignNode->GetExecPin());
-
-                    IsErrorFree &= Schema->TryCreateConnection(OutputPair->TempVar->GetVariablePin(), AssignNode->GetVariablePin());
-                    AssignNode->NotifyPinConnectionListChanged(AssignNode->GetVariablePin());
-                    IsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), InFunctionPin);
-                    AssignNode->NotifyPinConnectionListChanged(AssignNode->GetValuePin());
-
-                    LastThenPin = AssignNode->GetThenPin();
-                }
-            }
-            else
-            {
-                IsErrorFree = false;
-                CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
-            }
-        }
-
-        if (NOT IsErrorFree)
-        {
-            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this);
-        }
-    }
-
-    for (const auto& FunctionName : ExecFunction)
-    {
-        if (FunctionName == NAME_None) continue;
-        {
-            const auto& FindFunc = ProxyClass->FindFunctionByName(FunctionName);
-            if (FindFunc == nullptr)
-            {
-                IsErrorFree = false;
-                CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
-                continue;
-            }
-        }
-
-        auto* ExecPin = FindPinChecked(FunctionName, EGPD_Input);
-        auto* IsValidFuncNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-        auto* IfThenElse = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>(this, SourceGraph);
-
-        IsValidFuncNode->FunctionReference.SetExternalMember(IsValidFuncName, UKismetSystemLibrary::StaticClass());
-        IsValidFuncNode->AllocateDefaultPins();
-        IfThenElse->AllocateDefaultPins();
-
-        auto* IsValidInputPin = IsValidFuncNode->FindPinChecked(TEXT("Object"));
-        IsErrorFree &= Schema->TryCreateConnection(Cast_Output, IsValidInputPin);
-        IsErrorFree &= Schema->TryCreateConnection(IsValidFuncNode->GetReturnValuePin(), IfThenElse->GetConditionPin());
-
-        IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*ExecPin, *IfThenElse->GetExecPin()).CanSafeConnect();
-
-        auto* const CallFunction_Node = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-        CallFunction_Node->FunctionReference.SetExternalMember(FunctionName, ProxyClass);
-        CallFunction_Node->AllocateDefaultPins();
-
-        const auto& IsPureFunc = CallFunction_Node->IsNodePure();
-        if (IsPureFunc)
-        {
-            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need To Refresh Node. @@"), this);
-            continue;
-        }
-
-        auto* CallSelfPin = Schema->FindSelfPin(*CallFunction_Node, EGPD_Input);
-        check(CallSelfPin);
-
-        IsErrorFree &= Schema->TryCreateConnection(Cast_Output, CallSelfPin);
-
-        auto* FunctionExecPin = CallFunction_Node->FindPinChecked(UEdGraphSchema_K2::PN_Execute);
-
-        check(FunctionExecPin && ExecPin);
-
-        IsErrorFree &= Schema->TryCreateConnection(IfThenElse->GetThenPin(), FunctionExecPin);
-
-        auto* EventSignature = CallFunction_Node->GetTargetFunction();
-        for (TFieldIterator<FProperty> PropIt(EventSignature); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
-        {
-            const auto& Param = *PropIt;
-            const auto& IsFunctionInput =
-                NOT Param->HasAnyPropertyFlags(CPF_ReturnParm) &&
-                (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
-            if (IsFunctionInput)
-            {
-                auto* InNodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), EGPD_Input);
-                if (InNodePin)
-                {
-                    auto* InFunctionPin = CallFunction_Node->FindPinChecked(Param->GetFName(), EGPD_Input);
-
-                    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*InNodePin, *InFunctionPin).CanSafeConnect();
-                }
-                else
-                {
-                    IsErrorFree = false;
-                    CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
-                }
-            }
-        }
-    }
-
-    if (NOT IsErrorFree)
-    {
-        CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to Expand Functions the proxy object error. @@"), this);
-    }
-
-    IsErrorFree &= CompilerContext.CopyPinLinksToIntermediate(*OriginalThenPin, *LastThenPin).CanSafeConnect();
-    if (NOT IsErrorFree)
-    {
-        CompilerContext.MessageLog.Error(*LOCTEXT("InternalConnectionError", "ExtendConstructObject: Internal connection error. @@").ToString(), this);
-    }
-
-    SpawnParam.Shrink();
-
-    BreakAllNodeLinks();
-}
-
-bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
-    const UClass* ClassToSpawn,
-    const UEdGraphSchema_K2* Schema,
-    FKismetCompilerContext& CompilerContext,
-    UEdGraph* SourceGraph,
-    UEdGraphPin*& LastThenPin,
-    UEdGraphPin* SpawnedActorReturnPin)
-{
-    auto IsErrorFree = true;
-    for (const auto& OldPinParamName : SpawnParam)
-    {
-        auto* SpawnVarPin = FindPin(OldPinParamName);
-
-        if (NOT SpawnVarPin) continue;
-
-        const auto& HasDefaultValue = NOT SpawnVarPin->DefaultValue.IsEmpty() || NOT SpawnVarPin->DefaultTextValue.IsEmpty() || SpawnVarPin->DefaultObject;
-        if (SpawnVarPin->LinkedTo.Num() > 0 || HasDefaultValue)
-        {
-            if (SpawnVarPin->LinkedTo.Num() == 0)
-            {
-                const auto& Property = FindFProperty<FProperty>(ClassToSpawn, SpawnVarPin->PinName);
-                if (NOT Property) continue;
-
-                if (ClassToSpawn->ClassDefaultObject != nullptr)
-                {
-                    FString DefaultValueAsString;
-                    FBlueprintEditorUtils::PropertyValueToString(
-                        Property,
-#if ENGINE_MINOR_VERSION < 3
-                        reinterpret_cast<uint8*>(ClassToSpawn->ClassDefaultObject),
-#else
-                        reinterpret_cast<uint8*>(ClassToSpawn->ClassDefaultObject.Get()),
-#endif
-                        DefaultValueAsString,
-                        this);
-
-                    if (DefaultValueAsString == SpawnVarPin->DefaultValue) continue;
-                }
-            }
-
-            if (const auto& SetByNameFunction = Schema->FindSetVariableByNameFunction(SpawnVarPin->PinType))
-            {
-                UK2Node_CallFunction* SetVarNode;
-                if (SpawnVarPin->PinType.IsArray())
-                {
-                    SetVarNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallArrayFunction>(this, SourceGraph);
-                }
-                else
-                {
-                    SetVarNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-                }
-                SetVarNode->SetFromFunction(SetByNameFunction);
-                SetVarNode->AllocateDefaultPins();
-
-                IsErrorFree &= Schema->TryCreateConnection(LastThenPin, SetVarNode->GetExecPin());
-                if (NOT IsErrorFree)
-                {
-                    CompilerContext.MessageLog.Error(
-                        *LOCTEXT("InternalConnectionError", "ExtendConstructObject: Internal connection error. @@").ToString(),
-                        this);
-                }
-                LastThenPin = SetVarNode->GetThenPin();
-
-                static const auto& ObjectParamName = FName(TEXT("Object"));
-                static const auto& ValueParamName = FName(TEXT("Value"));
-                static const auto& PropertyNameParamName = FName(TEXT("PropertyName"));
-
-                auto* ObjectPin = SetVarNode->FindPinChecked(ObjectParamName);
-                SpawnedActorReturnPin->MakeLinkTo(ObjectPin);
-
-                auto* PropertyNamePin = SetVarNode->FindPinChecked(PropertyNameParamName);
-                PropertyNamePin->DefaultValue = SpawnVarPin->PinName.ToString();
-
-                auto* ValuePin = SetVarNode->FindPinChecked(ValueParamName);
-                if (SpawnVarPin->LinkedTo.Num() == 0 &&
-                    SpawnVarPin->DefaultValue != FString() &&
-                    SpawnVarPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Byte &&
-                    SpawnVarPin->PinType.PinSubCategoryObject.IsValid() &&
-                    SpawnVarPin->PinType.PinSubCategoryObject->IsA<UEnum>())
-                {
-                    auto* EnumLiteralNode = CompilerContext.SpawnIntermediateNode<UK2Node_EnumLiteral>(this, SourceGraph);
-                    EnumLiteralNode->Enum = CastChecked<UEnum>(SpawnVarPin->PinType.PinSubCategoryObject.Get());
-                    EnumLiteralNode->AllocateDefaultPins();
-                    EnumLiteralNode->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue)->MakeLinkTo(ValuePin);
-
-                    auto* InPin = EnumLiteralNode->FindPinChecked(UK2Node_EnumLiteral::GetEnumInputPinName());
-                    InPin->DefaultValue = SpawnVarPin->DefaultValue;
-                }
-                else
-                {
-                    if (NOT SpawnVarPin->PinType.IsArray() &&
-                        SpawnVarPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Struct &&
-                        SpawnVarPin->LinkedTo.Num() == 0)
-                    {
-                        ValuePin->PinType.PinCategory = SpawnVarPin->PinType.PinCategory;
-                        ValuePin->PinType.PinSubCategory = SpawnVarPin->PinType.PinSubCategory;
-                        ValuePin->PinType.PinSubCategoryObject = SpawnVarPin->PinType.PinSubCategoryObject;
-                        CompilerContext.MovePinLinksToIntermediate(*SpawnVarPin, *ValuePin);
-                    }
-                    else
-                    {
-                        CompilerContext.MovePinLinksToIntermediate(*SpawnVarPin, *ValuePin);
-                        SetVarNode->PinConnectionListChanged(ValuePin);
-                    }
-                }
-            }
-        }
-    }
-    return IsErrorFree;
-}
-
-bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::ValidDataPin(const UEdGraphPin* Pin, EEdGraphPinDirection Direction)
-{
-    const auto& ValidDataPin =
-        Pin &&
-        NOT Pin->bOrphanedPin &&
-        (Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec);
-
-    const auto& ProperDirection = Pin && (Pin->Direction == Direction);
-
-    return ValidDataPin && ProperDirection;
-}
-
-bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::CreateDelegateForNewFunction(
-    UEdGraphPin* DelegateInputPin,
-    FName FunctionName,
-    UK2Node* CurrentNode,
-    UEdGraph* SourceGraph,
-    FKismetCompilerContext& CompilerContext)
-{
-    const auto& Schema = CompilerContext.GetSchema();
-    check(DelegateInputPin && Schema && CurrentNode && SourceGraph && (FunctionName != NAME_None));
-    auto Result = true;
-
-    auto* SelfNode = CompilerContext.SpawnIntermediateNode<UK2Node_Self>(CurrentNode, SourceGraph);
-    SelfNode->AllocateDefaultPins();
-
-    auto* CreateDelegateNode = CompilerContext.SpawnIntermediateNode<UK2Node_CreateDelegate>(CurrentNode, SourceGraph);
-    CreateDelegateNode->AllocateDefaultPins();
-    Result &= Schema->TryCreateConnection(DelegateInputPin, CreateDelegateNode->GetDelegateOutPin());
-    Result &= Schema->TryCreateConnection(SelfNode->FindPinChecked(UEdGraphSchema_K2::PN_Self), CreateDelegateNode->GetObjectInPin());
-    CreateDelegateNode->SetFunction(FunctionName);
-
-    return Result;
-}
-
-bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::CopyEventSignature(UK2Node_CustomEvent* CENode, UFunction* Function, const UEdGraphSchema_K2* Schema)
-{
-    check(CENode && Function && Schema);
-
-    auto Result = true;
-    for (TFieldIterator<FProperty> PropIt(Function); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
-    {
-        const auto& Param = *PropIt;
-        if (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm))
-        {
-            FEdGraphPinType PinType;
-            Result &= Schema->ConvertPropertyToPinType(Param, PinType);
-            Result &= (nullptr != CENode->CreateUserDefinedPin(Param->GetFName(), PinType, EGPD_Output));
-        }
-    }
-    return Result;
-}
-
-bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleDelegateImplementation(
-    FMulticastDelegateProperty* CurrentProperty,
-    const TArray<FNodeHelper::FOutputPinAndLocalVariable>& VariableOutputs,
-    UEdGraphPin* ProxyObjectPin,
-    UEdGraphPin*& InOutLastThenPin,
-    UK2Node* CurrentNode,
-    UEdGraph* SourceGraph,
-    FKismetCompilerContext& CompilerContext)
-{
-    auto IsErrorFree = true;
-    const auto& Schema = CompilerContext.GetSchema();
-    check(CurrentProperty && ProxyObjectPin && InOutLastThenPin && CurrentNode && SourceGraph && Schema);
-
-    auto* PinForCurrentDelegateProperty = CurrentNode->FindPin(CurrentProperty->GetFName());
-    if (NOT PinForCurrentDelegateProperty || (UEdGraphSchema_K2::PC_Exec != PinForCurrentDelegateProperty->PinType.PinCategory))
-    {
-        const auto& ErrorMessage = FText::Format(
-            LOCTEXT("WrongDelegateProperty", "BaseAsyncTask: Cannot find execution pin for delegate "),
-            FText::FromString(CurrentProperty->GetName()));
-        CompilerContext.MessageLog.Error(*ErrorMessage.ToString(), CurrentNode);
-        return false;
-    }
-
-    auto* CurrentCeNode =
-        CompilerContext.SpawnIntermediateNode<UK2Node_CustomEvent>(CurrentNode, SourceGraph);
-    {
-        auto* AddDelegateNode = CompilerContext.SpawnIntermediateNode<UK2Node_AddDelegate>(CurrentNode, SourceGraph);
-        AddDelegateNode->SetFromProperty(CurrentProperty, false, CurrentProperty->GetOwnerClass());
-        AddDelegateNode->AllocateDefaultPins();
-        IsErrorFree &= Schema->TryCreateConnection(AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Self), ProxyObjectPin);
-        IsErrorFree &= Schema->TryCreateConnection(InOutLastThenPin, AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
-        InOutLastThenPin = AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
-
-        CurrentCeNode->CustomFunctionName = *FString::Printf(TEXT("%s_%s"), *CurrentProperty->GetName(), *CompilerContext.GetGuid(CurrentNode));
-        CurrentCeNode->AllocateDefaultPins();
-
-        IsErrorFree &= FNodeHelper::CreateDelegateForNewFunction(
-            AddDelegateNode->GetDelegatePin(),
-            CurrentCeNode->GetFunctionName(),
-            CurrentNode,
-            SourceGraph,
-            CompilerContext);
-        IsErrorFree &= FNodeHelper::CopyEventSignature(CurrentCeNode, AddDelegateNode->GetDelegateSignature(), Schema);
-    }
-
-    auto* LastActivatedNodeThen = CurrentCeNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
-
-    const auto& DelegateNameStr = CurrentProperty->GetName();
-    for (const auto& OutputPair : VariableOutputs)
-    {
-        auto PinNameStr = OutputPair.OutputPin->PinName.ToString();
-
-        if (NOT PinNameStr.StartsWith(DelegateNameStr))
-        {
-            continue;
-        }
-
-        PinNameStr.RemoveAt(0, DelegateNameStr.Len() + 1);
-
-        auto* PinWithData = CurrentCeNode->FindPinChecked(FName(*PinNameStr));
-
-        if (NOT PinWithData)
-        {
-            return false;
-        }
-
-        auto* AssignNode = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>(CurrentNode, SourceGraph);
-        AssignNode->AllocateDefaultPins();
-        IsErrorFree &= Schema->TryCreateConnection(LastActivatedNodeThen, AssignNode->GetExecPin());
-        IsErrorFree &= Schema->TryCreateConnection(OutputPair.TempVar->GetVariablePin(), AssignNode->GetVariablePin());
-        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetVariablePin());
-        IsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), PinWithData);
-        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetValuePin());
-
-        LastActivatedNodeThen = AssignNode->GetThenPin();
-    }
-
-    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*PinForCurrentDelegateProperty, *LastActivatedNodeThen).CanSafeConnect();
-    return IsErrorFree;
-}
-
-bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleCustomPinsImplementation(
-    FMulticastDelegateProperty* CurrentProperty, const TArray<FOutputPinAndLocalVariable>& VariableOutputs,
-    UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, TArray<FCustomOutputPin> OutputNames,
-    FKismetCompilerContext& CompilerContext)
-{
-    auto IsErrorFree = true;
-    const auto& Schema = CompilerContext.GetSchema();
-    check(CurrentProperty && ProxyObjectPin && InOutLastThenPin && CurrentNode && SourceGraph && Schema);
-
-    auto* CurrentCeNode =
-    CompilerContext.SpawnIntermediateNode<UK2Node_CustomEvent>(CurrentNode, SourceGraph);
-    {
-        auto* AddDelegateNode = CompilerContext.SpawnIntermediateNode<UK2Node_AddDelegate>(CurrentNode, SourceGraph);
-        AddDelegateNode->SetFromProperty(CurrentProperty, false, CurrentProperty->GetOwnerClass());
-        AddDelegateNode->AllocateDefaultPins();
-        IsErrorFree &= Schema->TryCreateConnection(AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Self), ProxyObjectPin);
-        IsErrorFree &= Schema->TryCreateConnection(InOutLastThenPin, AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
-        InOutLastThenPin = AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
-
-        CurrentCeNode->CustomFunctionName = *FString::Printf(TEXT("%s_%s"), *CurrentProperty->GetName(), *CompilerContext.GetGuid(CurrentNode));
-        CurrentCeNode->AllocateDefaultPins();
-
-        IsErrorFree &= FNodeHelper::CreateDelegateForNewFunction(
-            AddDelegateNode->GetDelegatePin(),
-            CurrentCeNode->GetFunctionName(),
-            CurrentNode,
-            SourceGraph,
-            CompilerContext);
-        IsErrorFree &= FNodeHelper::CopyEventSignature(CurrentCeNode, AddDelegateNode->GetDelegateSignature(), Schema);
-
-        auto* DataPin = CurrentCeNode->FindPin(TEXT("Data"));
-
-        auto* TempVarOutput =
-            CompilerContext.SpawnInternalVariable(
-                CurrentNode,
-                DataPin->PinType.PinCategory,
-                DataPin->PinType.PinSubCategory,
-                DataPin->PinType.PinSubCategoryObject.Get(),
-                DataPin->PinType.ContainerType,
-                DataPin->PinType.PinValueType
-                );
-
-        auto* AssignNode = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>(CurrentNode, SourceGraph);
-        AssignNode->AllocateDefaultPins();
-        IsErrorFree &= Schema->TryCreateConnection(CurrentCeNode->FindPinChecked(UEdGraphSchema_K2::PN_Then), AssignNode->GetExecPin());
-        IsErrorFree &= Schema->TryCreateConnection(TempVarOutput->GetVariablePin(), AssignNode->GetVariablePin());
-        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetVariablePin());
-        IsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), DataPin);
-        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetValuePin());
-
-        IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*CurrentNode->FindPin(TEXT("Custom Pin Data")), *TempVarOutput->GetVariablePin()).CanSafeConnect();
-
-        auto* SwitchNode = CompilerContext.SpawnIntermediateNode<UK2Node_SwitchName>(CurrentNode, SourceGraph);
-        TArray<FName> ConvertedOutputNames;
-        for (auto& CurrentPin : OutputNames)
-        {
-            ConvertedOutputNames.Add(FName(CurrentPin.PinName));
-        }
-        SwitchNode->PinNames = ConvertedOutputNames;
-        SwitchNode->AllocateDefaultPins();
-
-        Schema->TryCreateConnection(AssignNode->GetThenPin(), SwitchNode->GetExecPin());
-
-        Schema->TryCreateConnection(CurrentCeNode->FindPin(TEXT("PinName")), SwitchNode->GetSelectionPin());
-
-        for (int32 i = 0; i < OutputNames.Num(); ++i)
-        {
-            const auto& OutputName = FName(OutputNames[i].PinName);
-            if (auto* SwitchCasePin = SwitchNode->FindPin(OutputName.ToString()))
-            {
-                SwitchCasePin->PinToolTip = OutputNames[i].Tooltip;
-                auto* NodeOutputPin = CurrentNode->FindPin(OutputName);
-                if (SwitchCasePin && NodeOutputPin)
-                {
-                    CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *SwitchCasePin);
-                }
-            }
-        }
-    }
-
-    return IsErrorFree;
 }
 
 void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const bool FullRefresh)
@@ -2747,4 +1987,776 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
         });
 }
 
+bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
+    const UClass* ClassToSpawn,
+    const UEdGraphSchema_K2* Schema,
+    FKismetCompilerContext& CompilerContext,
+    UEdGraph* SourceGraph,
+    UEdGraphPin*& LastThenPin,
+    UEdGraphPin* SpawnedActorReturnPin)
+{
+    auto IsErrorFree = true;
+    for (const auto& OldPinParamName : SpawnParam)
+    {
+        auto* SpawnVarPin = FindPin(OldPinParamName);
+
+        if (NOT SpawnVarPin)
+        { continue; }
+
+        const auto& HasDefaultValue = NOT SpawnVarPin->DefaultValue.IsEmpty() || NOT SpawnVarPin->DefaultTextValue.IsEmpty() || SpawnVarPin->DefaultObject;
+        if (SpawnVarPin->LinkedTo.Num() > 0 || HasDefaultValue)
+        {
+            if (SpawnVarPin->LinkedTo.Num() == 0)
+            {
+                const auto& Property = FindFProperty<FProperty>(ClassToSpawn, SpawnVarPin->PinName);
+                if (NOT Property)
+                { continue; }
+
+                if (ClassToSpawn->ClassDefaultObject != nullptr)
+                {
+                    FString DefaultValueAsString;
+                    FBlueprintEditorUtils::PropertyValueToString(
+                        Property,
+#if ENGINE_MINOR_VERSION < 3
+                        reinterpret_cast<uint8*>(ClassToSpawn->ClassDefaultObject),
+#else
+                        reinterpret_cast<uint8*>(ClassToSpawn->ClassDefaultObject.Get()),
+#endif
+                        DefaultValueAsString,
+                        this);
+
+                    if (DefaultValueAsString == SpawnVarPin->DefaultValue)
+                    { continue; }
+                }
+            }
+
+            if (const auto& SetByNameFunction = Schema->FindSetVariableByNameFunction(SpawnVarPin->PinType))
+            {
+                UK2Node_CallFunction* SetVarNode;
+                if (SpawnVarPin->PinType.IsArray())
+                {
+                    SetVarNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallArrayFunction>(this, SourceGraph);
+                }
+                else
+                {
+                    SetVarNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+                }
+                SetVarNode->SetFromFunction(SetByNameFunction);
+                SetVarNode->AllocateDefaultPins();
+
+                IsErrorFree &= Schema->TryCreateConnection(LastThenPin, SetVarNode->GetExecPin());
+                if (NOT IsErrorFree)
+                {
+                    CompilerContext.MessageLog.Error(
+                        *LOCTEXT("InternalConnectionError", "ExtendConstructObject: Internal connection error. @@").ToString(),
+                        this);
+                }
+                LastThenPin = SetVarNode->GetThenPin();
+
+                static const auto& ObjectParamName = FName(TEXT("Object"));
+                static const auto& ValueParamName = FName(TEXT("Value"));
+                static const auto& PropertyNameParamName = FName(TEXT("PropertyName"));
+
+                auto* ObjectPin = SetVarNode->FindPinChecked(ObjectParamName);
+                SpawnedActorReturnPin->MakeLinkTo(ObjectPin);
+
+                auto* PropertyNamePin = SetVarNode->FindPinChecked(PropertyNameParamName);
+                PropertyNamePin->DefaultValue = SpawnVarPin->PinName.ToString();
+
+                auto* ValuePin = SetVarNode->FindPinChecked(ValueParamName);
+                if (SpawnVarPin->LinkedTo.Num() == 0 &&
+                    SpawnVarPin->DefaultValue != FString() &&
+                    SpawnVarPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Byte &&
+                    SpawnVarPin->PinType.PinSubCategoryObject.IsValid() &&
+                    SpawnVarPin->PinType.PinSubCategoryObject->IsA<UEnum>())
+                {
+                    auto* EnumLiteralNode = CompilerContext.SpawnIntermediateNode<UK2Node_EnumLiteral>(this, SourceGraph);
+                    EnumLiteralNode->Enum = CastChecked<UEnum>(SpawnVarPin->PinType.PinSubCategoryObject.Get());
+                    EnumLiteralNode->AllocateDefaultPins();
+                    EnumLiteralNode->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue)->MakeLinkTo(ValuePin);
+
+                    auto* InPin = EnumLiteralNode->FindPinChecked(UK2Node_EnumLiteral::GetEnumInputPinName());
+                    InPin->DefaultValue = SpawnVarPin->DefaultValue;
+                }
+                else
+                {
+                    if (NOT SpawnVarPin->PinType.IsArray() &&
+                        SpawnVarPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Struct &&
+                        SpawnVarPin->LinkedTo.Num() == 0)
+                    {
+                        ValuePin->PinType.PinCategory = SpawnVarPin->PinType.PinCategory;
+                        ValuePin->PinType.PinSubCategory = SpawnVarPin->PinType.PinSubCategory;
+                        ValuePin->PinType.PinSubCategoryObject = SpawnVarPin->PinType.PinSubCategoryObject;
+                        CompilerContext.MovePinLinksToIntermediate(*SpawnVarPin, *ValuePin);
+                    }
+                    else
+                    {
+                        CompilerContext.MovePinLinksToIntermediate(*SpawnVarPin, *ValuePin);
+                        SetVarNode->PinConnectionListChanged(ValuePin);
+                    }
+                }
+            }
+        }
+    }
+    return IsErrorFree;
+}
+
+bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::ValidDataPin(const UEdGraphPin* Pin, EEdGraphPinDirection Direction)
+{
+    const auto& ValidDataPin =
+        Pin &&
+        NOT Pin->bOrphanedPin &&
+        (Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec);
+
+    const auto& ProperDirection = Pin && (Pin->Direction == Direction);
+
+    return ValidDataPin && ProperDirection;
+}
+
+bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::CreateDelegateForNewFunction(
+    UEdGraphPin* DelegateInputPin,
+    FName FunctionName,
+    UK2Node* CurrentNode,
+    UEdGraph* SourceGraph,
+    FKismetCompilerContext& CompilerContext)
+{
+    const auto& Schema = CompilerContext.GetSchema();
+    check(DelegateInputPin && Schema && CurrentNode && SourceGraph && (FunctionName != NAME_None));
+    auto Result = true;
+
+    auto* SelfNode = CompilerContext.SpawnIntermediateNode<UK2Node_Self>(CurrentNode, SourceGraph);
+    SelfNode->AllocateDefaultPins();
+
+    auto* CreateDelegateNode = CompilerContext.SpawnIntermediateNode<UK2Node_CreateDelegate>(CurrentNode, SourceGraph);
+    CreateDelegateNode->AllocateDefaultPins();
+    Result &= Schema->TryCreateConnection(DelegateInputPin, CreateDelegateNode->GetDelegateOutPin());
+    Result &= Schema->TryCreateConnection(SelfNode->FindPinChecked(UEdGraphSchema_K2::PN_Self), CreateDelegateNode->GetObjectInPin());
+    CreateDelegateNode->SetFunction(FunctionName);
+
+    return Result;
+}
+
+bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::CopyEventSignature(UK2Node_CustomEvent* CENode, UFunction* Function, const UEdGraphSchema_K2* Schema)
+{
+    check(CENode && Function && Schema);
+
+    auto Result = true;
+    for (TFieldIterator<FProperty> PropIt(Function); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+    {
+        const auto& Param = *PropIt;
+        if (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm))
+        {
+            FEdGraphPinType PinType;
+            Result &= Schema->ConvertPropertyToPinType(Param, PinType);
+            Result &= (nullptr != CENode->CreateUserDefinedPin(Param->GetFName(), PinType, EGPD_Output));
+        }
+    }
+    return Result;
+}
+
+bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleDelegateImplementation(
+    FMulticastDelegateProperty* CurrentProperty,
+    const TArray<FNodeHelper::FOutputPinAndLocalVariable>& VariableOutputs,
+    UEdGraphPin* ProxyObjectPin,
+    UEdGraphPin*& InOutLastThenPin,
+    UK2Node* CurrentNode,
+    UEdGraph* SourceGraph,
+    FKismetCompilerContext& CompilerContext)
+{
+    auto IsErrorFree = true;
+    const auto& Schema = CompilerContext.GetSchema();
+    check(CurrentProperty && ProxyObjectPin && InOutLastThenPin && CurrentNode && SourceGraph && Schema);
+
+    auto* PinForCurrentDelegateProperty = CurrentNode->FindPin(CurrentProperty->GetFName());
+    if (NOT PinForCurrentDelegateProperty || (UEdGraphSchema_K2::PC_Exec != PinForCurrentDelegateProperty->PinType.PinCategory))
+    {
+        const auto& ErrorMessage = FText::Format(
+            LOCTEXT("WrongDelegateProperty", "BaseAsyncTask: Cannot find execution pin for delegate "),
+            FText::FromString(CurrentProperty->GetName()));
+        CompilerContext.MessageLog.Error(*ErrorMessage.ToString(), CurrentNode);
+        return false;
+    }
+
+    auto* CurrentCeNode =
+        CompilerContext.SpawnIntermediateNode<UK2Node_CustomEvent>(CurrentNode, SourceGraph);
+    {
+        auto* AddDelegateNode = CompilerContext.SpawnIntermediateNode<UK2Node_AddDelegate>(CurrentNode, SourceGraph);
+        AddDelegateNode->SetFromProperty(CurrentProperty, false, CurrentProperty->GetOwnerClass());
+        AddDelegateNode->AllocateDefaultPins();
+        IsErrorFree &= Schema->TryCreateConnection(AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Self), ProxyObjectPin);
+        IsErrorFree &= Schema->TryCreateConnection(InOutLastThenPin, AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+        InOutLastThenPin = AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+
+        CurrentCeNode->CustomFunctionName = *FString::Printf(TEXT("%s_%s"), *CurrentProperty->GetName(), *CompilerContext.GetGuid(CurrentNode));
+        CurrentCeNode->AllocateDefaultPins();
+
+        IsErrorFree &= FNodeHelper::CreateDelegateForNewFunction(
+            AddDelegateNode->GetDelegatePin(),
+            CurrentCeNode->GetFunctionName(),
+            CurrentNode,
+            SourceGraph,
+            CompilerContext);
+        IsErrorFree &= FNodeHelper::CopyEventSignature(CurrentCeNode, AddDelegateNode->GetDelegateSignature(), Schema);
+    }
+
+    auto* LastActivatedNodeThen = CurrentCeNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+
+    const auto& DelegateNameStr = CurrentProperty->GetName();
+    for (const auto& OutputPair : VariableOutputs)
+    {
+        auto PinNameStr = OutputPair.OutputPin->PinName.ToString();
+
+        if (NOT PinNameStr.StartsWith(DelegateNameStr))
+        { continue; }
+
+        PinNameStr.RemoveAt(0, DelegateNameStr.Len() + 1);
+
+        auto* PinWithData = CurrentCeNode->FindPinChecked(FName(*PinNameStr));
+
+        if (NOT PinWithData)
+        { return false; }
+
+        auto* AssignNode = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>(CurrentNode, SourceGraph);
+        AssignNode->AllocateDefaultPins();
+        IsErrorFree &= Schema->TryCreateConnection(LastActivatedNodeThen, AssignNode->GetExecPin());
+        IsErrorFree &= Schema->TryCreateConnection(OutputPair.TempVar->GetVariablePin(), AssignNode->GetVariablePin());
+        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetVariablePin());
+        IsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), PinWithData);
+        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetValuePin());
+
+        LastActivatedNodeThen = AssignNode->GetThenPin();
+    }
+
+    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*PinForCurrentDelegateProperty, *LastActivatedNodeThen).CanSafeConnect();
+    return IsErrorFree;
+}
+
+bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleCustomPinsImplementation(
+    FMulticastDelegateProperty* CurrentProperty, const TArray<FOutputPinAndLocalVariable>& VariableOutputs,
+    UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, TArray<FCustomOutputPin> OutputNames,
+    FKismetCompilerContext& CompilerContext)
+{
+    auto IsErrorFree = true;
+    const auto& Schema = CompilerContext.GetSchema();
+    check(CurrentProperty && ProxyObjectPin && InOutLastThenPin && CurrentNode && SourceGraph && Schema);
+
+    auto* CurrentCeNode =
+    CompilerContext.SpawnIntermediateNode<UK2Node_CustomEvent>(CurrentNode, SourceGraph);
+    {
+        auto* AddDelegateNode = CompilerContext.SpawnIntermediateNode<UK2Node_AddDelegate>(CurrentNode, SourceGraph);
+        AddDelegateNode->SetFromProperty(CurrentProperty, false, CurrentProperty->GetOwnerClass());
+        AddDelegateNode->AllocateDefaultPins();
+        IsErrorFree &= Schema->TryCreateConnection(AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Self), ProxyObjectPin);
+        IsErrorFree &= Schema->TryCreateConnection(InOutLastThenPin, AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+        InOutLastThenPin = AddDelegateNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+
+        CurrentCeNode->CustomFunctionName = *FString::Printf(TEXT("%s_%s"), *CurrentProperty->GetName(), *CompilerContext.GetGuid(CurrentNode));
+        CurrentCeNode->AllocateDefaultPins();
+
+        IsErrorFree &= FNodeHelper::CreateDelegateForNewFunction(
+            AddDelegateNode->GetDelegatePin(),
+            CurrentCeNode->GetFunctionName(),
+            CurrentNode,
+            SourceGraph,
+            CompilerContext);
+        IsErrorFree &= FNodeHelper::CopyEventSignature(CurrentCeNode, AddDelegateNode->GetDelegateSignature(), Schema);
+
+        auto* DataPin = CurrentCeNode->FindPin(TEXT("Data"));
+
+        auto* TempVarOutput =
+            CompilerContext.SpawnInternalVariable(
+                CurrentNode,
+                DataPin->PinType.PinCategory,
+                DataPin->PinType.PinSubCategory,
+                DataPin->PinType.PinSubCategoryObject.Get(),
+                DataPin->PinType.ContainerType,
+                DataPin->PinType.PinValueType
+                );
+
+        auto* AssignNode = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>(CurrentNode, SourceGraph);
+        AssignNode->AllocateDefaultPins();
+        IsErrorFree &= Schema->TryCreateConnection(CurrentCeNode->FindPinChecked(UEdGraphSchema_K2::PN_Then), AssignNode->GetExecPin());
+        IsErrorFree &= Schema->TryCreateConnection(TempVarOutput->GetVariablePin(), AssignNode->GetVariablePin());
+        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetVariablePin());
+        IsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), DataPin);
+        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetValuePin());
+
+        IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*CurrentNode->FindPin(TEXT("Custom Pin Data")), *TempVarOutput->GetVariablePin()).CanSafeConnect();
+
+        auto* SwitchNode = CompilerContext.SpawnIntermediateNode<UK2Node_SwitchName>(CurrentNode, SourceGraph);
+        TArray<FName> ConvertedOutputNames;
+        for (auto& CurrentPin : OutputNames)
+        {
+            ConvertedOutputNames.Add(FName(CurrentPin.PinName));
+        }
+        SwitchNode->PinNames = ConvertedOutputNames;
+        SwitchNode->AllocateDefaultPins();
+
+        Schema->TryCreateConnection(AssignNode->GetThenPin(), SwitchNode->GetExecPin());
+
+        Schema->TryCreateConnection(CurrentCeNode->FindPin(TEXT("PinName")), SwitchNode->GetSelectionPin());
+
+        for (int32 i = 0; i < OutputNames.Num(); ++i)
+        {
+            const auto& OutputName = FName(OutputNames[i].PinName);
+            if (auto* SwitchCasePin = SwitchNode->FindPin(OutputName.ToString()))
+            {
+                SwitchCasePin->PinToolTip = OutputNames[i].Tooltip;
+                auto* NodeOutputPin = CurrentNode->FindPin(OutputName);
+                if (SwitchCasePin && NodeOutputPin)
+                {
+                    CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *SwitchCasePin);
+                }
+            }
+        }
+    }
+
+    return IsErrorFree;
+}
+
+void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
+{
+    Super::ExpandNode(CompilerContext, SourceGraph);
+    if (ProxyClass == nullptr)
+    {
+        CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: ProxyClass nullptr error. @@"), this);
+        return;
+    }
+
+    const auto& Schema = CompilerContext.GetSchema();
+    check(SourceGraph && Schema);
+    auto IsErrorFree = true;
+
+    auto* const CreateProxyObject_Node = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+    CreateProxyObject_Node->FunctionReference.SetExternalMember(ProxyFactoryFunctionName, ProxyFactoryClass);
+    CreateProxyObject_Node->AllocateDefaultPins();
+    if (CreateProxyObject_Node->GetTargetFunction() == nullptr)
+    {
+        const auto& ClassName = ProxyFactoryClass ? FText::FromString(ProxyFactoryClass->GetName()) : LOCTEXT("MissingClassString", "Unknown Class");
+        const auto& FormattedMessage =
+            FText::Format(
+                LOCTEXT("AsyncTaskErrorFmt", "BaseAsyncTask: Missing function {0} from class {1} for async task @@"),
+                FText::FromString(ProxyFactoryFunctionName.GetPlainNameString()),
+                ClassName)
+                .ToString();
+
+        CompilerContext.MessageLog.Error(*FormattedMessage, this);
+        return;
+    }
+
+    IsErrorFree &= CompilerContext
+                        .MovePinLinksToIntermediate(
+                            *FindPinChecked(UEdGraphSchema_K2::PN_Execute),
+                            *CreateProxyObject_Node->FindPinChecked(UEdGraphSchema_K2::PN_Execute))
+                        .CanSafeConnect();
+    if (SelfContext)
+    {
+        auto* const Self_Node = CompilerContext.SpawnIntermediateNode<UK2Node_Self>(this, SourceGraph);
+        Self_Node->AllocateDefaultPins();
+        auto* SelfPin = Self_Node->FindPinChecked(UEdGraphSchema_K2::PN_Self);
+        IsErrorFree &= Schema->TryCreateConnection(SelfPin, CreateProxyObject_Node->FindPinChecked(WorldContextPinName));
+        if (NOT IsErrorFree)
+        {
+            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Pin Self Context Error. @@"), this);
+        }
+    }
+
+    for (auto* CurrentPin : Pins)
+    {
+        if (CurrentPin->PinName != UEdGraphSchema_K2::PSC_Self && FNodeHelper::ValidDataPin(CurrentPin, EGPD_Input))
+        {
+            if (auto* DestPin = CreateProxyObject_Node->FindPin(CurrentPin->PinName))
+            {
+                IsErrorFree &= CompilerContext.CopyPinLinksToIntermediate(*CurrentPin, *DestPin).CanSafeConnect();
+                if (NOT IsErrorFree)
+                {
+                    CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to factory the proxy object error. @@"), this);
+                }
+            }
+        }
+    }
+
+    CreateProxyObject_Node->FindPin(NodeGuidStrName)->DefaultValue = NodeGuid.ToString();
+
+    const auto& PinProxyObject = CreateProxyObject_Node->GetReturnValuePin();
+    auto* Cast_Output = PinProxyObject;
+    if (PinProxyObject->PinType.PinSubCategoryObject.Get() != ProxyClass)
+    {
+        auto* CastNode = CompilerContext.SpawnIntermediateNode<UK2Node_DynamicCast>(this, SourceGraph);
+        CastNode->SetPurity(true);
+        CastNode->TargetType = ProxyClass;
+        CastNode->AllocateDefaultPins();
+        IsErrorFree &= Schema->TryCreateConnection(PinProxyObject, CastNode->GetCastSourcePin());
+        Cast_Output = CastNode->GetCastResultPin();
+        check(Cast_Output);
+    }
+    const auto& OutputObjectPin = FindPinChecked(OutPutObjectPinName, EGPD_Output);
+    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*OutputObjectPin, *Cast_Output).CanSafeConnect();
+    if (NOT IsErrorFree)
+    {
+        CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: OutObjectPin Error. @@"), this);
+    }
+
+    TArray<FNodeHelper::FOutputPinAndLocalVariable> VariableOutputs;
+    for (auto* CurrentPin : Pins)
+    {
+        if (OutputObjectPin != CurrentPin && FNodeHelper::ValidDataPin(CurrentPin, EGPD_Output))
+        {
+            const auto& PinType = CurrentPin->PinType;
+
+            auto* TempVarOutput =
+                CompilerContext.SpawnInternalVariable(
+                    this,
+                    PinType.PinCategory,
+                    PinType.PinSubCategory,
+                    PinType.PinSubCategoryObject.Get(),
+                    PinType.ContainerType,
+                    PinType.PinValueType);
+
+            IsErrorFree &= TempVarOutput->GetVariablePin() != nullptr;
+            IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*CurrentPin, *TempVarOutput->GetVariablePin()).CanSafeConnect();
+            VariableOutputs.Add(FNodeHelper::FOutputPinAndLocalVariable(CurrentPin, TempVarOutput));
+        }
+    }
+
+    const auto& IsValidFuncName = GET_FUNCTION_NAME_CHECKED(UKismetSystemLibrary, IsValid);
+
+    auto* OriginalThenPin = FindPinChecked(UEdGraphSchema_K2::PN_Then);
+    auto* LastThenPin = CreateProxyObject_Node->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+    auto* ValidateProxyNode = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>(this, SourceGraph);
+    ValidateProxyNode->AllocateDefaultPins();
+    {
+        auto* IsValidFuncNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+
+        IsValidFuncNode->FunctionReference.SetExternalMember(IsValidFuncName, UKismetSystemLibrary::StaticClass());
+        IsValidFuncNode->AllocateDefaultPins();
+        auto* IsValidInputPin = IsValidFuncNode->FindPinChecked(TEXT("Object"));
+
+        IsErrorFree &= Schema->TryCreateConnection(PinProxyObject, IsValidInputPin);
+        IsErrorFree &= Schema->TryCreateConnection(IsValidFuncNode->GetReturnValuePin(), ValidateProxyNode->GetConditionPin());
+        IsErrorFree &= Schema->TryCreateConnection(LastThenPin, ValidateProxyNode->GetExecPin());
+        IsErrorFree &= CompilerContext.CopyPinLinksToIntermediate(*OriginalThenPin, *ValidateProxyNode->GetElsePin()).CanSafeConnect();
+
+        LastThenPin = ValidateProxyNode->GetThenPin();
+    }
+
+    for (const auto& DelegateName : InDelegate)
+    {
+        if (DelegateName == NAME_None)
+        { continue; }
+
+        if (auto* Property = ProxyClass->FindPropertyByName(DelegateName))
+        {
+            auto* CurrentProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
+            if (CurrentProperty && CurrentProperty->GetFName() == DelegateName)
+            {
+                auto* InDelegatePin = FindPinChecked(DelegateName, EGPD_Input);
+                if (InDelegatePin->LinkedTo.Num() != 0)
+                {
+                    auto* AssignDelegate = CompilerContext.SpawnIntermediateNode<UK2Node_AssignDelegate>(this, SourceGraph);
+                    AssignDelegate->SetFromProperty(CurrentProperty, false, CurrentProperty->GetOwnerClass());
+                    AssignDelegate->AllocateDefaultPins();
+
+                    IsErrorFree &= Schema->TryCreateConnection(AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Self), Cast_Output);
+                    IsErrorFree &= Schema->TryCreateConnection(LastThenPin, AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+                    auto* DelegatePin = AssignDelegate->GetDelegatePin();
+
+                    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*InDelegatePin, *DelegatePin).CanSafeConnect();
+                    if (NOT IsErrorFree)
+                    {
+                        CompilerContext.MessageLog.Error(*LOCTEXT("Invalid_DelegateProperties", "Error @@").ToString(), this);
+                    }
+                    LastThenPin = AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+                }
+            }
+        }
+        else
+        {
+            IsErrorFree = false;
+            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
+            continue;
+        }
+    }
+
+    for (const auto& DelegateName : OutDelegate)
+    {
+        if (DelegateName == NAME_None)
+        { continue; }
+
+        if (auto* Property = ProxyClass->FindPropertyByName(DelegateName))
+        {
+            auto* CurrentProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
+            if (CurrentProperty && CurrentProperty->GetFName() == DelegateName)
+            {
+                auto* DelegateProperty = FindPin(CurrentProperty->GetFName());
+                if (DelegateProperty)
+                {
+                    IsErrorFree &= FNodeHelper::HandleDelegateImplementation(
+                        CurrentProperty,
+                        VariableOutputs,
+                        Cast_Output,
+                        LastThenPin,
+                        this,
+                        SourceGraph,
+                        CompilerContext);
+                }
+                else
+                {
+                    IsErrorFree = false;
+                }
+                if (NOT IsErrorFree)
+                {
+                    CompilerContext.MessageLog.Error(*LOCTEXT("Invalid_DelegateProperties", "@@").ToString(), this);
+                }
+            }
+        }
+        else
+        {
+            IsErrorFree = false;
+            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
+            continue;
+        }
+    }
+
+    if (NOT IsErrorFree)
+    {
+        CompilerContext.MessageLog.Error(
+            TEXT("ExtendConstructObject: For each delegate define event, connect it to delegate and implement a chain of assignments error. @@"),
+            this);
+    }
+    if (CreateProxyObject_Node->FindPinChecked(UEdGraphSchema_K2::PN_Then) == LastThenPin)
+    {
+        CompilerContext.MessageLog.Error(*LOCTEXT("MissingDelegateProperties", "ExtendConstructObject: Proxy has no delegates defined. @@").ToString(), this);
+        return;
+    }
+
+    IsErrorFree &= ConnectSpawnProperties(ProxyClass, Schema, CompilerContext, SourceGraph, LastThenPin, PinProxyObject);
+    if (NOT IsErrorFree)
+    {
+        CompilerContext.MessageLog.Error(TEXT("ConnectSpawnProperties error. @@"), this);
+    }
+
+    if (NOT CustomPins.IsEmpty())
+    {
+        auto* DelegateProperty = ProxyClass->FindPropertyByName(GET_MEMBER_NAME_CHECKED(UBtf_TaskForge, OnCustomPinTriggered));
+        auto* MulticastDelegateProperty = CastField<FMulticastDelegateProperty>(DelegateProperty);
+
+        if (NOT MulticastDelegateProperty)
+        {
+            CompilerContext.MessageLog.Error(*FString::Printf(TEXT("Failed to find delegate property for %s."), *GetNodeTitle(ENodeTitleType::FullTitle).ToString()));
+            BreakAllNodeLinks();
+            return;
+        }
+
+        TArray<FNodeHelper::FOutputPinAndLocalVariable> VariableOutputs2;
+        for (auto* Pin : Pins)
+        {
+            if (Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+            {
+                FNodeHelper::FOutputPinAndLocalVariable OutputMapping;
+                OutputMapping.OutputPin = Pin;
+                OutputMapping.TempVar = nullptr;
+                VariableOutputs2.Add(OutputMapping);
+            }
+        }
+
+        const auto& Success = FNodeHelper::HandleCustomPinsImplementation(
+            MulticastDelegateProperty,
+            VariableOutputs2,
+            Cast_Output,
+            LastThenPin,
+            this,
+            SourceGraph,
+            CustomPins,
+            CompilerContext
+        );
+
+        if (NOT Success)
+        {
+            CompilerContext.MessageLog.Error(*FString::Printf(TEXT("Failed to handle delegate for %s."), *GetNodeTitle(ENodeTitleType::FullTitle).ToString()));
+        }
+    }
+
+    for (const auto& FunctionName : AutoCallFunction)
+    {
+        if (FunctionName == NAME_None)
+        { continue; }
+        {
+            const auto& FindFunc = ProxyClass->FindFunctionByName(FunctionName);
+            if (FindFunc == nullptr)
+            {
+                IsErrorFree = false;
+                CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
+                continue;
+            }
+        }
+
+        auto* const CallFunction_Node = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+        CallFunction_Node->FunctionReference.SetExternalMember(FunctionName, ProxyClass);
+        CallFunction_Node->AllocateDefaultPins();
+
+        auto* ActivateCallSelfPin = Schema->FindSelfPin(*CallFunction_Node, EGPD_Input);
+        check(ActivateCallSelfPin);
+        IsErrorFree &= Schema->TryCreateConnection(Cast_Output, ActivateCallSelfPin);
+        if (NOT IsErrorFree)
+        {
+            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this);
+        }
+
+        const auto& IsPureFunc = CallFunction_Node->IsNodePure();
+        if (NOT IsPureFunc)
+        {
+            auto* ActivateExecPin = CallFunction_Node->FindPinChecked(UEdGraphSchema_K2::PN_Execute);
+            auto* ActivateThenPin = CallFunction_Node->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+            IsErrorFree &= Schema->TryCreateConnection(LastThenPin, ActivateExecPin);
+            if (NOT IsErrorFree)
+            {
+                CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this);
+            }
+            LastThenPin = ActivateThenPin;
+        }
+
+        auto* EventSignature = CallFunction_Node->GetTargetFunction();
+        check(EventSignature);
+        for (TFieldIterator<FProperty> PropIt(EventSignature); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+        {
+            const auto& Param = *PropIt;
+
+            const auto& IsFunctionInput =
+                NOT Param->HasAnyPropertyFlags(CPF_ReturnParm) &&
+                (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
+
+            const auto& Direction = IsFunctionInput ? EGPD_Input : EGPD_Output;
+            auto* InNodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), Direction);
+
+            if (InNodePin)
+            {
+                auto* InFunctionPin = CallFunction_Node->FindPinChecked(Param->GetFName(), Direction);
+                if (IsFunctionInput)
+                {
+                    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*InNodePin, *InFunctionPin).CanSafeConnect();
+                }
+                else
+                {
+                    auto* OutputPair = VariableOutputs.FindByKey(InNodePin);
+                    check(OutputPair);
+
+                    auto* AssignNode = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>(this, SourceGraph);
+                    AssignNode->AllocateDefaultPins();
+                    IsErrorFree &= Schema->TryCreateConnection(LastThenPin, AssignNode->GetExecPin());
+
+                    IsErrorFree &= Schema->TryCreateConnection(OutputPair->TempVar->GetVariablePin(), AssignNode->GetVariablePin());
+                    AssignNode->NotifyPinConnectionListChanged(AssignNode->GetVariablePin());
+                    IsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), InFunctionPin);
+                    AssignNode->NotifyPinConnectionListChanged(AssignNode->GetValuePin());
+
+                    LastThenPin = AssignNode->GetThenPin();
+                }
+            }
+            else
+            {
+                IsErrorFree = false;
+                CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
+            }
+        }
+
+        if (NOT IsErrorFree)
+        {
+            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this);
+        }
+    }
+
+    for (const auto& FunctionName : ExecFunction)
+    {
+        if (FunctionName == NAME_None)
+        { continue; }
+        {
+            const auto& FindFunc = ProxyClass->FindFunctionByName(FunctionName);
+            if (FindFunc == nullptr)
+            {
+                IsErrorFree = false;
+                CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
+                continue;
+            }
+        }
+
+        auto* ExecPin = FindPinChecked(FunctionName, EGPD_Input);
+        auto* IsValidFuncNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+        auto* IfThenElse = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>(this, SourceGraph);
+
+        IsValidFuncNode->FunctionReference.SetExternalMember(IsValidFuncName, UKismetSystemLibrary::StaticClass());
+        IsValidFuncNode->AllocateDefaultPins();
+        IfThenElse->AllocateDefaultPins();
+
+        auto* IsValidInputPin = IsValidFuncNode->FindPinChecked(TEXT("Object"));
+        IsErrorFree &= Schema->TryCreateConnection(Cast_Output, IsValidInputPin);
+        IsErrorFree &= Schema->TryCreateConnection(IsValidFuncNode->GetReturnValuePin(), IfThenElse->GetConditionPin());
+
+        IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*ExecPin, *IfThenElse->GetExecPin()).CanSafeConnect();
+
+        auto* const CallFunction_Node = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+        CallFunction_Node->FunctionReference.SetExternalMember(FunctionName, ProxyClass);
+        CallFunction_Node->AllocateDefaultPins();
+
+        const auto& IsPureFunc = CallFunction_Node->IsNodePure();
+        if (IsPureFunc)
+        {
+            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need To Refresh Node. @@"), this);
+            continue;
+        }
+
+        auto* CallSelfPin = Schema->FindSelfPin(*CallFunction_Node, EGPD_Input);
+        check(CallSelfPin);
+
+        IsErrorFree &= Schema->TryCreateConnection(Cast_Output, CallSelfPin);
+
+        auto* FunctionExecPin = CallFunction_Node->FindPinChecked(UEdGraphSchema_K2::PN_Execute);
+
+        check(FunctionExecPin && ExecPin);
+
+        IsErrorFree &= Schema->TryCreateConnection(IfThenElse->GetThenPin(), FunctionExecPin);
+
+        auto* EventSignature = CallFunction_Node->GetTargetFunction();
+        for (TFieldIterator<FProperty> PropIt(EventSignature); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+        {
+            const auto& Param = *PropIt;
+            const auto& IsFunctionInput =
+                NOT Param->HasAnyPropertyFlags(CPF_ReturnParm) &&
+                (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
+            if (IsFunctionInput)
+            {
+                auto* InNodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), EGPD_Input);
+                if (InNodePin)
+                {
+                    auto* InFunctionPin = CallFunction_Node->FindPinChecked(Param->GetFName(), EGPD_Input);
+
+                    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*InNodePin, *InFunctionPin).CanSafeConnect();
+                }
+                else
+                {
+                    IsErrorFree = false;
+                    CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need Refresh Node. @@"), this);
+                }
+            }
+        }
+    }
+
+    if (NOT IsErrorFree)
+    {
+        CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to Expand Functions the proxy object error. @@"), this);
+    }
+
+    IsErrorFree &= CompilerContext.CopyPinLinksToIntermediate(*OriginalThenPin, *LastThenPin).CanSafeConnect();
+    if (NOT IsErrorFree)
+    {
+        CompilerContext.MessageLog.Error(*LOCTEXT("InternalConnectionError", "ExtendConstructObject: Internal connection error. @@").ToString(), this);
+    }
+
+    SpawnParam.Shrink();
+
+    BreakAllNodeLinks();
+}
+
 #undef LOCTEXT_NAMESPACE
+
+// --------------------------------------------------------------------------------------------------------------------

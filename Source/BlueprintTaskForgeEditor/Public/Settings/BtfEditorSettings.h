@@ -2,8 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-
 #include "BtfEditorSettings.generated.h"
+
+// --------------------------------------------------------------------------------------------------------------------
 
 /**
  *
@@ -14,7 +15,10 @@ class BLUEPRINTTASKFORGEEDITOR_API UBtf_EditorSettings : public UDeveloperSettin
 	GENERATED_BODY()
 
 public:
+	virtual FName GetSectionName() const override;
+	virtual FName GetCategoryName() const override;
 
+public:
 	/**The task palette will automatically retrieve all task nodes,
 	 * but your project might contain functions that are related
 	 * to tasks that you want to add to the task palette.
@@ -22,14 +26,6 @@ public:
 	 * want to that palette. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly)
 	TArray<FName> ExtraTaskPaletteFunctions;
-
-	virtual FName GetSectionName() const override
-	{
-		return "Blueprint Task Forge Editor Settings";
-	}
-
-	virtual FName GetCategoryName() const override
-	{
-		return "Plugins";
-	}
 };
+
+// --------------------------------------------------------------------------------------------------------------------

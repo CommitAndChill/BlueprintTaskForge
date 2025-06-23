@@ -7,12 +7,16 @@
 #include "Serialization/CustomVersion.h"
 #include "BftMacros.h"
 
+// --------------------------------------------------------------------------------------------------------------------
+
 class FBlueprintTaskForgeModule : public IModuleInterface
 {
 public:
     virtual void StartupModule() override;
     virtual void ShutdownModule() override;
 };
+
+// --------------------------------------------------------------------------------------------------------------------
 
 struct FBlueprintTaskForgeCustomVersion
 {
@@ -27,3 +31,5 @@ struct FBlueprintTaskForgeCustomVersion
     
     BLUEPRINTTASKFORGE_API const static FGuid GUID;
 };
+
+// --------------------------------------------------------------------------------------------------------------------

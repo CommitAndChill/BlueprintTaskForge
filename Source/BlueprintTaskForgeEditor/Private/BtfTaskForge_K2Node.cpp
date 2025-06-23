@@ -1,12 +1,12 @@
 #include "BtfTaskForge_K2Node.h"
-
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintFunctionNodeSpawner.h"
 #include "BlueprintNodeSpawner.h"
 #include "Kismet2/BlueprintEditorUtils.h"
-
 #include "BlueprintTaskForge/Public/BtfTaskForge.h"
 #include "BlueprintTaskForge/Public/Subsystem/BtfSubsystem.h"
+
+// --------------------------------------------------------------------------------------------------------------------
 
 #define LOCTEXT_NAMESPACE "K2Node"
 
@@ -15,6 +15,18 @@ UBtf_TaskForge_K2Node::UBtf_TaskForge_K2Node(const FObjectInitializer& ObjectIni
     ProxyFactoryFunctionName = GET_FUNCTION_NAME_CHECKED(UBtf_TaskForge, BlueprintTaskForge);
     ProxyFactoryClass = UBtf_TaskForge::StaticClass();
     OutPutObjectPinName = FName(TEXT("TaskObject"));
+}
+
+void UBtf_TaskForge_K2Node::PinDefaultValueChanged(UEdGraphPin* Pin)
+{
+    if (Decorator.IsValid())
+    {
+        FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float DeltaTime) -> bool
+        {
+            ReconstructNode();
+            return false;
+        }));
+    }
 }
 
 void UBtf_TaskForge_K2Node::HideClassPin() const
@@ -36,7 +48,8 @@ void UBtf_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBluepr
                                 Name.Contains(FNames_Helper::ReinstPrefix) || 
                                 Name.Contains(FNames_Helper::DeadclassPrefix));
 
-    if (HasInvalidFlags || HasInvalidName) { return; }
+    if (HasInvalidFlags || HasInvalidName)
+    { return; }
 
     auto* NodeClass = GetClass();
     auto Lambda = [NodeClass, TargetClass](const UFunction* FactoryFunc) -> UBlueprintNodeSpawner*
@@ -44,7 +57,8 @@ void UBtf_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBluepr
         auto CustomizeTimelineNodeLambda = [TargetClass](UEdGraphNode* NewNode, bool IsTemplateNode, const TWeakObjectPtr<UFunction> FunctionPtr)
         {
             auto* AsyncTaskNode = CastChecked<UBtf_TaskForge_K2Node>(NewNode);
-            if (NOT FunctionPtr.IsValid()) { return; }
+            if (NOT FunctionPtr.IsValid())
+            { return; }
 
             auto* Func = FunctionPtr.Get();
             AsyncTaskNode->ProxyFactoryFunctionName = Func->GetFName();
@@ -97,11 +111,14 @@ void UBtf_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBluepr
     for (TFieldIterator<UFunction> FuncIt(TargetClass); FuncIt; ++FuncIt)
     {
         const auto* Function = *FuncIt;
-        if (NOT Function->HasAnyFunctionFlags(FUNC_Static)) { continue; }
-        if (CastField<FObjectProperty>(Function->GetReturnProperty()) == nullptr) { continue; }
+        if (NOT Function->HasAnyFunctionFlags(FUNC_Static))
+        { continue; }
+        
+        if (CastField<FObjectProperty>(Function->GetReturnProperty()) == nullptr)
+        { continue; }
 
         if (auto* NewAction = Lambda(Function); 
-            NewAction != nullptr)
+            IsValid(NewAction))
         {
             ActionRegistrar.AddBlueprintAction(Function, NewAction);
         }
@@ -153,7 +170,8 @@ void UBtf_TaskForge_K2Node::ExpandNode(class FKismetCompilerContext& CompilerCon
 
 FText UBtf_TaskForge_K2Node::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-    if (NOT ProxyClass) { return FText(LOCTEXT("UBtf_TaskForge_K2Node", "Node_Blueprint_Task Function")); }
+    if (NOT ProxyClass)
+    { return FText(LOCTEXT("UBtf_TaskForge_K2Node", "Node_Blueprint_Task Function")); }
 
     if (const auto* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
         IsValid(TargetClassAsBlueprintTask))
@@ -200,7 +218,8 @@ FString UBtf_TaskForge_K2Node::Get_NodeDescription() const
 
     // TODO: Expose through developer settings
     constexpr auto ShowNodeDescriptionWhilePlaying = false;
-    if (NOT ShowNodeDescriptionWhilePlaying) { return {}; }
+    if (NOT ShowNodeDescriptionWhilePlaying)
+    { return {}; }
 
     if (const auto* Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
         IsValid(Subsystem))
@@ -218,11 +237,15 @@ FString UBtf_TaskForge_K2Node::Get_NodeDescription() const
 FString UBtf_TaskForge_K2Node::Get_StatusString() const
 {
     const auto* Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
-    if (NOT IsValid(Subsystem)) { return {}; }
+    if (NOT IsValid(Subsystem))
+    { return {}; }
 
     const auto* FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
-    if (NOT IsValid(FoundTaskInstance)) { return {}; }
-    if (NOT FoundTaskInstance->Get_IsActive()) { return {}; }
+    if (NOT IsValid(FoundTaskInstance))
+    { return {}; }
+    
+    if (NOT FoundTaskInstance->Get_IsActive())
+    { return {}; }
 
     return FoundTaskInstance->Get_StatusString_Implementation();
 }
@@ -233,10 +256,12 @@ FLinearColor UBtf_TaskForge_K2Node::Get_StatusBackgroundColor() const
     constexpr auto NodeStatusBackground = FLinearColor(0.12f, 0.12f, 0.12f, 1.0f);
 
     const auto* Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
-    if (NOT IsValid(Subsystem)) { return NodeStatusBackground; }
+    if (NOT IsValid(Subsystem))
+    { return NodeStatusBackground; }
 
     const auto* FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
-    if (NOT IsValid(FoundTaskInstance)) { return NodeStatusBackground; }
+    if (NOT IsValid(FoundTaskInstance))
+    { return NodeStatusBackground; }
 
     auto ObtainedColor = FLinearColor{};
     if (FoundTaskInstance->Get_StatusBackgroundColor_Implementation(ObtainedColor))
@@ -250,10 +275,12 @@ FLinearColor UBtf_TaskForge_K2Node::Get_StatusBackgroundColor() const
 FText UBtf_TaskForge_K2Node::Get_NodeConfigText() const
 {
     const auto* Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
-    if (NOT IsValid(Subsystem)) { return FText::GetEmpty(); }
+    if (NOT IsValid(Subsystem))
+    { return FText::GetEmpty(); }
 
     const auto* FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
-    if (NOT IsValid(FoundTaskInstance)) { return FText::GetEmpty(); }
+    if (NOT IsValid(FoundTaskInstance))
+    { return FText::GetEmpty(); }
 
     if (FoundTaskInstance->Get_IsActive())
     {
@@ -304,17 +331,20 @@ void UBtf_TaskForge_K2Node::ResetToDefaultExposeOptions_Impl()
 
 void UBtf_TaskForge_K2Node::CollectSpawnParam(UClass* InClass, const bool FullRefresh)
 {
-    if (NOT InClass) { return; }
+    if (NOT InClass)
+    { return; }
 
     const auto* CDO = InClass->GetDefaultObject<UBtf_TaskForge>();
-    if (NOT IsValid(CDO)) { return; }
+    if (NOT IsValid(CDO))
+    { return; }
 
     AllDelegates = CDO->Get_AllDelegates();
     AllFunctions = CDO->Get_AllFunctions();
     AllFunctionsExec = CDO->Get_AllFunctionsExec();
     AllParam = CDO->Get_AllParam();
     
-    if (NOT FullRefresh) { return; }
+    if (NOT FullRefresh)
+    { return; }
 
     SpawnParam = CDO->Get_SpawnParam();
     AutoCallFunction = CDO->Get_AutoCallFunction();
@@ -324,3 +354,5 @@ void UBtf_TaskForge_K2Node::CollectSpawnParam(UClass* InClass, const bool FullRe
 }
 
 #undef LOCTEXT_NAMESPACE
+
+// --------------------------------------------------------------------------------------------------------------------

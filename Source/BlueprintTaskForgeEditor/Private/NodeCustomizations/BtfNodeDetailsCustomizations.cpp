@@ -1,12 +1,12 @@
 #include "NodeCustomizations/BtfNodeDetailsCustomizations.h"
 #include "BftMacros.h"
-
 #include "BtfExtendConstructObject_K2Node.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
 #include "BtfTaskForge.h"
-
 #include "NodeDecorators/BtfNodeDecorator.h"
+
+// --------------------------------------------------------------------------------------------------------------------
 
 TSharedRef<IDetailCustomization> FBtf_NodeDetailsCustomizations::MakeInstance()
 {
@@ -19,9 +19,7 @@ void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
     DetailBuilder.GetObjectsBeingCustomized(CustomizedObjects);
 
     if (CustomizedObjects.Num() != 1)
-    {
-        return;
-    }
+    { return; }
 
     TArray<FName> CategoryNames;
     DetailBuilder.GetCategoryNames(CategoryNames);
@@ -35,9 +33,7 @@ void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
     auto* TaskNode = Cast<UBtf_ExtendConstructObject_K2Node>(CustomizedObjects[0].Get());
 
     if (NOT IsValid(TaskNode))
-    {
-        return;
-    }
+    { return; }
 
     TaskNode->DetailsPanelBuilder = &DetailBuilder;
 
@@ -97,3 +93,5 @@ void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
         }
     }
 }
+
+// --------------------------------------------------------------------------------------------------------------------

@@ -4,8 +4,12 @@
 #include "UObject/Object.h"
 #include "BtfNodeDecorator.generated.h"
 
+// --------------------------------------------------------------------------------------------------------------------
+
 class SBtf_Node;
 class UBtf_TaskForge;
+
+// --------------------------------------------------------------------------------------------------------------------
 
 /**
  * This class allows you to decorate Blueprint Task nodes.
@@ -27,22 +31,16 @@ class BLUEPRINTTASKFORGE_API UBtf_NodeDecorator : public UObject
 	GENERATED_BODY()
 
 public:
-
-	virtual TSharedRef<SWidget> CreateTopContent(UClass* TaskClass, UBtf_TaskForge* BlueprintTaskNode, UEdGraphNode* GraphNode) { return SNullWidget::NullWidget; }
-
-	virtual TSharedRef<SWidget> CreateCenterContent(UClass* TaskClass, UBtf_TaskForge* BlueprintTaskNode, UEdGraphNode* GraphNode) { return SNullWidget::NullWidget; };
-
-	virtual TSharedRef<SWidget> CreateBottomContent(UClass* TaskClass, UBtf_TaskForge* BlueprintTaskNode, UEdGraphNode* GraphNode) { return SNullWidget::NullWidget; }
+	virtual TSharedRef<SWidget> CreateTopContent(UClass* TaskClass, UBtf_TaskForge* BlueprintTaskNode, UEdGraphNode* GraphNode);
+	virtual TSharedRef<SWidget> CreateCenterContent(UClass* TaskClass, UBtf_TaskForge* BlueprintTaskNode, UEdGraphNode* GraphNode);
+	virtual TSharedRef<SWidget> CreateBottomContent(UClass* TaskClass, UBtf_TaskForge* BlueprintTaskNode, UEdGraphNode* GraphNode);
 
 	/**If overriden, you can override the entirety of the node rather than
 	 * using the standardized top, center and bottom content.
 	 *
 	 * Remember to always assign the left and right vertical box, or you'll
 	 * get an engine crash.	 */
-	virtual TSharedRef<SWidget> OverrideContentNodeArea(SBtf_Node* Node)
-	{
-		return SNullWidget::NullWidget;
-	}
+	virtual TSharedRef<SWidget> OverrideContentNodeArea(SBtf_Node* Node);
 
 	/**Any objects returned by this function will have a custom details
 	 * panel created when the node is selected.
@@ -52,5 +50,7 @@ public:
 	 * Tip: This is executed after the "CreateContent" functions. So if you need
 	 * data that can only be retrieved from the graph node, you can override
 	 * those functions, store the data, then fetch it in this function. */
-	virtual TArray<UObject*> GetObjectsForExtraDetailsPanels() const { return TArray<UObject*>(); }
+	virtual TArray<UObject*> GetObjectsForExtraDetailsPanels() const;
 };
+
+// --------------------------------------------------------------------------------------------------------------------

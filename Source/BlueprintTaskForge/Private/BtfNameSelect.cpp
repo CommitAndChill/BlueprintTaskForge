@@ -1,5 +1,7 @@
 #include "BtfNameSelect.h"
 
+// --------------------------------------------------------------------------------------------------------------------
+
 FBtf_NameSelect::FBtf_NameSelect() : Name(NAME_None)
 {
 }
@@ -13,6 +15,8 @@ FBtf_NameSelect::operator FName() const
     return Name;
 }
 
+// --------------------------------------------------------------------------------------------------------------------
+
 uint32 GetTypeHash(const FBtf_NameSelect& Node)
 {
     return GetTypeHash(Node.Name);
@@ -23,6 +27,8 @@ FArchive& operator<<(FArchive& Ar, FBtf_NameSelect& Node)
     Ar << Node.Name;
     return Ar;
 }
+
+// --------------------------------------------------------------------------------------------------------------------
 
 #if WITH_EDITORONLY_DATA
 FBtf_NameSelect& FBtf_NameSelect::operator=(const FBtf_NameSelect& Other)
@@ -55,3 +61,5 @@ void FBtf_NameSelect::SetAllExclude(TSet<FName>& InAll, TArray<FBtf_NameSelect>&
     Exclude = &InExclude;
 }
 #endif
+
+// --------------------------------------------------------------------------------------------------------------------

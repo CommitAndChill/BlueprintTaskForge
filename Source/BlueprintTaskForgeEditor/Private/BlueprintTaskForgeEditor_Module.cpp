@@ -1,5 +1,4 @@
 #include "BlueprintTaskForgeEditor_Module.h"
-
 #include "CoreMinimal.h"
 #include "Delegates/DelegateSignatureImpl.inl"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -8,20 +7,20 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BtfTaskForge.h"
 #include "BtfTaskForge_K2Node.h"
-
 #include "PropertyEditorDelegates.h"
 #include "PropertyEditorModule.h"
 #include "AssetRegistry/ARFilter.h"
-
 #include "NodeCustomizations/BtfNameSelectStructCustomization.h"
 #include "NodeCustomizations/BtfNodeDetailsCustomizations.h"
+
+// --------------------------------------------------------------------------------------------------------------------
 
 #define LOCTEXT_NAMESPACE "FBlueprintTaskForgeEditorModule"
 
 void FBlueprintTaskForgeEditorModule::StartupModule()
 {
     if (auto* AssetRegistry = IAssetRegistry::Get(); 
-        AssetRegistry != nullptr)
+        IsValid(AssetRegistry))
     {
         OnAssetRenamedDelegateHandle = AssetRegistry->OnAssetRenamed().AddRaw(this, &FBlueprintTaskForgeEditorModule::OnAssetRenamed);
         OnInMemoryAssetDeletedDelegateHandle = AssetRegistry->OnInMemoryAssetDeleted().AddRaw(this, &FBlueprintTaskForgeEditorModule::HandleAssetDeleted);
@@ -46,7 +45,7 @@ void FBlueprintTaskForgeEditorModule::StartupModule()
 void FBlueprintTaskForgeEditorModule::ShutdownModule()
 {
     if (auto* AssetRegistry = IAssetRegistry::Get(); 
-        AssetRegistry != nullptr)
+        IsValid(AssetRegistry))
     {
         AssetRegistry->OnAssetRenamed().Remove(OnAssetRenamedDelegateHandle);
         AssetRegistry->OnInMemoryAssetDeleted().Remove(OnInMemoryAssetDeletedDelegateHandle);
@@ -79,7 +78,7 @@ void FBlueprintTaskForgeEditorModule::RefreshClassActions() const
     auto AssetDataArr = TArray<FAssetData>{};
 
     if (const auto* AssetRegistry = IAssetRegistry::Get(); 
-        AssetRegistry != nullptr)
+        IsValid(AssetRegistry))
     {
         auto Filter = FARFilter{};
         Filter.ClassPaths.Add(FTopLevelAssetPath(UBtf_TaskForge::StaticClass()));
@@ -91,11 +90,15 @@ void FBlueprintTaskForgeEditorModule::RefreshClassActions() const
     for (const auto& AssetData : AssetDataArr)
     {
         const auto* Blueprint = Cast<UBlueprint>(AssetData.GetAsset());
-        if (NOT IsValid(Blueprint)) { continue; }
+        if (NOT IsValid(Blueprint))
+        { continue; }
 
         const auto* TestClass = Blueprint->GeneratedClass;
-        if (NOT TestClass) { continue; }
-        if (NOT TestClass->IsChildOf(UBtf_TaskForge::StaticClass())) { continue; }
+        if (NOT TestClass)
+        { continue; }
+        
+        if (NOT TestClass->IsChildOf(UBtf_TaskForge::StaticClass()))
+        { continue; }
 
         if (const auto CDO = TestClass->GetDefaultObject(true); 
             CDO != nullptr)
@@ -105,7 +108,7 @@ void FBlueprintTaskForgeEditorModule::RefreshClassActions() const
     }
 
     if (auto* Bad = FBlueprintActionDatabase::TryGet(); 
-        Bad != nullptr)
+        IsValid(Bad))
     {
         Bad->RefreshClassActions(UBtf_TaskForge::StaticClass());
         Bad->RefreshClassActions(UBtf_TaskForge_K2Node::StaticClass());
@@ -117,10 +120,12 @@ void FBlueprintTaskForgeEditorModule::OnObjectPropertyChanged(
     FPropertyChangedEvent& PropertyChangedEvent) const
 {
     const auto* ObjectBeingModifiedBlueprint = Cast<UBlueprint>(ObjectBeingModified);
-    if (NOT IsValid(ObjectBeingModifiedBlueprint)) { return; }
+    if (NOT IsValid(ObjectBeingModifiedBlueprint))
+    { return; }
 
     const auto* BlueprintParentClass = ObjectBeingModifiedBlueprint->GeneratedClass;
-    if (NOT IsValid(BlueprintParentClass)) { return; }
+    if (NOT IsValid(BlueprintParentClass))
+    { return; }
 
     constexpr auto CreateIfNeeded = true;
     if (auto* NodeTemplate = Cast<UBtf_TaskForge>(BlueprintParentClass->GetDefaultObject(CreateIfNeeded));
@@ -138,11 +143,15 @@ void FBlueprintTaskForgeEditorModule::OnAssetRenamed(const struct FAssetData& As
 void FBlueprintTaskForgeEditorModule::OnAssetAdded(const FAssetData& AssetData) const
 {
     const auto* Blueprint = Cast<UBlueprint>(AssetData.GetAsset());
-    if (NOT IsValid(Blueprint)) { return; }
+    if (NOT IsValid(Blueprint))
+    { return; }
 
     const auto* TestClass = Blueprint->GeneratedClass;
-    if (NOT TestClass) { return; }
-    if (NOT TestClass->IsChildOf(UBtf_TaskForge::StaticClass())) { return; }
+    if (NOT TestClass)
+    { return; }
+    
+    if (NOT TestClass->IsChildOf(UBtf_TaskForge::StaticClass()))
+    { return; }
 
     RefreshClassActions();
 }
@@ -150,15 +159,21 @@ void FBlueprintTaskForgeEditorModule::OnAssetAdded(const FAssetData& AssetData) 
 void FBlueprintTaskForgeEditorModule::HandleAssetDeleted(UObject* Object) const
 {
     const auto* Blueprint = Cast<UBlueprint>(Object);
-    if (NOT IsValid(Blueprint)) { return; }
+    if (NOT IsValid(Blueprint))
+    { return; }
 
     const auto* TestClass = Blueprint->ParentClass;
-    if (NOT TestClass) { return; }
-    if (NOT TestClass->IsChildOf(UBtf_TaskForge::StaticClass())) { return; }
+    if (NOT TestClass)
+    { return; }
+    
+    if (NOT TestClass->IsChildOf(UBtf_TaskForge::StaticClass()))
+    { return; }
 
     RefreshClassActions();
 }
 
 #undef LOCTEXT_NAMESPACE
+
+// --------------------------------------------------------------------------------------------------------------------
 
 IMPLEMENT_MODULE(FBlueprintTaskForgeEditorModule, BlueprintTaskForgeEditor)
