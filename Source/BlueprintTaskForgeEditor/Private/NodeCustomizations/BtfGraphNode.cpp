@@ -1,4 +1,4 @@
-﻿#include "NodeCustomizations/BtfGraphNode.h"
+#include "NodeCustomizations/BtfGraphNode.h"
 
 #include "BtfTaskForge.h"
 #include "BtfTaskForge_K2Node.h"
@@ -11,210 +11,196 @@
 
 void SBtf_Node::Construct(const FArguments& InArgs, UEdGraphNode* InGraphNode, UClass* InTaskClass)
 {
-	GraphNode = InGraphNode;
-	TaskClass = InTaskClass;
-	_BlueprintTaskNode = Cast<UBtf_TaskForge_K2Node>(InGraphNode);
+    GraphNode = InGraphNode;
+    TaskClass = InTaskClass;
+    BlueprintTaskNode = Cast<UBtf_TaskForge_K2Node>(InGraphNode);
 
-	SetCursor(EMouseCursor::CardinalCross);
-	UpdateGraphNode();
+    SetCursor(EMouseCursor::CardinalCross);
+    UpdateGraphNode();
 }
 
 TSharedRef<SWidget> SBtf_Node::CreateNodeContentArea()
 {
-	TSharedPtr<SWidget> TopContent;
-	TSharedPtr<SWidget> CenterContent;
-	TSharedPtr<SWidget> BottomContent;
+    auto TopContent = TSharedPtr<SWidget>{};
+    auto CenterContent = TSharedPtr<SWidget>{};
+    auto BottomContent = TSharedPtr<SWidget>{};
 
-	if(IsValid(_BlueprintTaskNode->GetInstanceOrDefaultObject()->Decorator))
-	{
-		if(!Decorator)
-		{
-			/**Make a new instance so things can be more dynamic. Also required for certain
-			 * Slate usages, like brushes that need to be stored as a class member. */
-			Decorator = NewObject<UBtf_NodeDecorator>(_BlueprintTaskNode.Get(), _BlueprintTaskNode->GetInstanceOrDefaultObject()->Decorator);
-			_BlueprintTaskNode.Get()->Decorator = Decorator;
+    if (NOT IsValid(BlueprintTaskNode->GetInstanceOrDefaultObject()->Get_Decorator()))
+    {
+        return CreateDefaultNodeContent(TopContent, CenterContent, BottomContent);
+    }
 
-			/**V: Since decorators are UObject's and Slate REALLY cares about the
-			 * lifetime of things, and us storing a pointer to it inside a non-UCLASS
-			 * won't prevent it from being garbage collected.
-			 * This means that if you hot reload or do anything that causes the
-			 * garbage collector to kick in while the decorators elements, like an
-			 * image, is being rendered, it will cause a crash.
-			 * For now, I am just adding it to root and in the destructor,
-			 * we remove it from root. */
-			Decorator->AddToRoot();
-		}
+    if (NOT Decorator)
+    {
+        /**Make a new instance so things can be more dynamic. Also required for certain
+         * Slate usages, like brushes that need to be stored as a class member. */
+        Decorator = NewObject<UBtf_NodeDecorator>(BlueprintTaskNode.Get(), BlueprintTaskNode->GetInstanceOrDefaultObject()->Get_Decorator());
+        BlueprintTaskNode.Get()->Decorator = Decorator;
 
-		TSharedPtr<SWidget> NodeOverride = Decorator->OverrideContentNodeArea(this);
-		if(NodeOverride != SNullWidget::NullWidget)
-		{
-			/**The decorator wants to override the node. Return it and
-			 * exit out of this function. */
-			return NodeOverride.ToSharedRef();
-		}
+        /**Since decorators are UObject's and Slate REALLY cares about the
+         * lifetime of things, and us storing a pointer to it inside a non-UCLASS
+         * won't prevent it from being garbage collected.
+         * This means that if you hot reload or do anything that causes the
+         * garbage collector to kick in while the decorators elements, like an
+         * image, is being rendered, it will cause a crash.
+         * For now, I am just adding it to root and in the destructor,
+         * we remove it from root. */
+        Decorator->AddToRoot();
+    }
 
-		TopContent = Decorator->CreateTopContent(TaskClass, _BlueprintTaskNode.Get()->GetInstanceOrDefaultObject(), _BlueprintTaskNode.IsValid() ? _BlueprintTaskNode.Get() : nullptr);
-		CenterContent = Decorator->CreateCenterContent(TaskClass, _BlueprintTaskNode.Get()->GetInstanceOrDefaultObject(), _BlueprintTaskNode.IsValid() ? _BlueprintTaskNode.Get() : nullptr);
-		BottomContent = Decorator->CreateBottomContent(TaskClass, _BlueprintTaskNode.Get()->GetInstanceOrDefaultObject(), _BlueprintTaskNode.IsValid() ? _BlueprintTaskNode.Get() : nullptr);
-	}
+    if (auto NodeOverride = Decorator->OverrideContentNodeArea(this); 
+        NodeOverride != SNullWidget::NullWidget)
+    {
+        /**The decorator wants to override the node. Return it and
+         * exit out of this function. */
+        return NodeOverride.ToSharedRef();
+    }
 
-	return SNew(SVerticalBox)
-		//Optional Top Content Slot that takes up the width of the node
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(8, 2)
-		.HAlign(HAlign_Fill)
-		[
-			TopContent.IsValid() ? TopContent.ToSharedRef() : SNullWidget::NullWidget
-		]
+    TopContent = Decorator->CreateTopContent(TaskClass, BlueprintTaskNode.Get()->GetInstanceOrDefaultObject(), BlueprintTaskNode.IsValid() ? BlueprintTaskNode.Get() : nullptr);
+    CenterContent = Decorator->CreateCenterContent(TaskClass, BlueprintTaskNode.Get()->GetInstanceOrDefaultObject(), BlueprintTaskNode.IsValid() ? BlueprintTaskNode.Get() : nullptr);
+    BottomContent = Decorator->CreateBottomContent(TaskClass, BlueprintTaskNode.Get()->GetInstanceOrDefaultObject(), BlueprintTaskNode.IsValid() ? BlueprintTaskNode.Get() : nullptr);
 
-		//Main Content (SBorder wrapped)
-		+ SVerticalBox::Slot()
-		.FillHeight(1.0f) //Main content takes up the remaining space
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SBorder)
-			.BorderImage(FAppStyle::GetBrush("NoBorder"))
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			.Padding(FMargin(0, 3))
-			[
-				SNew(SHorizontalBox)
-
-				//Left Node Box for the left side pins
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.HAlign(HAlign_Fill)
-				[
-					SAssignNew(LeftNodeBox, SVerticalBox)
-				]
-
-				//Center Content
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f) //Center should be space-greedy rather than try to distribute it
-				.HAlign(HAlign_Fill)
-				[
-					CenterContent.IsValid() ? CenterContent.ToSharedRef() : SNullWidget::NullWidget
-				]
-
-				//Right Node Box for the right side pins
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.HAlign(HAlign_Fill)
-				[
-					SAssignNew(RightNodeBox, SVerticalBox)
-				]
-			]
-		]
-
-		//Optional Bottom Content Slot that takes up the width of the node
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(8, 2)
-		.HAlign(HAlign_Fill)
-		[
-			BottomContent.IsValid() ? BottomContent.ToSharedRef() : SNullWidget::NullWidget
-		];
+    return CreateDefaultNodeContent(TopContent, CenterContent, BottomContent);
 }
 
-auto
-	SBtf_Node::
-	GetNodeInfoPopups(
-		FNodeInfoContext* Context,
-		TArray<FGraphInformationPopupInfo>& Popups) const
-	-> void
+TSharedRef<SWidget> SBtf_Node::CreateDefaultNodeContent(TSharedPtr<SWidget> TopContent, TSharedPtr<SWidget> CenterContent, TSharedPtr<SWidget> BottomContent)
 {
-	if(!_BlueprintTaskNode.IsValid())
-	{ return; }
+    return SNew(SVerticalBox)
+        //Optional Top Content Slot that takes up the width of the node
+        + SVerticalBox::Slot()
+        .AutoHeight()
+        .Padding(8, 2)
+        .HAlign(HAlign_Fill)
+        [
+            TopContent.IsValid() ? TopContent.ToSharedRef() : SNullWidget::NullWidget
+        ]
 
-	if (const auto& Description = _BlueprintTaskNode->Get_NodeDescription();
-		Description.IsEmpty() == false)
-	{
-		// TODO: Expose through developer settings
-		// constexpr auto NodeDescriptionBackGroundColor = FLinearColor(0.0625f, 0.0625f, 0.0625f, 1.0f);
+        //Main Content (SBorder wrapped)
+        + SVerticalBox::Slot()
+        .FillHeight(1.0f) //Main content takes up the remaining space
+        .HAlign(HAlign_Fill)
+        .VAlign(VAlign_Fill)
+        [
+            SNew(SBorder)
+            .BorderImage(FAppStyle::GetBrush("NoBorder"))
+            .HAlign(HAlign_Fill)
+            .VAlign(VAlign_Fill)
+            .Padding(FMargin(0, 3))
+            [
+                SNew(SHorizontalBox)
 
-		const auto DescriptionPopup = FGraphInformationPopupInfo(nullptr, _BlueprintTaskNode->Get_StatusBackgroundColor(), Description);
-		Popups.Add(DescriptionPopup);
-	}
+                //Left Node Box for the left side pins
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .HAlign(HAlign_Fill)
+                [
+                    SAssignNew(LeftNodeBox, SVerticalBox)
+                ]
 
-	if (GEditor->PlayWorld)
-	{
-		if (const auto& Status = _BlueprintTaskNode->Get_StatusString();
-			Status.IsEmpty() == false)
-		{
-			const auto DescriptionPopup = FGraphInformationPopupInfo(nullptr, _BlueprintTaskNode->Get_StatusBackgroundColor(), Status);
-			Popups.Add(DescriptionPopup);
-		}
-	}
+                //Center Content
+                + SHorizontalBox::Slot()
+                .FillWidth(1.0f) //Center should be space-greedy rather than try to distribute it
+                .HAlign(HAlign_Fill)
+                [
+                    CenterContent.IsValid() ? CenterContent.ToSharedRef() : SNullWidget::NullWidget
+                ]
+
+                //Right Node Box for the right side pins
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .HAlign(HAlign_Fill)
+                [
+                    SAssignNew(RightNodeBox, SVerticalBox)
+                ]
+            ]
+        ]
+
+        //Optional Bottom Content Slot that takes up the width of the node
+        + SVerticalBox::Slot()
+        .AutoHeight()
+        .Padding(8, 2)
+        .HAlign(HAlign_Fill)
+        [
+            BottomContent.IsValid() ? BottomContent.ToSharedRef() : SNullWidget::NullWidget
+        ];
 }
 
-auto
-	SBtf_Node::
-	CreateBelowPinControls(
-		TSharedPtr<SVerticalBox> MainBox)
-	-> void
+void SBtf_Node::GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformationPopupInfo>& Popups) const
 {
-	static const FMargin ConfigBoxPadding = FMargin(2.0f, 0.0f, 1.0f, 0.0);
+    if (NOT BlueprintTaskNode.IsValid()) { return; }
 
-	// Add a box to wrap around the Config Text area to make it a more visually distinct part of the node
-	TSharedPtr<SVerticalBox> BelowPinsBox;
-	MainBox->AddSlot()
-		.AutoHeight()
-		.Padding(ConfigBoxPadding)
-		[
-			SNew(SBorder)
-			.BorderImage(FAppStyle::GetBrush("Graph.StateNode.Body"))
-			.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.04f, 1.0f))
-			.Visibility(this, &SBtf_Node::Get_NodeConfigTextVisibility)
-			[
-				SAssignNew(BelowPinsBox, SVerticalBox)
-			]
-		];
+    if (const auto Description = BlueprintTaskNode->Get_NodeDescription(); 
+        NOT Description.IsEmpty())
+    {
+        // TODO: Expose through developer settings
+        // constexpr auto NodeDescriptionBackGroundColor = FLinearColor(0.0625f, 0.0625f, 0.0625f, 1.0f);
 
-	static const FMargin ConfigTextPadding = FMargin(2.0f, 0.0f, 0.0f, 3.0f);
+        const auto DescriptionPopup = FGraphInformationPopupInfo(nullptr, BlueprintTaskNode->Get_StatusBackgroundColor(), Description);
+        Popups.Add(DescriptionPopup);
+    }
 
-	BelowPinsBox->AddSlot()
-		.AutoHeight()
-		.Padding(ConfigTextPadding)
-		[
-			SAssignNew(_ConfigTextBlock, STextBlock)
-			.AutoWrapText(true)
-			.LineBreakPolicy(FBreakIterator::CreateWordBreakIterator())
-			.Text(this, &SBtf_Node::Get_NodeConfigText)
-		];
+    if (NOT GEditor->PlayWorld) { return; }
+
+    if (const auto Status = BlueprintTaskNode->Get_StatusString(); 
+        NOT Status.IsEmpty())
+    {
+        const auto DescriptionPopup = FGraphInformationPopupInfo(nullptr, BlueprintTaskNode->Get_StatusBackgroundColor(), Status);
+        Popups.Add(DescriptionPopup);
+    }
 }
 
-auto
-	SBtf_Node::
-	Get_NodeConfigTextVisibility() const
-	-> EVisibility
+void SBtf_Node::CreateBelowPinControls(TSharedPtr<SVerticalBox> MainBox)
 {
-	// Hide in lower LODs
-	if (const TSharedPtr<SGraphPanel> OwnerPanel = GetOwnerPanel();
-		OwnerPanel.IsValid() == false || OwnerPanel->GetCurrentLOD() > EGraphRenderingLOD::MediumDetail)
-	{
-		if (_ConfigTextBlock.IsValid() && _ConfigTextBlock->GetText().IsEmptyOrWhitespace() == false)
-		{
-			return EVisibility::Visible;
-		}
-	}
+    static const auto ConfigBoxPadding = FMargin(2.0f, 0.0f, 1.0f, 0.0);
 
-	return EVisibility::Collapsed;
+    // Add a box to wrap around the Config Text area to make it a more visually distinct part of the node
+    auto BelowPinsBox = TSharedPtr<SVerticalBox>{};
+    MainBox->AddSlot()
+        .AutoHeight()
+        .Padding(ConfigBoxPadding)
+        [
+            SNew(SBorder)
+            .BorderImage(FAppStyle::GetBrush("Graph.StateNode.Body"))
+            .BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.04f, 1.0f))
+            .Visibility(this, &SBtf_Node::Get_NodeConfigTextVisibility)
+            [
+                SAssignNew(BelowPinsBox, SVerticalBox)
+            ]
+        ];
+
+    static const auto ConfigTextPadding = FMargin(2.0f, 0.0f, 0.0f, 3.0f);
+
+    BelowPinsBox->AddSlot()
+        .AutoHeight()
+        .Padding(ConfigTextPadding)
+        [
+            SAssignNew(ConfigTextBlock, STextBlock)
+            .AutoWrapText(true)
+            .LineBreakPolicy(FBreakIterator::CreateWordBreakIterator())
+            .Text(this, &SBtf_Node::Get_NodeConfigText)
+        ];
 }
 
-auto
-	SBtf_Node::
-	Get_NodeConfigText() const
-	-> FText
+EVisibility SBtf_Node::Get_NodeConfigTextVisibility() const
 {
-	if (IsValid(_BlueprintTaskNode.Get()))
-	{ return _BlueprintTaskNode->Get_NodeConfigText(); }
+    // Hide in lower LODs
+    if (const auto OwnerPanel = GetOwnerPanel(); 
+        NOT OwnerPanel.IsValid() || OwnerPanel->GetCurrentLOD() > EGraphRenderingLOD::MediumDetail)
+    {
+        if (ConfigTextBlock.IsValid() && NOT ConfigTextBlock->GetText().IsEmptyOrWhitespace())
+        {
+            return EVisibility::Visible;
+        }
+    }
 
-	return FText::GetEmpty();
+    return EVisibility::Collapsed;
 }
 
-//-CK
+FText SBtf_Node::Get_NodeConfigText() const
+{
+    if (NOT IsValid(BlueprintTaskNode.Get())) { return FText::GetEmpty(); }
+
+    return BlueprintTaskNode->Get_NodeConfigText();
+}
 
 #undef LOCTEXT_NAMESPACE
-

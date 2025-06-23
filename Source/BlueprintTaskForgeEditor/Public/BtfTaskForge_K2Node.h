@@ -11,6 +11,7 @@ UCLASS()
 class BLUEPRINTTASKFORGEEDITOR_API UBtf_TaskForge_K2Node : public UBtf_ExtendConstructObject_K2Node
 {
     GENERATED_BODY()
+
 public:
     UBtf_TaskForge_K2Node(const FObjectInitializer& ObjectInitializer);
 

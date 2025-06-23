@@ -11,12 +11,6 @@ class BLUEPRINTTASKFORGE_API UBtf_RuntimeSettings : public UDeveloperSettings
     GENERATED_BODY()
 
 public:
-
-	/**Inside a tasks class defaults, should "Deactivate" always be
-	 * enforced in the "Exec Function" array? */
-    UPROPERTY(Category = "Node Settings", EditAnywhere, Config)
-    bool EnforceDeactivateExecFunction = true;
-
     virtual FName GetSectionName() const override
     {
         return "Blueprint Task Forge Runtime Settings";
@@ -26,4 +20,13 @@ public:
     {
         return "Plugins";
     }
+
+private:
+    /**Inside a tasks class defaults, should "Deactivate" always be
+     * enforced in the "Exec Function" array? */
+    UPROPERTY(Category = "Node Settings", EditAnywhere, Config, meta = (AllowPrivateAccess = "true"))
+    bool EnforceDeactivateExecFunction = true;
+
+public:
+    BFT_PROPERTY_GET(EnforceDeactivateExecFunction)
 };

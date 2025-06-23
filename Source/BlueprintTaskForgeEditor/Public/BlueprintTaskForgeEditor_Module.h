@@ -30,4 +30,7 @@ private:
 
 private:
     FDelegateHandle OnObjectPropertyChangedDelegateHandle;
+    FDelegateHandle OnAssetRenamedDelegateHandle;
+    FDelegateHandle OnInMemoryAssetDeletedDelegateHandle;
+    FDelegateHandle OnFilesLoadedDelegateHandle;
 };

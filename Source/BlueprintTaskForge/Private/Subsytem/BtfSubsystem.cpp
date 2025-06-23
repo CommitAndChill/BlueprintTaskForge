@@ -2,149 +2,119 @@
 
 #include "BtfTaskForge.h"
 
-// --------------------------------------------------------------------------------------------------------------------
-
-auto
-    UBtf_WorldSubsystem::
-    Deinitialize()
-    -> void
+void UBtf_WorldSubsystem::Deinitialize()
 {
 #if WITH_EDITOR
-    if (IsValid(GEngine))
+    if (NOT IsValid(GEngine))
     {
-        if (const auto& BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
-            IsValid(BlueprintTaskEngineSubsystem))
-        {
-            BlueprintTaskEngineSubsystem->Request_Clear();
-        }
+        Super::Deinitialize();
+        return;
+    }
+
+    if (const auto* BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
+        IsValid(BlueprintTaskEngineSubsystem))
+    {
+        BlueprintTaskEngineSubsystem->Request_Clear();
     }
 #endif
 
     Super::Deinitialize();
 }
 
-auto
-    UBtf_WorldSubsystem::
-    Request_TrackTask(
-        UBtf_TaskForge* Task)
-    -> void
+void UBtf_WorldSubsystem::Request_TrackTask(UBtf_TaskForge* Task)
 {
     QUICK_SCOPE_CYCLE_COUNTER(Request_TrackTask)
 
-    if (!IsValid(Task))
-    { return; }
+    if (NOT IsValid(Task)) { return; }
 
-    _BlueprintTasks.Add(Task);
+    BlueprintTasks.Add(Task);
 
-    if(FBtf_OutersBlueprintTasksArrayWrapper* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
+    if (auto* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()); 
+        TasksWrapper != nullptr)
     {
         TasksWrapper->Tasks.AddUnique(Task);
+        return;
     }
-    else
-    {
-        FBtf_OutersBlueprintTasksArrayWrapper TasksArrayWrapper;
-        TasksArrayWrapper.Tasks.Add(Task);
-        ObjectsAndTheirTasks.Add(Task->GetOuter(), TasksArrayWrapper);
-    }
+
+    auto TasksArrayWrapper = FBtf_OutersBlueprintTasksArrayWrapper{};
+    TasksArrayWrapper.Tasks.Add(Task);
+    ObjectsAndTheirTasks.Add(Task->GetOuter(), TasksArrayWrapper);
 }
 
-auto
-    UBtf_WorldSubsystem::
-    Request_UntrackTask(
-        UBtf_TaskForge* Task)
-    -> void
+void UBtf_WorldSubsystem::Request_UntrackTask(UBtf_TaskForge* Task)
 {
     QUICK_SCOPE_CYCLE_COUNTER(Request_UntrackTask)
 
-    if (!IsValid(Task))
-    { return; }
+    if (NOT IsValid(Task)) { return; }
 
-    _BlueprintTasks.Remove(Task);
+    BlueprintTasks.Remove(Task);
 
-    if(FBtf_OutersBlueprintTasksArrayWrapper* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
+    auto* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter());
+    if (NOT TasksWrapper) { return; }
+
+    TasksWrapper->Tasks.RemoveSingle(Task);
+    if (TasksWrapper->Tasks.IsEmpty())
     {
-        TasksWrapper->Tasks.RemoveSingle(Task);
-        if(TasksWrapper->Tasks.IsEmpty())
-        {
-            ObjectsAndTheirTasks.Remove(Task->GetOuter());
-        }
+        ObjectsAndTheirTasks.Remove(Task->GetOuter());
     }
 }
 
-auto
-    UBtf_EngineSubsystem::
-    Request_Add(
-        FGuid InTaskNodeGuid,
-        UBtf_TaskForge* InTaskInstance)
-    -> void
+void UBtf_EngineSubsystem::Request_Add(FGuid InTaskNodeGuid, UBtf_TaskForge* InTaskInstance)
 {
 #if WITH_EDITOR
-    _TaskNodeGuidToTaskInstance.Add(InTaskNodeGuid, TWeakObjectPtr<UBtf_TaskForge>(InTaskInstance));
-    _TaskInstanceTaskNodeGuid.Add(InTaskInstance, InTaskNodeGuid);
+    TaskNodeGuidToTaskInstance.Add(InTaskNodeGuid, TWeakObjectPtr<UBtf_TaskForge>(InTaskInstance));
+    TaskInstanceTaskNodeGuid.Add(InTaskInstance, InTaskNodeGuid);
 #endif
 }
 
-auto
-    UBtf_EngineSubsystem::
-    Request_Remove(
-        UBtf_TaskForge* InTaskInstance)
-    -> void
+void UBtf_EngineSubsystem::Request_Remove(UBtf_TaskForge* InTaskInstance)
 {
 #if WITH_EDITOR
-    if (const auto& FoundTaskNodeGuid = _TaskInstanceTaskNodeGuid.Find(InTaskInstance);
-        FoundTaskNodeGuid != nullptr)
+    const auto* FoundTaskNodeGuid = TaskInstanceTaskNodeGuid.Find(InTaskInstance);
+    if (NOT FoundTaskNodeGuid)
     {
-        _TaskNodeGuidToTaskInstance.Remove(*FoundTaskNodeGuid);
-        _TaskInstanceTaskNodeGuid.Remove(InTaskInstance);
-    }
-#endif
-}
-
-auto
-    UBtf_EngineSubsystem::
-    Request_Remove(
-        FGuid InTaskNodeGuid)
-    -> void
-{
-#if WITH_EDITOR
-    if (const auto& FoundTaskInstance = _TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
-        FoundTaskInstance != nullptr)
-    {
-        const auto& TaskInstance = *FoundTaskInstance;
-        _TaskInstanceTaskNodeGuid.Remove(TaskInstance);
-        _TaskNodeGuidToTaskInstance.Remove(InTaskNodeGuid);
-    }
-#endif
-}
-
-auto
-    UBtf_EngineSubsystem::
-    Request_Clear()
-    -> void
-{
-#if WITH_EDITOR
-    _TaskNodeGuidToTaskInstance.Empty();
-    _TaskInstanceTaskNodeGuid.Empty();
-#endif
-}
-
-auto
-    UBtf_EngineSubsystem::
-    FindTaskInstanceWithGuid(
-        FGuid InTaskNodeGuid)
-    -> UBtf_TaskForge*
-{
-#if WITH_EDITOR
-    if (const auto& FoundTaskInstance = _TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
-        FoundTaskInstance != nullptr)
-    {
-        return FoundTaskInstance->Get();
+        return;
     }
 
-    return {};
+    TaskNodeGuidToTaskInstance.Remove(*FoundTaskNodeGuid);
+    TaskInstanceTaskNodeGuid.Remove(InTaskInstance);
+#endif
+}
+
+void UBtf_EngineSubsystem::Request_Remove(FGuid InTaskNodeGuid)
+{
+#if WITH_EDITOR
+    const auto* FoundTaskInstance = TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
+    if (NOT FoundTaskInstance)
+    {
+        return;
+    }
+
+    const auto& TaskInstance = *FoundTaskInstance;
+    TaskInstanceTaskNodeGuid.Remove(TaskInstance);
+    TaskNodeGuidToTaskInstance.Remove(InTaskNodeGuid);
+#endif
+}
+
+void UBtf_EngineSubsystem::Request_Clear()
+{
+#if WITH_EDITOR
+    TaskNodeGuidToTaskInstance.Empty();
+    TaskInstanceTaskNodeGuid.Empty();
+#endif
+}
+
+UBtf_TaskForge* UBtf_EngineSubsystem::FindTaskInstanceWithGuid(FGuid InTaskNodeGuid)
+{
+#if WITH_EDITOR
+    const auto* FoundTaskInstance = TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
+    if (NOT FoundTaskInstance)
+    {
+        return nullptr;
+    }
+
+    return FoundTaskInstance->Get();
 #else
-    return {};
+    return nullptr;
 #endif
 }
-
-// --------------------------------------------------------------------------------------------------------------------

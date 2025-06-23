@@ -13,62 +13,53 @@
 #include "Subsystem/BtfSubsystem.h"
 #endif // WITH_EDITOR
 
-
 UBtf_TaskForge::UBtf_TaskForge(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 }
 
-//++CK
-//UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskForge(UObject* Outer, const TSubclassOf<UBtf_TaskForge> Class)
 UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskForge(UObject* Outer, const TSubclassOf<UBtf_TaskForge> Class, FString NodeGuidStr)
-//--CK
 {
-    if (IsValid(Outer) && Class && !Class->HasAnyClassFlags(CLASS_Abstract))
+    if (NOT IsValid(Outer)) { return nullptr; }
+    if (NOT Class) { return nullptr; }
+    if (Class->HasAnyClassFlags(CLASS_Abstract)) { return nullptr; }
+
+    auto* TaskTemplate = GetTaskByNodeGUID(Outer, NodeGuidStr);
+    const auto TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName(), EUniqueObjectNameOptions::GloballyUnique);
+    auto* Task = NewObject<UBtf_TaskForge>(Outer, Class, TaskObjName, RF_NoFlags, TaskTemplate ? TaskTemplate : nullptr);
+
+    if (NOT IsValid(Task))
     {
-        UBtf_TaskForge* TaskTemplate = GetTaskByNodeGUID(Outer, NodeGuidStr);
-
-//++CK
-        //const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName()); //Class->GetFName();//
-        const FName TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName(), EUniqueObjectNameOptions::GloballyUnique); //Class->GetFName();//
-//--CK
-        const auto Task = NewObject<UBtf_TaskForge>(Outer, Class, TaskObjName, RF_NoFlags, TaskTemplate ? TaskTemplate : nullptr);
-
-//++CK
-        if (IsValid(Task) == false)
-        { return Task; }
-
-        if (const auto& BlueprintTaskEngineSystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
-            IsValid(BlueprintTaskEngineSystem))
-        {
-            BlueprintTaskEngineSystem->Request_Add(FGuid(NodeGuidStr), Task);
-        }
-//--CK
-
         return Task;
     }
-    return nullptr;
+
+    if (const auto* BlueprintTaskEngineSystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>(); 
+        IsValid(BlueprintTaskEngineSystem))
+    {
+        BlueprintTaskEngineSystem->Request_Add(FGuid(NodeGuidStr), Task);
+    }
+
+    return Task;
 }
 
 UBtf_TaskForge* UBtf_TaskForge::GetTaskByNodeGUID(UObject* Outer, FString NodeGUID)
 {
     for (UClass* TemplateOwnerClass = (Outer != nullptr) ? Outer->GetClass() : Outer->GetClass()
-        ; TemplateOwnerClass
+        ; TemplateOwnerClass != nullptr
         ; TemplateOwnerClass = TemplateOwnerClass->GetSuperClass())
     {
-        if (UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass))
+        auto* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass);
+        if (NOT IsValid(BPGC)) { continue; }
+
+        auto* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy);
+        if (NOT IsValid(Blueprint)) { continue; }
+
+        for (const auto& Extension : Blueprint->GetExtensions())
         {
-            if(UBlueprint* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy))
+            if (NOT IsValid(Extension)) { continue; }
+
+            if (Extension->IsA<UBtf_TaskForge>() && Extension->GetFName().ToString().Contains(NodeGUID))
             {
-                for(TObjectPtr<UBlueprintExtension> Extension : Blueprint->GetExtensions())
-                {
-                    if(Extension)
-                    {
-                        if(Extension->IsA<UBtf_TaskForge>() && Extension->GetFName().ToString().Contains(NodeGUID))
-                        {
-                            return Cast<UBtf_TaskForge>(Extension);
-                        }
-                    }
-                }
+                return Cast<UBtf_TaskForge>(Extension);
             }
         }
     }
@@ -76,12 +67,11 @@ UBtf_TaskForge* UBtf_TaskForge::GetTaskByNodeGUID(UObject* Outer, FString NodeGU
     return nullptr;
 }
 
-void
-    UBtf_TaskForge::Activate()
+void UBtf_TaskForge::Activate()
 {
     QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Activate)
 
-    if (const auto World = GetWorld();
+    if (const auto* World = GetWorld(); 
         IsValid(World))
     {
         World->GetSubsystem<UBtf_WorldSubsystem>()->Request_TrackTask(this);
@@ -90,17 +80,13 @@ void
     Activate_Internal();
 }
 
-void
-    UBtf_TaskForge::Deactivate()
+void UBtf_TaskForge::Deactivate()
 {
     QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Deactivate)
 
-    if(!IsActive)
-    {
-        return;
-    }
+    if (NOT IsActive) { return; }
 
-    for (const auto& Task : _TasksToDeactivateOnDeactivate)
+    for (const auto& Task : TasksToDeactivateOnDeactivate)
     {
         if (Task.IsValid())
         {
@@ -108,7 +94,7 @@ void
         }
     }
 
-    if (const auto World = GetWorld();
+    if (const auto* World = GetWorld(); 
         IsValid(World))
     {
         World->GetSubsystem<UBtf_WorldSubsystem>()->Request_UntrackTask(this);
@@ -117,16 +103,70 @@ void
     Deactivate_Internal();
 }
 
-//++CK
-auto
-    UBtf_TaskForge::
-    OnDestroy()
-    -> void
+UWorld* UBtf_TaskForge::GetWorld() const
+{
+    if (IsTemplate()) { return nullptr; }
+    if (NOT GetOuter()) { return nullptr; }
+
+    return GetOuter()->GetWorld();
+}
+
+void UBtf_TaskForge::OnDestroy()
 {
     IsBeingDestroyed = true;
     MarkAsGarbage();
 }
-//--CK
+
+void UBtf_TaskForge::Activate_Internal()
+{
+    QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Activate_Internal)
+
+    if (IsBeingDestroyed) { return; }
+    if (NOT IsValid(GetOuter())) { return; }
+
+    SetupAutomaticCleanup();
+    IsActive = true;
+    Activate_BP();
+}
+
+void UBtf_TaskForge::SetupAutomaticCleanup()
+{
+    if (NOT GetOuter()) { return; }
+
+    if (auto* Actor = Cast<AActor>(GetOuter()); 
+        IsValid(Actor))
+    {
+        Actor->OnDestroyed.AddDynamic(this, &UBtf_TaskForge::OnActorOuterDestroyed);
+        return;
+    }
+
+    if (auto* TaskTemplate = Cast<UBtf_TaskForge>(GetOuter()); 
+        IsValid(TaskTemplate))
+    {
+        TaskTemplate->TrackTaskForAutomaticDeactivation(this);
+    }
+}
+
+void UBtf_TaskForge::OnActorOuterDestroyed(AActor* Actor)
+{
+    Deactivate();
+}
+
+void UBtf_TaskForge::TrackTaskForAutomaticDeactivation(UBtf_TaskForge* Task)
+{
+    if (NOT IsValid(Task)) { return; }
+    if (TasksToDeactivateOnDeactivate.Contains(Task)) { return; }
+
+    TasksToDeactivateOnDeactivate.Add(Task);
+}
+
+void UBtf_TaskForge::UntrackTaskForAutomaticDeactivation(UBtf_TaskForge* Task)
+{
+    if (NOT IsValid(Task)) { return; }
+    if (NOT TasksToDeactivateOnDeactivate.Contains(Task)) { return; }
+
+    TasksToDeactivateOnDeactivate.RemoveSingle(Task);
+}
 
 void UBtf_TaskForge::Serialize(FArchive& Ar)
 {
@@ -136,7 +176,7 @@ void UBtf_TaskForge::Serialize(FArchive& Ar)
     if (Ar.IsLoading() && GetLinkerCustomVersion(FBlueprintTaskForgeCustomVersion::GUID) < FBlueprintTaskForgeCustomVersion::ExposeOnSpawnInClass)
     {
         RefreshCollected();
-        const FBtf_SpawnParam Spawn = UBtf_ExtendConstructObject_Utils::CollectSpawnParam(GetClass(), AllDelegates, AllFunctions, AllFunctionsExec, AllParam);
+        const auto& Spawn = UBtf_ExtendConstructObject_Utils::CollectSpawnParam(GetClass(), AllDelegates, AllFunctions, AllFunctionsExec, AllParam);
         for (const auto& It : Spawn.AutoCallFunction)
         {
             AutoCallFunction.AddUnique(It);
@@ -161,38 +201,11 @@ void UBtf_TaskForge::Serialize(FArchive& Ar)
 #endif
 }
 
-void UBtf_TaskForge::SetupAutomaticCleanup()
-{
-    if(GetOuter() == nullptr)
-    {
-        return;
-    }
-
-    if(GetOuter()->IsA<AActor>())
-    {
-        if(AActor* Actor = Cast<AActor>(GetOuter()))
-        {
-            Actor->OnDestroyed.AddDynamic(this, &UBtf_TaskForge::OnActorOuterDestroyed);
-            return;
-        }
-    }
-
-    if(GetOuter()->IsA<UBtf_TaskForge>())
-    {
-        if(UBtf_TaskForge* TaskTemplate = Cast<UBtf_TaskForge>(GetOuter()))
-        {
-            TaskTemplate->TrackTaskForAutomaticDeactivation(this);
-        }
-    }
-}
-
-//++CK
-void
-    UBtf_TaskForge::Deactivate_Internal()
+void UBtf_TaskForge::Deactivate_Internal()
 {
     QUICK_SCOPE_CYCLE_COUNTER(TaskNode_Deactivate_Internal)
-    if (IsBeingDestroyed)
-    { return; }
+    
+    if (IsBeingDestroyed) { return; }
 
     if (IsValid(GetOuter()))
     {
@@ -201,13 +214,10 @@ void
 
     IsActive = false;
 
-    if (IsValid(GEngine))
+    if (const auto* BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
+        IsValid(BlueprintTaskEngineSubsystem))
     {
-        if (const auto& BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
-            IsValid(BlueprintTaskEngineSubsystem))
-        {
-            BlueprintTaskEngineSubsystem->Request_Remove(this);
-        }
+        BlueprintTaskEngineSubsystem->Request_Remove(this);
     }
 
     OnDestroy();
@@ -224,8 +234,6 @@ FString UBtf_TaskForge::Get_NodeDescription_Implementation() const
     return FString();
 }
 
-//--CK
-
 TArray<FString> UBtf_TaskForge::ValidateNodeDuringCompilation_Implementation()
 {
     return TArray<FString>();
@@ -233,12 +241,13 @@ TArray<FString> UBtf_TaskForge::ValidateNodeDuringCompilation_Implementation()
 
 void UBtf_TaskForge::DeactivateAllTasksRelatedToObject(UObject* Object)
 {
-    TArray<UObject*> SubObjects;
+    auto SubObjects = TArray<UObject*>{};
     GetObjectsWithOuter(Object, SubObjects);
 
-    for(auto& CurrentObject : SubObjects)
+    for (auto& CurrentObject : SubObjects)
     {
-        if(UBtf_TaskForge* TaskTemplate = Cast<UBtf_TaskForge>(CurrentObject))
+        if (auto* TaskTemplate = Cast<UBtf_TaskForge>(CurrentObject); 
+            IsValid(TaskTemplate))
         {
             TaskTemplate->Deactivate();
         }
@@ -247,8 +256,6 @@ void UBtf_TaskForge::DeactivateAllTasksRelatedToObject(UObject* Object)
 
 void UBtf_TaskForge::TriggerCustomOutputPin(FName OutputPin, TInstancedStruct<FCustomOutputPinData> Data)
 {
-    /**For now, this is just broadcasting the event. Future changes could include adding
-     * logging into this function or validation. */
     OnCustomPinTriggered.Broadcast(OutputPin, Data);
 }
 
@@ -259,8 +266,8 @@ TArray<FCustomOutputPin> UBtf_TaskForge::GetCustomOutputPins_Implementation()
 
 TArray<FName> UBtf_TaskForge::GetCustomOutputPinNames()
 {
-    TArray<FName> Result;
-    for(auto& CurrentPin : GetCustomOutputPins())
+    auto Result = TArray<FName>{};
+    for (auto& CurrentPin : GetCustomOutputPins())
     {
         Result.Add(FName(CurrentPin.PinName));
     }
@@ -276,18 +283,21 @@ bool UBtf_TaskForge::GetNodeTitleColor_Implementation(FLinearColor& Color)
 bool UBtf_TaskForge::IsExtension() const
 {
     for (UObject* TemplateOwnerClass = (GetOuter() != nullptr) ? GetOuter() : nullptr
-    ; TemplateOwnerClass
+    ; TemplateOwnerClass != nullptr
     ; TemplateOwnerClass = TemplateOwnerClass->GetOuter())
     {
-        if(UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass))
+        if (auto* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass); 
+            IsValid(BPGC))
         {
-            if(UBlueprint* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy))
+            if (auto* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy); 
+                IsValid(Blueprint))
             {
                 return Blueprint->GetExtensions().Contains(this);
             }
         }
 
-        if(UBlueprint* Blueprint = Cast<UBlueprint>(TemplateOwnerClass))
+        if (auto* Blueprint = Cast<UBlueprint>(TemplateOwnerClass); 
+            IsValid(Blueprint))
         {
             return Blueprint->GetExtensions().Contains(this);
         }
@@ -302,111 +312,117 @@ void UBtf_TaskForge::CollectSpawnParam(const UClass* InClass, TSet<FName>& Out)
     Out.Reset();
     for (TFieldIterator<FProperty> PropertyIt(InClass, EFieldIteratorFlags::IncludeSuper); PropertyIt; ++PropertyIt)
     {
-        const FProperty* Property = *PropertyIt;
-        const bool bIsDelegate = Property->IsA(FMulticastDelegateProperty::StaticClass());
-        const bool bIsExposedToSpawn = Property->HasMetaData(TEXT("ExposeOnSpawn")) || Property->HasAllPropertyFlags(CPF_ExposeOnSpawn);
-        const bool bIsSettableExternally = !Property->HasAnyPropertyFlags(CPF_DisableEditOnInstance);
+        const auto* Property = *PropertyIt;
+        const auto IsDelegate = Property->IsA(FMulticastDelegateProperty::StaticClass());
+        const auto IsExposedToSpawn = Property->HasMetaData(TEXT("ExposeOnSpawn")) || Property->HasAllPropertyFlags(CPF_ExposeOnSpawn);
+        const auto IsSettableExternally = NOT Property->HasAnyPropertyFlags(CPF_DisableEditOnInstance);
 
-        //++CK
-        if (const auto& IsBlueprintPrivate = Property->GetMetaData(TEXT("BlueprintPrivate")) == TEXT("true"))
-        { continue; }
-        //--CK
-
-        if (!Property->HasAnyPropertyFlags(CPF_Parm) && !bIsDelegate)
+        if (Property->GetMetaData(TEXT("BlueprintPrivate")) == TEXT("true"))
         {
-            if (bIsExposedToSpawn && bIsSettableExternally && Property->HasAllPropertyFlags(CPF_BlueprintVisible))
-            {
-                Out.Add(Property->GetFName());
-            }
-            else if (
-                !Property->HasAnyPropertyFlags(			 //
-                    CPF_NativeAccessSpecifierProtected | //
-                    CPF_NativeAccessSpecifierPrivate |	 //
-                    CPF_Protected |						 //
-                    CPF_BlueprintReadOnly |				 //
-                    CPF_EditorOnly |					 //
-                    CPF_InstancedReference |			 //
-                    CPF_Deprecated |					 //
-                    CPF_ExportObject) &&				 //
-                Property->HasAllPropertyFlags(CPF_Edit | CPF_BlueprintVisible))
-            {
-                Out.Add(Property->GetFName());
-            }
+            continue;
+        }
+
+        if (Property->HasAnyPropertyFlags(CPF_Parm) || IsDelegate)
+        {
+            continue;
+        }
+
+        if (IsExposedToSpawn && IsSettableExternally && Property->HasAllPropertyFlags(CPF_BlueprintVisible))
+        {
+            Out.Add(Property->GetFName());
+        }
+        else if (
+            NOT Property->HasAnyPropertyFlags(
+                CPF_NativeAccessSpecifierProtected |
+                CPF_NativeAccessSpecifierPrivate |
+                CPF_Protected |
+                CPF_BlueprintReadOnly |
+                CPF_EditorOnly |
+                CPF_InstancedReference |
+                CPF_Deprecated |
+                CPF_ExportObject) &&
+            Property->HasAllPropertyFlags(CPF_Edit | CPF_BlueprintVisible))
+        {
+            Out.Add(Property->GetFName());
         }
     }
 }
+
 void UBtf_TaskForge::CollectFunctions(const UClass* InClass, TSet<FName>& Out)
 {
     Out.Reset();
     for (TFieldIterator<UField> It(InClass, EFieldIteratorFlags::IncludeSuper); It; ++It)
     {
-        if (const UFunction* LocFunction = Cast<UFunction>(*It))
-        {
-            if (LocFunction->HasAllFunctionFlags(FUNC_BlueprintCallable | FUNC_Public) && //
-                !LocFunction->GetBoolMetaData(FName(TEXT("BlueprintInternalUseOnly"))) && //
-//++CK
-                // Autocall functions should not display in the list of exec functions since they will
-                // revert to 'None' on save anyway
-                !LocFunction->GetBoolMetaData(FName(TEXT("ExposeAutoCall"))) &&           //
-//--CK
-                !LocFunction->HasMetaData(FName(TEXT("DeprecatedFunction"))) &&			  //
-                !FObjectEditorUtils::IsFunctionHiddenFromClass(LocFunction, InClass) &&	  //!InClass->IsFunctionHidden(*LocFunction->GetName())
-                !LocFunction->HasAnyFunctionFlags(										  //
-                    FUNC_Static |														  //
-                    FUNC_UbergraphFunction |											  //
-                    FUNC_Delegate |														  //
-                    FUNC_Private |														  //
-                    FUNC_Protected |													  //
-                    FUNC_EditorOnly |													  //
-                    FUNC_BlueprintPure |												  //
-                    FUNC_Const))														  // FUNC_BlueprintPure
-            {
-                Out.Add(LocFunction->GetFName());
-            }
-        }
+        const auto* LocFunction = Cast<UFunction>(*It);
+        if (NOT IsValid(LocFunction)) { continue; }
+
+        const auto HasRequiredFlags = LocFunction->HasAllFunctionFlags(FUNC_BlueprintCallable | FUNC_Public);
+        const auto HasInternalUseOnly = LocFunction->GetBoolMetaData(FName(TEXT("BlueprintInternalUseOnly")));
+        const auto HasExposeAutoCall = LocFunction->GetBoolMetaData(FName(TEXT("ExposeAutoCall")));
+        const auto HasDeprecated = LocFunction->HasMetaData(FName(TEXT("DeprecatedFunction")));
+        const auto IsHidden = FObjectEditorUtils::IsFunctionHiddenFromClass(LocFunction, InClass);
+        const auto HasExcludedFlags = LocFunction->HasAnyFunctionFlags(
+            FUNC_Static |
+            FUNC_UbergraphFunction |
+            FUNC_Delegate |
+            FUNC_Private |
+            FUNC_Protected |
+            FUNC_EditorOnly |
+            FUNC_BlueprintPure |
+            FUNC_Const);
+
+        if (NOT HasRequiredFlags || HasInternalUseOnly || HasExposeAutoCall || HasDeprecated || IsHidden || HasExcludedFlags) { continue; }
+
+        Out.Add(LocFunction->GetFName());
     }
 }
+
 void UBtf_TaskForge::CollectDelegates(const UClass* InClass, TSet<FName>& Out)
 {
     Out.Reset();
     for (TFieldIterator<FProperty> PropertyIt(InClass, EFieldIteratorFlags::IncludeSuper); PropertyIt; ++PropertyIt)
     {
-        if (const FMulticastDelegateProperty* DelegateProperty = CastField<FMulticastDelegateProperty>(*PropertyIt))
-        {
-            if (DelegateProperty->HasAnyPropertyFlags(FUNC_Private | CPF_Protected | FUNC_EditorOnly) || //
-                !DelegateProperty->HasAnyPropertyFlags(CPF_BlueprintAssignable) ||						 //
-                DelegateProperty->GetBoolMetaData(FName(TEXT("BlueprintInternalUseOnly"))) ||			 //
-                DelegateProperty->HasMetaData(TEXT("DeprecatedFunction")))
-            {
-                continue;
-            }
+        const auto* DelegateProperty = CastField<FMulticastDelegateProperty>(*PropertyIt);
+        if (NOT DelegateProperty) { continue; }
 
-            if (const UFunction* LocFunction = DelegateProperty->SignatureFunction)
-            {
-                if (!LocFunction->HasAllFunctionFlags(FUNC_Public) ||				  //
-                    LocFunction->GetBoolMetaData(TEXT("BlueprintInternalUseOnly")) || //
-                    LocFunction->HasMetaData(TEXT("DeprecatedFunction")) ||
-                    LocFunction->HasAnyFunctionFlags( //
-                        FUNC_Static |				  //
-                        FUNC_BlueprintPure |		  //
-                        FUNC_Const |				  //
-                        FUNC_UbergraphFunction |	  //
-                        FUNC_Private |				  //
-                        FUNC_Protected |			  //
-                        FUNC_EditorOnly))
-                {
-                    continue;
-                }
-            }
-            Out.Add(DelegateProperty->GetFName());
+        const auto HasInvalidFlags = DelegateProperty->HasAnyPropertyFlags(FUNC_Private | CPF_Protected | FUNC_EditorOnly);
+        const auto HasAssignableFlag = DelegateProperty->HasAnyPropertyFlags(CPF_BlueprintAssignable);
+        const auto HasInternalUseOnly = DelegateProperty->GetBoolMetaData(FName(TEXT("BlueprintInternalUseOnly")));
+        const auto HasDeprecated = DelegateProperty->HasMetaData(TEXT("DeprecatedFunction"));
+
+        if (HasInvalidFlags || NOT HasAssignableFlag || HasInternalUseOnly || HasDeprecated) { continue; }
+
+        if (const auto* LocFunction = DelegateProperty->SignatureFunction; 
+            IsValid(LocFunction))
+        {
+            const auto HasPublicFlag = LocFunction->HasAllFunctionFlags(FUNC_Public);
+            const auto HasFunctionInternalUseOnly = LocFunction->GetBoolMetaData(TEXT("BlueprintInternalUseOnly"));
+            const auto HasFunctionDeprecated = LocFunction->HasMetaData(TEXT("DeprecatedFunction"));
+            const auto HasInvalidFunctionFlags = LocFunction->HasAnyFunctionFlags(
+                FUNC_Static |
+                FUNC_BlueprintPure |
+                FUNC_Const |
+                FUNC_UbergraphFunction |
+                FUNC_Private |
+                FUNC_Protected |
+                FUNC_EditorOnly);
+
+            if (NOT HasPublicFlag || HasFunctionInternalUseOnly || HasFunctionDeprecated || HasInvalidFunctionFlags) { continue; }
         }
+
+        Out.Add(DelegateProperty->GetFName());
     }
 }
+
 void UBtf_TaskForge::CleanInvalidParams(TArray<FBtf_NameSelect>& Arr, const TSet<FName>& ArrRef)
 {
     for (int32 i = Arr.Num() - 1; i >= 0; --i)
     {
-        if ((Arr[i].Name != NAME_None && !ArrRef.Contains(Arr[i])) || Arr[i].Name == GET_MEMBER_NAME_CHECKED(UBtf_TaskForge, OnCustomPinTriggered))
+        const auto& CurrentItem = Arr[i];
+        const auto IsInvalidParam = (CurrentItem.Get_Name() != NAME_None && NOT ArrRef.Contains(CurrentItem));
+        const auto IsCustomPinTriggered = (CurrentItem.Get_Name() == GET_MEMBER_NAME_CHECKED(UBtf_TaskForge, OnCustomPinTriggered));
+
+        if (IsInvalidParam || IsCustomPinTriggered)
         {
             Arr.RemoveAt(i, 1, EAllowShrinking::No);
         }
@@ -415,60 +431,53 @@ void UBtf_TaskForge::CleanInvalidParams(TArray<FBtf_NameSelect>& Arr, const TSet
 
 void UBtf_TaskForge::RefreshCollected()
 {
-
-    #if WITH_EDITORONLY_DATA
+#if WITH_EDITORONLY_DATA
+    const auto* InClass = GetClass();
+    CollectSpawnParam(InClass, AllParam);
+    CollectFunctions(InClass, AllFunctions);
+    CollectDelegates(InClass, AllDelegates);
+    AllFunctionsExec = AllFunctions;
+    CleanInvalidParams(AutoCallFunction, AllFunctions);
+    CleanInvalidParams(ExecFunction, AllFunctions);
+    CleanInvalidParams(InDelegate, AllDelegates);
+    CleanInvalidParams(OutDelegate, AllDelegates);
+    CleanInvalidParams(SpawnParam, AllParam);
+    AutoCallFunction.AddUnique(FName(TEXT("Activate")));
+    
+    for (auto& It : AutoCallFunction)
     {
-        const UClass* InClass = GetClass();
-        CollectSpawnParam(InClass, AllParam);
-        CollectFunctions(InClass, AllFunctions);
-        CollectDelegates(InClass, AllDelegates);
-        AllFunctionsExec = AllFunctions;
-        CleanInvalidParams(AutoCallFunction, AllFunctions);
-        CleanInvalidParams(ExecFunction, AllFunctions);
-        CleanInvalidParams(InDelegate, AllDelegates);
-        CleanInvalidParams(OutDelegate, AllDelegates);
-        CleanInvalidParams(SpawnParam, AllParam);
-        AutoCallFunction.AddUnique(FName(TEXT("Activate")));
-        for (auto& It : AutoCallFunction)
-        {
-            It.SetAllExclude(AllFunctions, AutoCallFunction);
-            ExecFunction.Remove(It);
-        }
-        for (auto& It : ExecFunction)
-        {
-            It.SetAllExclude(AllFunctionsExec, ExecFunction);
-            AutoCallFunction.Remove(It);
-        }
-        for (auto& It : InDelegate)
-        {
-            It.SetAllExclude(AllDelegates, InDelegate);
-            OutDelegate.Remove(It);
-        }
-        for (auto& It : OutDelegate)
-        {
-            It.SetAllExclude(AllDelegates, OutDelegate);
-            InDelegate.Remove(It);
-        }
-        for (auto& It : SpawnParam)
-        {
-            It.SetAllExclude(AllParam, SpawnParam);
-        }
-        AutoCallFunction.AddUnique(FName(TEXT("Activate")));
-
-//++CK
-        AutoCallFunction.Remove(FName(TEXT("Deactivate")));
-        //++V ExecFunction.AddUnique was added by CK, I am adding the developer settings logic to optionally disable this behavior
-        if(const UBtf_RuntimeSettings* DeveloperSettings = GetDefault<UBtf_RuntimeSettings>())
-        {
-            if(DeveloperSettings->EnforceDeactivateExecFunction)
-            {
-                ExecFunction.AddUnique(FName(TEXT("Deactivate")));
-            }
-        }
-        //--V
-//--CK
+        It.SetAllExclude(AllFunctions, AutoCallFunction);
+        ExecFunction.Remove(It);
     }
-    #endif // WITH_EDITORONLY_DATA
+    for (auto& It : ExecFunction)
+    {
+        It.SetAllExclude(AllFunctionsExec, ExecFunction);
+        AutoCallFunction.Remove(It);
+    }
+    for (auto& It : InDelegate)
+    {
+        It.SetAllExclude(AllDelegates, InDelegate);
+        OutDelegate.Remove(It);
+    }
+    for (auto& It : OutDelegate)
+    {
+        It.SetAllExclude(AllDelegates, OutDelegate);
+        InDelegate.Remove(It);
+    }
+    for (auto& It : SpawnParam)
+    {
+        It.SetAllExclude(AllParam, SpawnParam);
+    }
+    
+    AutoCallFunction.AddUnique(FName(TEXT("Activate")));
+    AutoCallFunction.Remove(FName(TEXT("Deactivate")));
+    
+    if (const auto* DeveloperSettings = GetDefault<UBtf_RuntimeSettings>(); 
+        IsValid(DeveloperSettings) && DeveloperSettings->Get_EnforceDeactivateExecFunction())
+    {
+        ExecFunction.AddUnique(FName(TEXT("Deactivate")));
+    }
+#endif // WITH_EDITORONLY_DATA
 }
 
 void UBtf_TaskForge::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
@@ -479,22 +488,9 @@ void UBtf_TaskForge::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
     OnPostPropertyChanged.ExecuteIfBound(PropertyChangedEvent);
 }
 
-//++CK
-
-
 FString UBtf_TaskForge::Get_StatusString_Implementation() const
 {
     return FString();
 }
-
-auto
-    UBtf_TaskForge::
-    Get_IsActive() const
-    -> bool
-{
-    return IsActive;
-}
-
-//--CK
 
 #endif // WITH_EDITOR

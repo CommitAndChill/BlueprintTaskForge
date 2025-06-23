@@ -34,24 +34,27 @@ void FBlueprintTaskForgeEditorToolsModule::RegisterTasksPaletteTab(FWorkflowAllo
 
 void FBlueprintTaskForgeEditorToolsModule::OnBlueprintCompiled()
 {
-    TArray<FAssetData> AssetDataArr;
-    const auto& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+    auto AssetDataArr = TArray<FAssetData>{};
 
-    FARFilter Filter;
-    Filter.ClassPaths.Add(FTopLevelAssetPath(UBtf_TaskForge::StaticClass()));
-    Filter.bRecursiveClasses = true;
+    if (const auto* AssetRegistry = IAssetRegistry::Get();
+        AssetRegistry != nullptr)
+    {
+        FARFilter Filter;
+        Filter.ClassPaths.Add(FTopLevelAssetPath(UBtf_TaskForge::StaticClass()));
+        Filter.bRecursiveClasses = true;
 
-    AssetRegistry.GetAssets(Filter, AssetDataArr);
+        AssetRegistry->GetAssets(Filter, AssetDataArr);
+    }
 
     for (const auto& AssetData : AssetDataArr)
     {
-        if (const auto& Blueprint = Cast<UBlueprint>(AssetData.GetAsset()))
+        if (const auto* Blueprint = Cast<UBlueprint>(AssetData.GetAsset()))
         {
-            if (const auto& TestClass = Blueprint->GeneratedClass)
+            if (const UClass* TestClass = Blueprint->GeneratedClass)
             {
                 if (TestClass->IsChildOf(UBtf_TaskForge::StaticClass()))
                 {
-                    if (const auto& CDO = TestClass->GetDefaultObject(true))
+                    if (const auto CDO = TestClass->GetDefaultObject(true))
                     {
                     }
                 }

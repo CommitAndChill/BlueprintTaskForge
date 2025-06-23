@@ -1440,7 +1440,7 @@ void UBtf_ExtendConstructObject_K2Node::GenerateInputDelegatePins(UClass* InClas
             {
                 const auto& DelegateProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
 
-                const auto& DelegateNameStr = DelegateName.ToString();
+                const auto& DelegateNameStr = DelegateName.Name.ToString();
 
                 FCreatePinParams PinParams;
                 PinParams.bIsReference = true;
@@ -1470,7 +1470,7 @@ void UBtf_ExtendConstructObject_K2Node::GenerateOutputDelegatePins(UClass* InCla
             if (const auto& Property = InClass->FindPropertyByName(DelegateName))
             {
                 const auto& DelegateProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
-                const auto& DelegateNameStr = DelegateName.ToString();
+                const auto& DelegateNameStr = DelegateName.Name.ToString();
 
                 auto* ExecPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, DelegateName);
                 ExecPin->PinToolTip = DelegateProperty->GetToolTipText().ToString();
@@ -2082,7 +2082,7 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
                 (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
 
             const auto& Direction = IsFunctionInput ? EGPD_Input : EGPD_Output;
-            auto* InNodePin = FindParamPin(FunctionName.ToString(), Param->GetFName(), Direction);
+            auto* InNodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), Direction);
 
             if (InNodePin)
             {
@@ -2179,7 +2179,7 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
                 (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
             if (IsFunctionInput)
             {
-                auto* InNodePin = FindParamPin(FunctionName.ToString(), Param->GetFName(), EGPD_Input);
+                auto* InNodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), EGPD_Input);
                 if (InNodePin)
                 {
                     auto* InFunctionPin = CallFunction_Node->FindPinChecked(Param->GetFName(), EGPD_Input);

@@ -1,6 +1,7 @@
-﻿#pragma once
+#pragma once
 
 #include "KismetNodes/SGraphNodeK2Base.h"
+#include "BftMacros.h"
 
 #include "NodeDecorators/BtfNodeDecorator.h"
 
@@ -11,34 +12,37 @@ class UBtf_TaskForge;
 class SBtf_Node : public SGraphNodeK2Base
 {
 public:
+    SLATE_BEGIN_ARGS(SBtf_Node) {}
+    SLATE_END_ARGS()
 
-	SLATE_BEGIN_ARGS(SBtf_Node) {}
-	SLATE_END_ARGS()
+    virtual ~SBtf_Node()
+    {
+        if (Decorator)
+        {
+            Decorator->RemoveFromRoot();
+        }
+    }
 
-	UClass* TaskClass = nullptr;
+    void Construct(const FArguments& InArgs, UEdGraphNode* InGraphNode, UClass* InTaskClass);
 
-	TObjectPtr<UBtf_NodeDecorator> Decorator = nullptr;
+    virtual TSharedRef<SWidget> CreateNodeContentArea() override;
+    virtual void GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformationPopupInfo>& Popups) const override;
 
-	virtual ~SBtf_Node()
-	{
-		if(Decorator)
-		{
-			Decorator->RemoveFromRoot();
-		}
-	}
+    void CreateBelowPinControls(TSharedPtr<SVerticalBox> MainBox) override;
 
-	void Construct(const FArguments& InArgs, UEdGraphNode* InGraphNode, UClass* InTaskClass);
+    EVisibility Get_NodeConfigTextVisibility() const;
+    FText Get_NodeConfigText() const;
 
-	virtual TSharedRef<SWidget> CreateNodeContentArea() override;
-	virtual void GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformationPopupInfo>& Popups) const override;
-
-	auto CreateBelowPinControls(
-		TSharedPtr<SVerticalBox> MainBox) -> void override;
-
-	auto Get_NodeConfigTextVisibility() const -> EVisibility;
-	auto Get_NodeConfigText() const -> FText;
+    BFT_PROPERTY_GET(TaskClass)
+    BFT_PROPERTY_GET(Decorator)
 
 protected:
-	TWeakObjectPtr<UBtf_TaskForge_K2Node> _BlueprintTaskNode;
-	TSharedPtr<STextBlock> _ConfigTextBlock;
+    TSharedRef<SWidget> CreateDefaultNodeContent(TSharedPtr<SWidget> TopContent, TSharedPtr<SWidget> CenterContent, TSharedPtr<SWidget> BottomContent);
+
+    TWeakObjectPtr<UBtf_TaskForge_K2Node> BlueprintTaskNode;
+    TSharedPtr<STextBlock> ConfigTextBlock;
+
+private:
+    UClass* TaskClass = nullptr;
+    TObjectPtr<UBtf_NodeDecorator> Decorator = nullptr;
 };

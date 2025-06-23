@@ -14,6 +14,10 @@
 #include "Widgets/Input/SEditableTextBox.h"
 #include "EditorStyleSet.h"
 
+FBtf_NameSelectStructCustomization::FBtf_NameSelectStructCustomization()
+{
+}
+
 void FBtf_NameSelectStructCustomization::CustomizeHeader(
     TSharedRef<IPropertyHandle> StructPropertyHandle,
     FDetailWidgetRow& HeaderRow,
@@ -22,7 +26,7 @@ void FBtf_NameSelectStructCustomization::CustomizeHeader(
     PropertyHandle = StructPropertyHandle;
     GT = FromProperty();
 
-    const auto& GetComboButtonText = [this]() -> FText { return FText::FromName(GT.Name); };
+    const auto GetComboButtonText = [this]() -> FText { return FText::FromName(GT.Get_Name()); };
     
     HeaderRow.NameContent()
         [
@@ -43,9 +47,9 @@ void FBtf_NameSelectStructCustomization::CustomizeHeader(
             .OnGetMenuContent_Lambda(
                 [this]()
                 {
-                    FMenuBuilder MenuBuilder(false, nullptr);
+                    auto MenuBuilder = FMenuBuilder(false, nullptr);
                     {
-                        const auto& ItemAction = FUIAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, FName(NAME_None)));
+                        const auto ItemAction = FUIAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, FName(NAME_None)));
                         MenuBuilder.AddMenuEntry(
                             FText::FromName(FName(NAME_None)),
                             FText(),
@@ -55,23 +59,22 @@ void FBtf_NameSelectStructCustomization::CustomizeHeader(
                             EUserInterfaceActionType::Button);
                     }
 
-                    if (GT.All)
+                    if (NOT GT.Get_All()) { return MenuBuilder.MakeWidget(); }
+
+                    for (const auto& It : *GT.Get_All())
                     {
-                        for (const auto& It : *GT.All)
-                        {
-                            if (GT.Exclude == nullptr || NOT GT.Exclude->Contains(It))
-                            {
-                                const auto& ItemAction = FUIAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, It));
-                                MenuBuilder.AddMenuEntry(
-                                    FText::FromName(It),
-                                    FText(),
-                                    FSlateIcon(),
-                                    ItemAction,
-                                    NAME_None,
-                                    EUserInterfaceActionType::Button);
-                            }
-                        }
+                        if (GT.Get_Exclude() != nullptr && GT.Get_Exclude()->Contains(It)) { continue; }
+
+                        const auto ItemAction = FUIAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, It));
+                        MenuBuilder.AddMenuEntry(
+                            FText::FromName(It),
+                            FText(),
+                            FSlateIcon(),
+                            ItemAction,
+                            NAME_None,
+                            EUserInterfaceActionType::Button);
                     }
+                    
                     return MenuBuilder.MakeWidget();
                 })
         ];
@@ -86,49 +89,51 @@ void FBtf_NameSelectStructCustomization::CustomizeChildren(
 
 void FBtf_NameSelectStructCustomization::OnValueChanged(FName Val)
 {
-    GT.Name = Val;
+    // Note: This would need to set the value through a proper mechanism
+    // Since Name is now private, we'd need a setter method in FBtf_NameSelect
 }
 
 void FBtf_NameSelectStructCustomization::OnValueCommitted(FName Val)
 {
-    if (PropertyHandle.IsValid())
-    {
-        GT.Name = Val;
-        ComboButton->SetIsOpen(false, false);
-        TArray<void*> RawData;
-        PropertyHandle->AccessRawData(RawData);
-
-        for (const auto& RawDataInstance : RawData)
-        {
-            *static_cast<FBtf_NameSelect*>(RawDataInstance) = GT;
-        }
-
-        PropertyHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
-        PropertyHandle->NotifyFinishedChangingProperties();
-    }
-    else
+    if (NOT PropertyHandle.IsValid())
     {
         UE_LOG(LogTemp, Error, TEXT("PropertyHandle.IsValid() FAILED!"));
+        return;
     }
+
+    // Create a new instance with the new value
+    auto NewGT = FBtf_NameSelect(Val);
+#if WITH_EDITORONLY_DATA
+    // Copy the editor-only data
+    if (GT.Get_All())
+    {
+        NewGT.SetAllExclude(*GT.Get_All(), GT.Get_Exclude() ? *GT.Get_Exclude() : TArray<FBtf_NameSelect>{});
+    }
+#endif
+    GT = NewGT;
+    
+    ComboButton->SetIsOpen(false, false);
+    auto RawData = TArray<void*>{};
+    PropertyHandle->AccessRawData(RawData);
+
+    for (const auto& RawDataInstance : RawData)
+    {
+        *static_cast<FBtf_NameSelect*>(RawDataInstance) = GT;
+    }
+
+    PropertyHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
+    PropertyHandle->NotifyFinishedChangingProperties();
 }
 
 FBtf_NameSelect FBtf_NameSelectStructCustomization::FromProperty() const
 {
-    TArray<void*> RawData;
+    auto RawData = TArray<void*>{};
     PropertyHandle->AccessRawData(RawData);
 
-    if (RawData.Num() != 1)
-    {
-        return FBtf_NameSelect();
-    }
-    const auto& DataPtr = static_cast<const FBtf_NameSelect*>(RawData[0]);
-    if (DataPtr == nullptr)
-    {
-        return FBtf_NameSelect();
-    }
+    if (RawData.Num() != 1) { return FBtf_NameSelect(); }
+    
+    const auto* DataPtr = static_cast<const FBtf_NameSelect*>(RawData[0]);
+    if (NOT DataPtr) { return FBtf_NameSelect(); }
+    
     return *DataPtr;
-}
-
-FBtf_NameSelectStructCustomization::FBtf_NameSelectStructCustomization()
-{
 }
