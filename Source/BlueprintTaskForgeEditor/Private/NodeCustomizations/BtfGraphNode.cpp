@@ -29,12 +29,12 @@ TSharedRef<SWidget> SBtf_Node::CreateNodeContentArea()
 	{
 		if(!Decorator)
 		{
-			/**Make a new instance so things can be more dynamic. Also required for certain
+			/* Make a new instance so things can be more dynamic. Also required for certain
 			 * Slate usages, like brushes that need to be stored as a class member. */
 			Decorator = NewObject<UBtf_NodeDecorator>(_BlueprintTaskNode.Get(), _BlueprintTaskNode->GetInstanceOrDefaultObject()->Decorator);
 			_BlueprintTaskNode.Get()->Decorator = Decorator;
 
-			/**V: Since decorators are UObject's and Slate REALLY cares about the
+			/* Since decorators are UObject's and Slate REALLY cares about the
 			 * lifetime of things, and us storing a pointer to it inside a non-UCLASS
 			 * won't prevent it from being garbage collected.
 			 * This means that if you hot reload or do anything that causes the
@@ -48,7 +48,7 @@ TSharedRef<SWidget> SBtf_Node::CreateNodeContentArea()
 		TSharedPtr<SWidget> NodeOverride = Decorator->OverrideContentNodeArea(this);
 		if(NodeOverride != SNullWidget::NullWidget)
 		{
-			/**The decorator wants to override the node. Return it and
+			/* The decorator wants to override the node. Return it and
 			 * exit out of this function. */
 			return NodeOverride.ToSharedRef();
 		}
@@ -213,8 +213,6 @@ auto
 
 	return FText::GetEmpty();
 }
-
-//-CK
 
 #undef LOCTEXT_NAMESPACE
 

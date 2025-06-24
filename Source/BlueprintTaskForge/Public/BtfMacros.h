@@ -1,15 +1,7 @@
-﻿#include "Settings/BtfRuntimeSettings.h"
+#pragma once
 
 // --------------------------------------------------------------------------------------------------------------------
 
-FName UBtf_RuntimeSettings::GetSectionName() const
-{
-    return "Blueprint Task Forge Runtime Settings";
-}
-
-FName UBtf_RuntimeSettings::GetCategoryName() const
-{
-    return "Plugins";
-}
+#define NOT !
 
 // --------------------------------------------------------------------------------------------------------------------

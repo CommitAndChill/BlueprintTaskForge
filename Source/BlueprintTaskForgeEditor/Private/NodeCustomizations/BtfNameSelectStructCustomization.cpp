@@ -23,7 +23,6 @@ void FBtf_NameSelectStructCustomization::CustomizeHeader(
 	GT = FromProperty();
 
 	const auto& GetComboButtonText = [this]() -> FText { return FText::FromName(GT.Name); };
-	// clang-format off
 	HeaderRow.NameContent()
 		[
 			StructPropertyHandle->CreatePropertyNameWidget()
@@ -33,7 +32,6 @@ void FBtf_NameSelectStructCustomization::CustomizeHeader(
 		.MinDesiredWidth(512.f)
 		[
 			SAssignNew(ComboButton, SComboButton)
-			//.ComboButtonStyle(FButtonStyle())
 			.ContentPadding(FMargin(4.0, 2.0))
 			.ButtonContent()
 			[
@@ -48,7 +46,7 @@ void FBtf_NameSelectStructCustomization::CustomizeHeader(
 					{
 						const FUIAction ItemAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, FName(NAME_None)));
 						MenuBuilder.AddMenuEntry(
-							FText::FromName(FName(NAME_None)),
+							FText::FromName(NAME_None),
 							FText(),
 							FSlateIcon(),
 							ItemAction,
@@ -62,8 +60,7 @@ void FBtf_NameSelectStructCustomization::CustomizeHeader(
 						{
 							if (GT.Exclude == nullptr || !GT.Exclude->Contains(It))
 							{
-
-								FUIAction ItemAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, It)/*, FCanExecuteAction(), FIsActionChecked()*/); //,  FIsActionChecked::CreateLambda([this]() -> bool { return true; })
+								FUIAction ItemAction(FExecuteAction::CreateRaw(this, &FBtf_NameSelectStructCustomization::OnValueCommitted, It));
 								MenuBuilder.AddMenuEntry(
 									FText::FromName(It),
 									FText(),
@@ -78,7 +75,6 @@ void FBtf_NameSelectStructCustomization::CustomizeHeader(
 				})
 
 		];
-	// clang-format on
 }
 
 void FBtf_NameSelectStructCustomization::CustomizeChildren(
@@ -102,7 +98,6 @@ void FBtf_NameSelectStructCustomization::OnValueCommitted(FName Val)
 		ComboButton->SetIsOpen(false, false);
 		TArray<void*> RawData;
 		PropertyHandle->AccessRawData(RawData);
-		//PropertyHandle->NotifyPreChange();
 
 		for (const auto RawDataInstance : RawData)
 		{
@@ -134,6 +129,3 @@ FBtf_NameSelect FBtf_NameSelectStructCustomization::FromProperty() const
 	}
 	return *DataPtr;
 }
-
-FBtf_NameSelectStructCustomization::FBtf_NameSelectStructCustomization()
-{}
