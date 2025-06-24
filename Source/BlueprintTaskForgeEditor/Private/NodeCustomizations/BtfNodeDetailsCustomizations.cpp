@@ -25,7 +25,7 @@ void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
 	TArray<FName> CategoryNames;
 	DetailBuilder.GetCategoryNames(CategoryNames);
 
-	/**The category we're about to create will annoyingly go to the top of the
+	/* The category we're about to create will annoyingly go to the top of the
 	 * details panel. Update all categories to 0, then we'll update the other
 	 * details panel to be 1 to force it to go to the bottom. */
 	for(auto& CurrentCategory : CategoryNames)
@@ -77,7 +77,7 @@ void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
 	if(TaskNode->Decorator.IsValid())
 	{
 		/**Start adding any objects the decorator wants to include in the details panel*/
-		for(auto& CurrentObject : TaskNode->Decorator.Get()->GetObjectsForExtraDetailsPanels())
+		for(auto& CurrentObject : TaskNode->Decorator.Get()->Get_ObjectsForExtraDetailsPanels())
 		{
 			//Create a new details view for the current object
 			FDetailsViewArgs CurrentObjectDetailsViewArgs;

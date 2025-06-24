@@ -17,10 +17,11 @@ protected:
 	TWeakPtr<FBlueprintEditor> WeakBlueprintEditor;
 };
 
-/**V: The majority of this palette is butchered together by combining logic
+/*: The majority of this palette is butchered together by combining logic
  * from the ActorSequenceEditorTabSummoner and SBlueprintLibraryPalette.
  * I would have made a child of SBlueprintLibraryPalette, but it's in a
- * private folder... yay... */
+ * private folder... yay...
+ */
 class SBtf_TaskPalette : public SGraphPalette
 {
 public:

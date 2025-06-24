@@ -31,7 +31,4 @@ private:
 	/** Holds a handle to the property being edited. */
 	TSharedPtr<IPropertyHandle> PropertyHandle;
 	TSharedPtr<class SComboButton> ComboButton;
-
-public:
-	FBtf_NameSelectStructCustomization();
 };
