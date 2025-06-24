@@ -1,52 +1,37 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-
 #include "BtfNameSelect.generated.h"
 
+// --------------------------------------------------------------------------------------------------------------------
+
 USTRUCT(BlueprintType)
-struct FBtf_NameSelect
+struct BLUEPRINTTASKFORGE_API FBtf_NameSelect
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	FBtf_NameSelect() : Name(NAME_None) {}
-	FBtf_NameSelect(FName InName) : Name(InName) {}
+public:
+    FBtf_NameSelect() = default;
+    explicit FBtf_NameSelect(FName InName);
 
-	UPROPERTY(EditAnywhere, Category = "NameSelect")
-	FName Name;
-
-	FORCEINLINE operator FName() const { return Name; }
-	FORCEINLINE friend uint32 GetTypeHash(const FBtf_NameSelect& Node) { return GetTypeHash(Node.Name); }
-	friend FArchive& operator<<(FArchive& Ar, FBtf_NameSelect& Node)
-	{
-		Ar << Node.Name;
-		return Ar;
-	}
+    operator FName() const;
+    friend uint32 GetTypeHash(const FBtf_NameSelect& Node);
+    friend FArchive& operator<<(FArchive& Ar, FBtf_NameSelect& Node);
 
 #if WITH_EDITORONLY_DATA
-	TSet<FName>* All = nullptr;
-	TArray<FBtf_NameSelect>* Exclude = nullptr;
+    TSet<FName>* All = nullptr;
+    TArray<FBtf_NameSelect>* Exclude = nullptr;
 
-	FORCEINLINE FBtf_NameSelect& operator=(const FBtf_NameSelect& Other)
-	{
-		Name = Other.Name;
-		All = Other.All;
-		Exclude = Other.Exclude;
-		return *this;
-	}
-	FORCEINLINE FBtf_NameSelect& operator=(const FName& Other)
-	{
-		Name = Other;
-		return *this;
-	}
+    FBtf_NameSelect& operator=(const FBtf_NameSelect& Other);
+    FBtf_NameSelect& operator=(const FName& Other);
+    bool operator==(const FBtf_NameSelect& Other) const;
+    bool operator==(const FName& Other) const;
 
-	FORCEINLINE bool operator==(const FBtf_NameSelect& Other) const { return Name == Other.Name; }
-	FORCEINLINE bool operator==(const FName& Other) const { return Name == Other; }
-
-	FORCEINLINE void SetAllExclude(TSet<FName>& InAll, TArray<FBtf_NameSelect>& InExclude)
-	{
-		All = &InAll;
-		Exclude = &InExclude;
-	}
+    void SetAllExclude(TSet<FName>& InAll, TArray<FBtf_NameSelect>& InExclude);
 #endif
+
+    UPROPERTY(EditAnywhere, Category = "NameSelect")
+    FName Name = NAME_None;
 };
+
+// --------------------------------------------------------------------------------------------------------------------

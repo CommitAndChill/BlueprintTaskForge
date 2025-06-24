@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BtfTaskForge.h"
+#include "BftMacros.h"
 
 #include <Subsystems/EngineSubsystem.h>
 #include <Subsystems/WorldSubsystem.h>
@@ -8,6 +9,7 @@
 #include "BtfSubsystem.generated.h"
 
 // --------------------------------------------------------------------------------------------------------------------
+
 USTRUCT()
 struct FBtf_OutersBlueprintTasksArrayWrapper
 {
@@ -23,25 +25,17 @@ class BLUEPRINTTASKFORGE_API UBtf_WorldSubsystem : public UWorldSubsystem
 {
     GENERATED_BODY()
 
-    auto Deinitialize() -> void override;
-
 public:
-    auto
-    Request_TrackTask(
-        UBtf_TaskForge* InTask) -> void;
+    virtual void Deinitialize() override;
 
-    auto
-    Request_UntrackTask(
-        UBtf_TaskForge* InTask) -> void;
+    void TrackTask(UBtf_TaskForge* InTask);
+    void UntrackTask(UBtf_TaskForge* InTask);
 
-    TMap<TWeakObjectPtr<UObject>, FBtf_OutersBlueprintTasksArrayWrapper> GetTaskTree()
-    {
-        return ObjectsAndTheirTasks;
-    }
+    TMap<TWeakObjectPtr<UObject>, FBtf_OutersBlueprintTasksArrayWrapper> GetTaskTree();
 
 private:
     UPROPERTY(Transient)
-    TSet<TObjectPtr<UBtf_TaskForge>> _BlueprintTasks;
+    TSet<TObjectPtr<UBtf_TaskForge>> BlueprintTasks;
 
     UPROPERTY()
     TMap<TWeakObjectPtr<UObject>, FBtf_OutersBlueprintTasksArrayWrapper> ObjectsAndTheirTasks;
@@ -55,33 +49,20 @@ class BLUEPRINTTASKFORGE_API UBtf_EngineSubsystem : public UEngineSubsystem
     GENERATED_BODY()
 
 public:
-    auto
-    Request_Add(
-        FGuid InTaskNodeGuid,
-        UBtf_TaskForge* InTaskInstance) -> void;
+    void Add(FGuid InTaskNodeGuid, UBtf_TaskForge* InTaskInstance);
+    void Remove(UBtf_TaskForge* InTaskInstance);
+    void Remove(FGuid InTaskNodeGuid);
+    void Clear();
 
-    auto
-    Request_Remove(
-        UBtf_TaskForge* InTaskInstance) -> void;
-
-    auto
-    Request_Remove(
-        FGuid InTaskNodeGuid) -> void;
-
-    auto
-    Request_Clear() -> void;
-
-    auto
-    FindTaskInstanceWithGuid(
-        FGuid InTaskNodeGuid) -> UBtf_TaskForge*;
+    UBtf_TaskForge* FindTaskInstanceWithGuid(FGuid InTaskNodeGuid);
 
 private:
 #if WITH_EDITORONLY_DATA
     UPROPERTY()
-    TMap<FGuid, TWeakObjectPtr<UBtf_TaskForge>> _TaskNodeGuidToTaskInstance;
+    TMap<FGuid, TWeakObjectPtr<UBtf_TaskForge>> TaskNodeGuidToTaskInstance;
 
     UPROPERTY()
-    TMap<TWeakObjectPtr<UBtf_TaskForge>, FGuid> _TaskInstanceTaskNodeGuid;
+    TMap<TWeakObjectPtr<UBtf_TaskForge>, FGuid> TaskInstanceTaskNodeGuid;
 # endif
 };
 

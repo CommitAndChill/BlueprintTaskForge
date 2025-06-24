@@ -1,13 +1,9 @@
 #include "Subsystem/BtfSubsystem.h"
-
 #include "BtfTaskForge.h"
 
 // --------------------------------------------------------------------------------------------------------------------
 
-auto
-    UBtf_WorldSubsystem::
-    Deinitialize()
-    -> void
+void UBtf_WorldSubsystem::Deinitialize()
 {
 #if WITH_EDITOR
     if (IsValid(GEngine))
@@ -15,7 +11,7 @@ auto
         if (const auto& BlueprintTaskEngineSubsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
             IsValid(BlueprintTaskEngineSubsystem))
         {
-            BlueprintTaskEngineSubsystem->Request_Clear();
+            BlueprintTaskEngineSubsystem->Clear();
         }
     }
 #endif
@@ -23,128 +19,103 @@ auto
     Super::Deinitialize();
 }
 
-auto
-    UBtf_WorldSubsystem::
-    Request_TrackTask(
-        UBtf_TaskForge* Task)
-    -> void
+void UBtf_WorldSubsystem::TrackTask(UBtf_TaskForge* Task)
 {
-    QUICK_SCOPE_CYCLE_COUNTER(Request_TrackTask)
+    QUICK_SCOPE_CYCLE_COUNTER(TrackTask)
 
-    if (!IsValid(Task))
+    if (NOT IsValid(Task))
     { return; }
 
-    _BlueprintTasks.Add(Task);
+    BlueprintTasks.Add(Task);
 
-    if(FBtf_OutersBlueprintTasksArrayWrapper* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
+    if (auto* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
     {
         TasksWrapper->Tasks.AddUnique(Task);
     }
     else
     {
-        FBtf_OutersBlueprintTasksArrayWrapper TasksArrayWrapper;
+        auto TasksArrayWrapper = FBtf_OutersBlueprintTasksArrayWrapper{};
         TasksArrayWrapper.Tasks.Add(Task);
         ObjectsAndTheirTasks.Add(Task->GetOuter(), TasksArrayWrapper);
     }
 }
 
-auto
-    UBtf_WorldSubsystem::
-    Request_UntrackTask(
-        UBtf_TaskForge* Task)
-    -> void
+void UBtf_WorldSubsystem::UntrackTask(UBtf_TaskForge* Task)
 {
-    QUICK_SCOPE_CYCLE_COUNTER(Request_UntrackTask)
+    QUICK_SCOPE_CYCLE_COUNTER(UntrackTask)
 
-    if (!IsValid(Task))
+    if (NOT IsValid(Task))
     { return; }
 
-    _BlueprintTasks.Remove(Task);
+    BlueprintTasks.Remove(Task);
 
-    if(FBtf_OutersBlueprintTasksArrayWrapper* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
+    if (auto* TasksWrapper = ObjectsAndTheirTasks.Find(Task->GetOuter()))
     {
         TasksWrapper->Tasks.RemoveSingle(Task);
-        if(TasksWrapper->Tasks.IsEmpty())
+        if (TasksWrapper->Tasks.IsEmpty())
         {
             ObjectsAndTheirTasks.Remove(Task->GetOuter());
         }
     }
 }
 
-auto
-    UBtf_EngineSubsystem::
-    Request_Add(
-        FGuid InTaskNodeGuid,
-        UBtf_TaskForge* InTaskInstance)
-    -> void
+TMap<TWeakObjectPtr<UObject>, FBtf_OutersBlueprintTasksArrayWrapper> UBtf_WorldSubsystem::GetTaskTree()
+{
+    return ObjectsAndTheirTasks;
+}
+
+void UBtf_EngineSubsystem::Add(FGuid InTaskNodeGuid, UBtf_TaskForge* InTaskInstance)
 {
 #if WITH_EDITOR
-    _TaskNodeGuidToTaskInstance.Add(InTaskNodeGuid, TWeakObjectPtr<UBtf_TaskForge>(InTaskInstance));
-    _TaskInstanceTaskNodeGuid.Add(InTaskInstance, InTaskNodeGuid);
+    TaskNodeGuidToTaskInstance.Add(InTaskNodeGuid, TWeakObjectPtr<UBtf_TaskForge>(InTaskInstance));
+    TaskInstanceTaskNodeGuid.Add(InTaskInstance, InTaskNodeGuid);
 #endif
 }
 
-auto
-    UBtf_EngineSubsystem::
-    Request_Remove(
-        UBtf_TaskForge* InTaskInstance)
-    -> void
+void UBtf_EngineSubsystem::Remove(UBtf_TaskForge* InTaskInstance)
 {
 #if WITH_EDITOR
-    if (const auto& FoundTaskNodeGuid = _TaskInstanceTaskNodeGuid.Find(InTaskInstance);
+    if (const auto& FoundTaskNodeGuid = TaskInstanceTaskNodeGuid.Find(InTaskInstance);
         FoundTaskNodeGuid != nullptr)
     {
-        _TaskNodeGuidToTaskInstance.Remove(*FoundTaskNodeGuid);
-        _TaskInstanceTaskNodeGuid.Remove(InTaskInstance);
+        TaskNodeGuidToTaskInstance.Remove(*FoundTaskNodeGuid);
+        TaskInstanceTaskNodeGuid.Remove(InTaskInstance);
     }
 #endif
 }
 
-auto
-    UBtf_EngineSubsystem::
-    Request_Remove(
-        FGuid InTaskNodeGuid)
-    -> void
+void UBtf_EngineSubsystem::Remove(FGuid InTaskNodeGuid)
 {
 #if WITH_EDITOR
-    if (const auto& FoundTaskInstance = _TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
+    if (const auto& FoundTaskInstance = TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
         FoundTaskInstance != nullptr)
     {
         const auto& TaskInstance = *FoundTaskInstance;
-        _TaskInstanceTaskNodeGuid.Remove(TaskInstance);
-        _TaskNodeGuidToTaskInstance.Remove(InTaskNodeGuid);
+        TaskInstanceTaskNodeGuid.Remove(TaskInstance);
+        TaskNodeGuidToTaskInstance.Remove(InTaskNodeGuid);
     }
 #endif
 }
 
-auto
-    UBtf_EngineSubsystem::
-    Request_Clear()
-    -> void
+void UBtf_EngineSubsystem::Clear()
 {
 #if WITH_EDITOR
-    _TaskNodeGuidToTaskInstance.Empty();
-    _TaskInstanceTaskNodeGuid.Empty();
+    TaskNodeGuidToTaskInstance.Empty();
+    TaskInstanceTaskNodeGuid.Empty();
 #endif
 }
 
-auto
-    UBtf_EngineSubsystem::
-    FindTaskInstanceWithGuid(
-        FGuid InTaskNodeGuid)
-    -> UBtf_TaskForge*
+UBtf_TaskForge* UBtf_EngineSubsystem::FindTaskInstanceWithGuid(FGuid InTaskNodeGuid)
 {
 #if WITH_EDITOR
-    if (const auto& FoundTaskInstance = _TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
+    if (const auto& FoundTaskInstance = TaskNodeGuidToTaskInstance.Find(InTaskNodeGuid);
         FoundTaskInstance != nullptr)
     {
         return FoundTaskInstance->Get();
     }
-
-    return {};
-#else
-    return {};
 #endif
+
+    return nullptr;
 }
 
 // --------------------------------------------------------------------------------------------------------------------
