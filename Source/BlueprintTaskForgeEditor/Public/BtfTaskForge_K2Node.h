@@ -21,6 +21,7 @@ public:
     virtual void PinDefaultValueChanged(UEdGraphPin* Pin) override;
     virtual void AllocateDefaultPins() override;
     virtual void ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins) override;
+    virtual void ReconstructNode() override;
     virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
     virtual FText GetMenuCategory() const override;
 

@@ -226,12 +226,12 @@ void UBtf_TaskForge::TriggerCustomOutputPin(FName OutputPin, TInstancedStruct<FC
     OnCustomPinTriggered.Broadcast(OutputPin, Data);
 }
 
-TArray<FCustomOutputPin> UBtf_TaskForge::Get_CustomOutputPins_Implementation()
+TArray<FCustomOutputPin> UBtf_TaskForge::Get_CustomOutputPins_Implementation() const
 {
     return TArray<FCustomOutputPin>();
 }
 
-TArray<FName> UBtf_TaskForge::Get_CustomOutputPinNames()
+TArray<FName> UBtf_TaskForge::Get_CustomOutputPinNames() const
 {
     auto Result = TArray<FName>{};
     for (auto& CurrentPin : Get_CustomOutputPins())

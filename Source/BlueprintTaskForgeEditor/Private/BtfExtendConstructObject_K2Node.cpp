@@ -36,10 +36,14 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BtfTaskForge.h"
 #include "DetailLayoutBuilder.h"
+#include "K2Node_BreakStruct.h"
+
 #include "Framework/Commands/UIAction.h"
 #include "ToolMenu.h"
 #include "K2Node_SwitchName.h"
 #include "ObjectTools.h"
+
+#include "Kismet/BlueprintInstancedStructLibrary.h"
 
 #include "NodeCustomizations/BtfGraphNode.h"
 #include "StructUtils/InstancedStruct.h"
@@ -762,30 +766,74 @@ void UBtf_ExtendConstructObject_K2Node::GenerateCustomOutputPins()
             auto OldCustomPins = CustomPins;
             CustomPins = TargetClassAsBlueprintTask->Get_CustomOutputPins();
 
+            const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
+
             for (const auto& Pin : CustomPins)
             {
-                if (NOT FindPin(Pin.PinName))
+                FString PinNameStr = Pin.PinName;
+
+                // Create the execution pin for this custom output
+                if (!FindPin(PinNameStr))
                 {
-                    CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, FName(Pin.PinName))->PinToolTip = Pin.Tooltip;
+                    UEdGraphPin* ExecPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, FName(PinNameStr));
+                    ExecPin->PinToolTip = Pin.Tooltip;
                 }
-                else
+
+                // If this pin has a payload type, create output pins for each property
+                if (Pin.PayloadType)
                 {
-                    for (auto& OldPin : OldCustomPins)
+                    for (TFieldIterator<FProperty> It(Pin.PayloadType); It; ++It)
                     {
-                        if (auto* OldPinRef = FindPin(OldPin.PinName))
+                        FProperty* Property = *It;
+
+                        if (!Property->HasAnyPropertyFlags(CPF_Parm) &&
+                            Property->HasAllPropertyFlags(CPF_BlueprintVisible))
                         {
-                            RemovePin(OldPinRef);
+
+                            // Create pin name as CustomPinName_PropertyName
+                            FName PayloadPinName = Property->GetFName();
+
+                            if (!FindPin(PayloadPinName))
+                            {
+                                FEdGraphPinType PinType;
+                                if (K2Schema->ConvertPropertyToPinType(Property, PinType))
+                                {
+                                    UEdGraphPin* PayloadPin = CreatePin(EGPD_Output, PinType, PayloadPinName);
+                                    PayloadPin->PinFriendlyName = Property->GetDisplayNameText();
+
+                                    K2Schema->ConstructBasicPinTooltip(*PayloadPin,
+                                        Property->GetToolTipText(), PayloadPin->PinToolTip);
+                                }
+                            }
                         }
                     }
                 }
-            }
-
-            if (CustomPins.IsValidIndex(0))
-            {
-                if (NOT FindPin(FName("Custom Pin Data")))
+                else
                 {
-                    auto* DataPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Struct, "Custom Pin Data");
-                    DataPin->PinType.PinSubCategoryObject = TBaseStructure<FInstancedStruct>::Get();
+                    // Clean up old payload pins if they exist
+                    for (auto& OldPin : OldCustomPins)
+                    {
+                        if (OldPin.PinName == Pin.PinName)
+                        {
+                            // Remove any associated payload pins
+                            TArray<UEdGraphPin*> PinsToRemove;
+                            for (UEdGraphPin* ExistingPin : Pins)
+                            {
+                                FString ExistingPinName = ExistingPin->PinName.ToString();
+                                if (ExistingPinName.StartsWith(PinNameStr + TEXT("_")))
+                                {
+                                    PinsToRemove.Add(ExistingPin);
+                                }
+                            }
+
+                            for (UEdGraphPin* PinToRemove : PinsToRemove)
+                            {
+                                RemovePin(PinToRemove);
+                                PinToRemove->MarkAsGarbage();
+                            }
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -1856,6 +1904,36 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
         {
             const auto& PinType = CurrentPin->PinType;
 
+            bool bIsCustomPin = false;
+            for (const auto& CustomPin : CustomPins)
+            {
+                if (CustomPin.PayloadType)
+                {
+                    for (TFieldIterator<FProperty> It(CustomPin.PayloadType); It; ++It)
+                    {
+                        FProperty* Property = *It;
+
+                        if (!Property->HasAnyPropertyFlags(CPF_Parm) &&
+                            Property->HasAllPropertyFlags(CPF_BlueprintVisible))
+                        {
+                            FName PayloadPinName = Property->GetFName();
+
+                            if (CurrentPin->PinName == PayloadPinName)
+                            {
+                                bIsCustomPin = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (bIsCustomPin)
+                { break; }
+            }
+
+            if (bIsCustomPin)
+            { continue; }
+
             auto* TempVarOutput = CompilerContext.SpawnInternalVariable(
                     this,
                     PinType.PinCategory,
@@ -1997,21 +2075,8 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
             return;
         }
 
-        auto VariableOutputs2 = TArray<FNodeHelper::FOutputPinAndLocalVariable>{};
-        for (auto* Pin : Pins)
-        {
-            if (Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-            {
-                auto OutputMapping = FNodeHelper::FOutputPinAndLocalVariable{};
-                OutputMapping.OutputPin = Pin;
-                OutputMapping.TempVar = nullptr;
-                VariableOutputs2.Add(OutputMapping);
-            }
-        }
-
         const auto Success = FNodeHelper::HandleCustomPinsImplementation(
             MulticastDelegateProperty,
-            VariableOutputs2,
             Cast_Output,
             LastThenPin,
             this,
@@ -2448,9 +2513,9 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleDelegateImplementatio
 }
 
 bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleCustomPinsImplementation(
-    FMulticastDelegateProperty* CurrentProperty, const TArray<FOutputPinAndLocalVariable>& VariableOutputs,
-    UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, TArray<FCustomOutputPin> OutputNames,
-    FKismetCompilerContext& CompilerContext)
+    FMulticastDelegateProperty* CurrentProperty,
+    UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph,
+    TArray<FCustomOutputPin> OutputNames, FKismetCompilerContext& CompilerContext)
 {
     auto IsErrorFree = true;
     const auto* Schema = CompilerContext.GetSchema();
@@ -2468,7 +2533,7 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleCustomPinsImplementat
         CurrentCeNode->CustomFunctionName = *FString::Printf(TEXT("%s_%s"), *CurrentProperty->GetName(), *CompilerContext.GetGuid(CurrentNode));
         CurrentCeNode->AllocateDefaultPins();
 
-        //We need to assign the signature for the proper pins to generate before we connect them
+        // We need to assign the signature for the proper pins to generate before we connect them
         IsErrorFree &= FNodeHelper::CreateDelegateForNewFunction(
             AddDelegateNode->GetDelegatePin(),
             CurrentCeNode->GetFunctionName(),
@@ -2477,31 +2542,10 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleCustomPinsImplementat
             CompilerContext);
         IsErrorFree &= FNodeHelper::CopyEventSignature(CurrentCeNode, AddDelegateNode->GetDelegateSignature(), Schema);
 
+        auto* PinNamePin = CurrentCeNode->FindPin(TEXT("PinName"));
         auto* DataPin = CurrentCeNode->FindPin(TEXT("Data"));
 
-        //Create the temporary variable
-        auto* TempVarOutput = CompilerContext.SpawnInternalVariable(
-                CurrentNode,
-                DataPin->PinType.PinCategory,
-                DataPin->PinType.PinSubCategory,
-                DataPin->PinType.PinSubCategoryObject.Get(),
-                DataPin->PinType.ContainerType,
-                DataPin->PinType.PinValueType
-                );
-
-        //Create the assign node and make the appropriate connections
-        auto* AssignNode = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>(CurrentNode, SourceGraph);
-        AssignNode->AllocateDefaultPins();
-        IsErrorFree &= Schema->TryCreateConnection(CurrentCeNode->FindPinChecked(UEdGraphSchema_K2::PN_Then), AssignNode->GetExecPin());
-        IsErrorFree &= Schema->TryCreateConnection(TempVarOutput->GetVariablePin(), AssignNode->GetVariablePin());
-        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetVariablePin());
-        IsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), DataPin);
-        AssignNode->NotifyPinConnectionListChanged(AssignNode->GetValuePin());
-
-        //This allows the Custom Pin Data to read from the temporary variable
-        IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*CurrentNode->FindPin(TEXT("Custom Pin Data")), *TempVarOutput->GetVariablePin()).CanSafeConnect();
-
-        //To simplify the custom output pins, just make a switch node
+        // Create a switch node for routing to the correct custom pin
         auto* SwitchNode = CompilerContext.SpawnIntermediateNode<UK2Node_SwitchName>(CurrentNode, SourceGraph);
         auto ConvertedOutputNames = TArray<FName>{};
         for (auto& CurrentPin : OutputNames)
@@ -2511,23 +2555,75 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleCustomPinsImplementat
         SwitchNode->PinNames = ConvertedOutputNames;
         SwitchNode->AllocateDefaultPins();
 
-        //Connect the assign node to the switch node
-        Schema->TryCreateConnection(AssignNode->GetThenPin(), SwitchNode->GetExecPin());
+        // Connect the custom event to the switch node
+        Schema->TryCreateConnection(CurrentCeNode->FindPinChecked(UEdGraphSchema_K2::PN_Then), SwitchNode->GetExecPin());
+        Schema->TryCreateConnection(PinNamePin, SwitchNode->GetSelectionPin());
 
-        //Connect the Custom Event's FName output pin to the Switch's Selection pin
-        Schema->TryCreateConnection(CurrentCeNode->FindPin(TEXT("PinName")), SwitchNode->GetSelectionPin());
-
-        //Redirect all the switch nodes output pins to our custom pins
+        // For each custom output pin
         for (int32 i = 0; i < OutputNames.Num(); ++i)
         {
             const auto& OutputName = FName(OutputNames[i].PinName);
             if (auto* SwitchCasePin = SwitchNode->FindPin(OutputName.ToString()))
             {
-                SwitchCasePin->PinToolTip = OutputNames[i].Tooltip;
-                if (auto* NodeOutputPin = CurrentNode->FindPin(OutputName);
-                    SwitchCasePin && NodeOutputPin)
+                // Handle payload extraction if this pin has a payload type
+                if (OutputNames[i].PayloadType)
                 {
-                    CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *SwitchCasePin);
+                    // Create GetInstancedStructValue node
+                    auto* GetInstancedStructNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(CurrentNode, SourceGraph);
+                    GetInstancedStructNode->SetFromFunction(
+                        UBlueprintInstancedStructLibrary::StaticClass()->FindFunctionByName(
+                            GET_FUNCTION_NAME_CHECKED(UBlueprintInstancedStructLibrary, GetInstancedStructValue)));
+                    GetInstancedStructNode->AllocateDefaultPins();
+
+                    // Connect the data pin to GetInstancedStructValue
+                    Schema->TryCreateConnection(DataPin, GetInstancedStructNode->FindPin(TEXT("InstancedStruct")));
+                    Schema->TryCreateConnection(SwitchCasePin, GetInstancedStructNode->GetExecPin());
+
+                    // Create BreakStruct node
+                    auto* BreakStructNode = CompilerContext.SpawnIntermediateNode<UK2Node_BreakStruct>(CurrentNode, SourceGraph);
+                    BreakStructNode->StructType = OutputNames[i].PayloadType;
+                    BreakStructNode->AllocateDefaultPins();
+                    BreakStructNode->bMadeAfterOverridePinRemoval = true;
+
+                    // Connect GetInstancedStructValue to BreakStruct
+                    UEdGraphPin* ValuePin = GetInstancedStructNode->FindPin(TEXT("Value"));
+                    UEdGraphPin* StructInputPin = BreakStructNode->FindPin(OutputNames[i].PayloadType->GetFName());
+                    Schema->TryCreateConnection(ValuePin, StructInputPin);
+
+                    // Connect the broken out values to the output pins
+                    for (TFieldIterator<FProperty> It(OutputNames[i].PayloadType); It; ++It)
+                    {
+                        FProperty* Property = *It;
+                        if (!Property->HasAnyPropertyFlags(CPF_Parm) &&
+                            Property->HasAllPropertyFlags(CPF_BlueprintVisible))
+                        {
+                            UEdGraphPin* BreakPin = BreakStructNode->FindPin(Property->GetFName());
+                            if (BreakPin)
+                            {
+                                FName PayloadPinName = Property->GetFName();
+
+                                if (UEdGraphPin* NodeOutputPin = CurrentNode->FindPin(PayloadPinName))
+                                {
+                                    CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *BreakPin);
+                                }
+                            }
+                        }
+                    }
+
+                    // Connect execution output
+                    if (auto* NodeOutputPin = CurrentNode->FindPin(OutputName))
+                    {
+                        UEdGraphPin* ValidPin = GetInstancedStructNode->FindPin(TEXT("Valid"));
+                        CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *ValidPin);
+                    }
+                }
+                else
+                {
+                    // No payload, just connect the execution pin
+                    if (auto* NodeOutputPin = CurrentNode->FindPin(OutputName))
+                    {
+                        CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *SwitchCasePin);
+                    }
                 }
             }
         }
