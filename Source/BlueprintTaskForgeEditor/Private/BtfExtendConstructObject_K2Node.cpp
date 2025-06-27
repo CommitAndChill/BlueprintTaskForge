@@ -77,75 +77,73 @@ UBtf_ExtendConstructObject_K2Node::UBtf_ExtendConstructObject_K2Node(const FObje
 UEdGraphPin* UBtf_ExtendConstructObject_K2Node::GetWorldContextPin() const
 {
     if (SelfContext)
-    {
-        return FindPin(UEdGraphSchema_K2::PSC_Self);
-    }
+    { return FindPin(UEdGraphSchema_K2::PSC_Self); }
+    
     return FindPin(WorldContextPinName);
 }
 
 #if WITH_EDITORONLY_DATA
-void UBtf_ExtendConstructObject_K2Node::PostEditChangeProperty(FPropertyChangedEvent& e)
+void UBtf_ExtendConstructObject_K2Node::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
     auto NeedReconstruct = false;
-    if (e.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, AutoCallFunction))
+    const auto PropertyName = PropertyChangedEvent.GetPropertyName();
+    
+    if (PropertyName == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, AutoCallFunction))
     {
         RefreshNames(ExecFunction, false);
-        for (auto& It : AutoCallFunction)
+        for (auto& FuncName : AutoCallFunction)
         {
-            It.SetAllExclude(AllFunctions, AutoCallFunction);
-            ExecFunction.Remove(It);
+            FuncName.SetAllExclude(AllFunctions, AutoCallFunction);
+            ExecFunction.Remove(FuncName);
         }
         NeedReconstruct = true;
     }
-    else if (e.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, ExecFunction))
+    else if (PropertyName == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, ExecFunction))
     {
         RefreshNames(ExecFunction, false);
-        for (auto& It : ExecFunction)
+        for (auto& FuncName : ExecFunction)
         {
-            It.SetAllExclude(AllFunctionsExec, ExecFunction);
-            AutoCallFunction.Remove(It);
+            FuncName.SetAllExclude(AllFunctionsExec, ExecFunction);
+            AutoCallFunction.Remove(FuncName);
         }
         NeedReconstruct = true;
     }
-    else if (e.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, InDelegate))
+    else if (PropertyName == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, InDelegate))
     {
         RefreshNames(InDelegate, false);
-        for (auto& It : InDelegate)
+        for (auto& DelegateName : InDelegate)
         {
-            It.SetAllExclude(AllDelegates, InDelegate);
-            OutDelegate.Remove(It);
+            DelegateName.SetAllExclude(AllDelegates, InDelegate);
+            OutDelegate.Remove(DelegateName);
         }
         NeedReconstruct = true;
     }
-    else if (e.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, OutDelegate))
+    else if (PropertyName == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, OutDelegate))
     {
         RefreshNames(OutDelegate, false);
-        for (auto& It : OutDelegate)
+        for (auto& DelegateName : OutDelegate)
         {
-            It.SetAllExclude(AllDelegates, OutDelegate);
-            InDelegate.Remove(It);
+            DelegateName.SetAllExclude(AllDelegates, OutDelegate);
+            InDelegate.Remove(DelegateName);
         }
         NeedReconstruct = true;
     }
-    else if (e.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, SpawnParam))
+    else if (PropertyName == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, SpawnParam))
     {
         RefreshNames(SpawnParam, false);
-        for (auto& It : SpawnParam)
+        for (auto& Param : SpawnParam)
         {
-            It.SetAllExclude(AllParam, SpawnParam);
+            Param.SetAllExclude(AllParam, SpawnParam);
         }
         NeedReconstruct = true;
     }
-    else if (e.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, OwnerContextPin))
+    else if (PropertyName == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, OwnerContextPin))
     {
         NeedReconstruct = true;
-
         if (OwnerContextPin)
-        {
-            SelfContext = false;
-        }
+        { SelfContext = false; }
     }
-    else if (e.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, AllowInstance))
+    else if (PropertyName == GET_MEMBER_NAME_CHECKED(UBtf_ExtendConstructObject_K2Node, AllowInstance))
     {
         NeedReconstruct = true;
 
@@ -157,7 +155,7 @@ void UBtf_ExtendConstructObject_K2Node::PostEditChangeProperty(FPropertyChangedE
                 if (CurrentExtension.IsA(UBtf_TaskForge::StaticClass()) && CurrentExtension.GetName().Contains(NodeGuid.ToString()))
                 {
                     TaskInstance = Cast<UBtf_TaskForge>(CurrentExtension);
-                    TaskInstance->OnPostPropertyChanged.BindLambda([this](FPropertyChangedEvent PropertyChangedEvent)
+                    TaskInstance->OnPostPropertyChanged.BindLambda([this](FPropertyChangedEvent)
                     {
                         ReconstructNode();
                     });
@@ -172,7 +170,7 @@ void UBtf_ExtendConstructObject_K2Node::PostEditChangeProperty(FPropertyChangedE
                 std::ignore = GetBlueprint()->MarkPackageDirty();
                 std::ignore = TaskInstance->MarkPackageDirty();
 
-                TaskInstance->OnPostPropertyChanged.BindLambda([this](FPropertyChangedEvent PropertyChangedEvent)
+                TaskInstance->OnPostPropertyChanged.BindLambda([this](FPropertyChangedEvent)
                 {
                     ReconstructNode();
                 });
@@ -190,9 +188,7 @@ void UBtf_ExtendConstructObject_K2Node::PostEditChangeProperty(FPropertyChangedE
         }
 
         if (DetailsPanelBuilder)
-        {
-            DetailsPanelBuilder->ForceRefreshDetails();
-        }
+        { DetailsPanelBuilder->ForceRefreshDetails(); }
     }
 
     if (NeedReconstruct)
@@ -201,19 +197,10 @@ void UBtf_ExtendConstructObject_K2Node::PostEditChangeProperty(FPropertyChangedE
         ReconstructNode();
     }
 
-    auto IsDirty = false;
-    auto PropertyName = (e.Property != NULL) ? e.Property->GetFName() : NAME_None;
-    if (PropertyName == TEXT("CustomPins"))
-    {
-        IsDirty = true;
-    }
+    if (PropertyChangedEvent.Property != nullptr && PropertyChangedEvent.Property->GetFName() == TEXT("CustomPins"))
+    { ReconstructNode(); }
 
-    if (IsDirty)
-    {
-        ReconstructNode();
-    }
-
-    Super::PostEditChangeProperty(e);
+    Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 
 void UBtf_ExtendConstructObject_K2Node::ResetToDefaultExposeOptions_Impl()
@@ -229,9 +216,7 @@ void UBtf_ExtendConstructObject_K2Node::Serialize(FArchive& Ar)
     if (Ar.IsSaving())
     {
         if (IsValid(ProxyClass) && NOT ProxyClass->IsChildOf(UObject::StaticClass()))
-        {
-            ProxyClass = nullptr;
-        }
+        { ProxyClass = nullptr; }
     }
 
     Super::Serialize(Ar);
@@ -239,9 +224,8 @@ void UBtf_ExtendConstructObject_K2Node::Serialize(FArchive& Ar)
     if (Ar.IsLoading())
     {
         if (IsValid(ProxyClass) && NOT ProxyClass->IsChildOf(UObject::StaticClass()))
-        {
-            ProxyClass = nullptr;
-        }
+        { ProxyClass = nullptr; }
+        
         if (NOT OwnerContextPin && FindPin(WorldContextPinName))
         {
             SelfContext = false;
@@ -250,10 +234,11 @@ void UBtf_ExtendConstructObject_K2Node::Serialize(FArchive& Ar)
     }
 }
 
-void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const
+void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const
 {
     Super::GetNodeContextMenuActions(Menu, Context);
-    if (Context->bIsDebugging) return;
+    if (Context->bIsDebugging)
+    { return; }
 
     if (IsValid(Context->Node) && Context->Node->GetClass()->IsChildOf(UBtf_ExtendConstructObject_K2Node::StaticClass()) && Context->Pin == nullptr)
     {
@@ -266,23 +251,23 @@ void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(class UToolMen
                 FText::FromName(FName("AddSpawnParamPin")),
                 FText(),
                 FNewToolMenuDelegate::CreateLambda(
-                    [&](UToolMenu* InMenu)
+                    [&](UToolMenu* SubMenu)
                     {
-                        auto& SubMenuSection = InMenu->AddSection("AddSpawnParamPin", FText::FromName(FName("AddSpawnParamPin")));
-                        for (const auto& It : AllParam)
+                        auto& SubMenuSection = SubMenu->AddSection("AddSpawnParamPin", FText::FromName(FName("AddSpawnParamPin")));
+                        for (const auto& ParamName : AllParam)
                         {
-                            if (NOT SpawnParam.Contains(It))
+                            if (NOT SpawnParam.Contains(ParamName))
                             {
                                 SubMenuSection.AddMenuEntry(
-                                    It,
-                                    FText::FromName(It),
+                                    ParamName,
+                                    FText::FromName(ParamName),
                                     FText(),
                                     FSlateIcon(),
                                     FUIAction(
                                         FExecuteAction::CreateUObject(
                                             const_cast<UBtf_ExtendConstructObject_K2Node*>(this),
                                             &UBtf_ExtendConstructObject_K2Node::AddSpawnParam,
-                                            It),
+                                            ParamName),
                                         FIsActionChecked()));
                             }
                         }
@@ -296,23 +281,23 @@ void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(class UToolMen
                 FText::FromName(FName("AddAutoCallFunction")),
                 FText(),
                 FNewToolMenuDelegate::CreateLambda(
-                    [&](UToolMenu* InMenu)
+                    [&](UToolMenu* SubMenu)
                     {
-                        auto& SubMenuSection = InMenu->AddSection("AddAutoCallFunction", LOCTEXT("AddAutoCallFunction", "AddAutoCallFunction"));
-                        for (const auto& It : AllFunctions)
+                        auto& SubMenuSection = SubMenu->AddSection("AddAutoCallFunction", LOCTEXT("AddAutoCallFunction", "AddAutoCallFunction"));
+                        for (const auto& FuncName : AllFunctions)
                         {
-                            if (NOT AutoCallFunction.Contains(It))
+                            if (NOT AutoCallFunction.Contains(FuncName))
                             {
                                 SubMenuSection.AddMenuEntry(
-                                    It,
-                                    FText::FromName(It),
+                                    FuncName,
+                                    FText::FromName(FuncName),
                                     FText(),
                                     FSlateIcon(),
                                     FUIAction(
                                         FExecuteAction::CreateUObject(
                                             const_cast<UBtf_ExtendConstructObject_K2Node*>(this),
                                             &UBtf_ExtendConstructObject_K2Node::AddAutoCallFunction,
-                                            It),
+                                            FuncName),
                                         FIsActionChecked()));
                             }
                         }
@@ -326,23 +311,23 @@ void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(class UToolMen
                 FText::FromName(FName("AddExecCallFunction")),
                 FText(),
                 FNewToolMenuDelegate::CreateLambda(
-                    [&](UToolMenu* InMenu)
+                    [&](UToolMenu* SubMenu)
                     {
-                        auto& SubMenuSection = InMenu->AddSection("AddExecCallFunction", LOCTEXT("AddExecCallFunction", "AddCallFunctionPin"));
-                        for (const auto& It : AllFunctionsExec)
+                        auto& SubMenuSection = SubMenu->AddSection("AddExecCallFunction", LOCTEXT("AddExecCallFunction", "AddCallFunctionPin"));
+                        for (const auto& FuncName : AllFunctionsExec)
                         {
-                            if (NOT ExecFunction.Contains(It))
+                            if (NOT ExecFunction.Contains(FuncName))
                             {
                                 SubMenuSection.AddMenuEntry(
-                                    It,
-                                    FText::FromName(It),
+                                    FuncName,
+                                    FText::FromName(FuncName),
                                     FText(),
                                     FSlateIcon(),
                                     FUIAction(
                                         FExecuteAction::CreateUObject(
                                             const_cast<UBtf_ExtendConstructObject_K2Node*>(this),
                                             &UBtf_ExtendConstructObject_K2Node::AddInputExec,
-                                            It),
+                                            FuncName),
                                         FIsActionChecked()));
                             }
                         }
@@ -356,23 +341,23 @@ void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(class UToolMen
                 FText::FromName(FName("AddInputDelegatePin")),
                 FText(),
                 FNewToolMenuDelegate::CreateLambda(
-                    [&](UToolMenu* InMenu)
+                    [&](UToolMenu* SubMenu)
                     {
-                        auto& SubMenuSection = InMenu->AddSection("AddInputDelegatePin", FText::FromName(FName("AddInputDelegatePin")));
-                        for (const auto& It : AllDelegates)
+                        auto& SubMenuSection = SubMenu->AddSection("AddInputDelegatePin", FText::FromName(FName("AddInputDelegatePin")));
+                        for (const auto& DelegateName : AllDelegates)
                         {
-                            if (NOT InDelegate.Contains(It))
+                            if (NOT InDelegate.Contains(DelegateName))
                             {
                                 SubMenuSection.AddMenuEntry(
-                                    It,
-                                    FText::FromName(It),
+                                    DelegateName,
+                                    FText::FromName(DelegateName),
                                     FText(),
                                     FSlateIcon(),
                                     FUIAction(
                                         FExecuteAction::CreateUObject(
                                             const_cast<UBtf_ExtendConstructObject_K2Node*>(this),
                                             &UBtf_ExtendConstructObject_K2Node::AddInputDelegate,
-                                            It),
+                                            DelegateName),
                                         FIsActionChecked()));
                             }
                         }
@@ -383,23 +368,23 @@ void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(class UToolMen
                 FText::FromName(FName("AddOutputDelegatePin")),
                 FText(),
                 FNewToolMenuDelegate::CreateLambda(
-                    [&](UToolMenu* InMenu)
+                    [&](UToolMenu* SubMenu)
                     {
-                        auto& SubMenuSection = InMenu->AddSection("SubAsyncTaskSubMenu", FText::FromName(FName("AddOutputDelegatePin")));
-                        for (const auto& It : AllDelegates)
+                        auto& SubMenuSection = SubMenu->AddSection("SubAsyncTaskSubMenu", FText::FromName(FName("AddOutputDelegatePin")));
+                        for (const auto& DelegateName : AllDelegates)
                         {
-                            if (NOT OutDelegate.Contains(It))
+                            if (NOT OutDelegate.Contains(DelegateName))
                             {
                                 SubMenuSection.AddMenuEntry(
-                                    It,
-                                    FText::FromName(It),
+                                    DelegateName,
+                                    FText::FromName(DelegateName),
                                     FText(),
                                     FSlateIcon(),
                                     FUIAction(
                                         FExecuteAction::CreateUObject(
                                             const_cast<UBtf_ExtendConstructObject_K2Node*>(this),
                                             &UBtf_ExtendConstructObject_K2Node::AddOutputDelegate,
-                                            It),
+                                            DelegateName),
                                         FIsActionChecked()));
                             }
                         }
@@ -411,7 +396,8 @@ void UBtf_ExtendConstructObject_K2Node::GetNodeContextMenuActions(class UToolMen
         Context->Node->GetClass()->IsChildOf(UBtf_ExtendConstructObject_K2Node::StaticClass()) &&
         Context->Pin)
     {
-        if (Context->Pin->PinName == UEdGraphSchema_K2::PN_Execute || Context->Pin->PinName == UEdGraphSchema_K2::PN_Then) return;
+        if (Context->Pin->PinName == UEdGraphSchema_K2::PN_Execute || Context->Pin->PinName == UEdGraphSchema_K2::PN_Then)
+        { return; }
 
         const auto SpawnParamPin = SpawnParam.Contains(Context->Pin->PinName);
 
@@ -457,9 +443,8 @@ void UBtf_ExtendConstructObject_K2Node::GetMenuActions(FBlueprintActionDatabaseR
 FText UBtf_ExtendConstructObject_K2Node::GetMenuCategory() const
 {
     if (const auto* TargetFunction = GetFactoryFunction())
-    {
-        return UK2Node_CallFunction::GetDefaultCategoryForFunction(TargetFunction, FText::GetEmpty());
-    }
+    { return UK2Node_CallFunction::GetDefaultCategoryForFunction(TargetFunction, FText::GetEmpty()); }
+    
     return FText();
 }
 
@@ -470,12 +455,12 @@ bool UBtf_ExtendConstructObject_K2Node::IsCompatibleWithGraph(const UEdGraph* Ta
     return IsCompatible && Super::IsCompatibleWithGraph(TargetGraph);
 }
 
-void UBtf_ExtendConstructObject_K2Node::GetMenuEntries(struct FGraphContextMenuBuilder& ContextMenuBuilder) const
+void UBtf_ExtendConstructObject_K2Node::GetMenuEntries(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
     Super::GetMenuEntries(ContextMenuBuilder);
 }
 
-void UBtf_ExtendConstructObject_K2Node::ValidateNodeDuringCompilation(class FCompilerResultsLog& MessageLog) const
+void UBtf_ExtendConstructObject_K2Node::ValidateNodeDuringCompilation(FCompilerResultsLog& MessageLog) const
 {
     Super::ValidateNodeDuringCompilation(MessageLog);
 
@@ -530,13 +515,13 @@ void UBtf_ExtendConstructObject_K2Node::ValidateNodeDuringCompilation(class FCom
 
     if (auto* Task = GetInstanceOrDefaultObject())
     {
-        auto Errors = Task->ValidateNodeDuringCompilation();
-        for (const auto& It : Errors)
+        const auto Errors = Task->ValidateNodeDuringCompilation();
+        for (const auto& Error : Errors)
         {
             MessageLog.Error(
                 *FText::Format(
                      LOCTEXT("ExtendConstructObjectPlacedInGraph", "{0} @@"),
-                     FText::FromString(It)).ToString(), this);
+                     FText::FromString(Error)).ToString(), this);
         }
     }
 }
@@ -545,12 +530,12 @@ void UBtf_ExtendConstructObject_K2Node::GetPinHoverText(const UEdGraphPin& Pin, 
 {
     if (NOT PinTooltipsValid)
     {
-        for (auto* P : Pins)
+        for (auto* CurrentPin : Pins)
         {
-            if (P->Direction == EGPD_Input)
+            if (CurrentPin->Direction == EGPD_Input)
             {
-                P->PinToolTip.Reset();
-                GeneratePinTooltip(*P);
+                CurrentPin->PinToolTip.Reset();
+                GeneratePinTooltip(*CurrentPin);
             }
         }
         PinTooltipsValid = true;
@@ -558,7 +543,7 @@ void UBtf_ExtendConstructObject_K2Node::GetPinHoverText(const UEdGraphPin& Pin, 
     return Super::GetPinHoverText(Pin, HoverTextOut);
 }
 
-void UBtf_ExtendConstructObject_K2Node::EarlyValidation(class FCompilerResultsLog& MessageLog) const
+void UBtf_ExtendConstructObject_K2Node::EarlyValidation(FCompilerResultsLog& MessageLog) const
 {
     Super::EarlyValidation(MessageLog);
 
@@ -597,21 +582,17 @@ void UBtf_ExtendConstructObject_K2Node::GeneratePinTooltip(UEdGraphPin& Pin) con
     UK2Node_CallFunction::GeneratePinTooltipFromFunction(Pin, Function);
 }
 
-bool UBtf_ExtendConstructObject_K2Node::HasExternalDependencies(TArray<class UStruct*>* OptionalOutput) const
+bool UBtf_ExtendConstructObject_K2Node::HasExternalDependencies(TArray<UStruct*>* OptionalOutput) const
 {
     const auto* SourceBlueprint = GetBlueprint();
 
     const auto ProxyFactoryResult = (IsValid(ProxyFactoryClass)) && (ProxyFactoryClass->ClassGeneratedBy != SourceBlueprint);
     if (ProxyFactoryResult && OptionalOutput != nullptr)
-    {
-        OptionalOutput->AddUnique(ProxyFactoryClass);
-    }
+    { OptionalOutput->AddUnique(ProxyFactoryClass); }
 
     const auto ProxyResult = (IsValid(ProxyClass)) && (ProxyClass->ClassGeneratedBy != SourceBlueprint);
     if (ProxyResult && OptionalOutput != nullptr)
-    {
-        OptionalOutput->AddUnique(ProxyClass);
-    }
+    { OptionalOutput->AddUnique(ProxyClass); }
 
     const auto SuperResult = Super::HasExternalDependencies(OptionalOutput);
 
@@ -622,9 +603,9 @@ FText UBtf_ExtendConstructObject_K2Node::GetNodeTitle(ENodeTitleType::Type Title
 {
     if (IsValid(ProxyClass))
     {
-        auto Str = ProxyClass->GetName();
-        Str.RemoveFromEnd(FNames_Helper::CompiledFromBlueprintSuffix, ESearchCase::Type::CaseSensitive);
-        return FText::FromString(FString::Printf(TEXT("%s"), *Str));
+        auto ClassName = ProxyClass->GetName();
+        ClassName.RemoveFromEnd(FNames_Helper::CompiledFromBlueprintSuffix, ESearchCase::Type::CaseSensitive);
+        return FText::FromString(FString::Printf(TEXT("%s"), *ClassName));
     }
     return FText(LOCTEXT("UBtf_ExtendConstructObject_K2Node", "ExtendConstructObject"));
 }
@@ -639,9 +620,7 @@ FLinearColor UBtf_ExtendConstructObject_K2Node::GetNodeTitleColor() const
 {
     auto CustomColor = FLinearColor{};
     if (GetInstanceOrDefaultObject()->Get_NodeTitleColor(CustomColor))
-    {
-        return CustomColor;
-    }
+    { return CustomColor; }
 
     return Super::GetNodeTitleColor();
 }
@@ -651,9 +630,7 @@ FName UBtf_ExtendConstructObject_K2Node::GetCornerIcon() const
     if (IsValid(ProxyClass))
     {
         if (OutDelegate.Num() == 0)
-        {
-            return FName();
-        }
+        { return FName(); }
     }
     return TEXT("Graph.Latent.LatentIcon");
 }
@@ -665,17 +642,15 @@ bool UBtf_ExtendConstructObject_K2Node::UseWorldContext() const
     return IsValid(ParentClass) ? ParentClass->HasMetaDataHierarchical(FBlueprintMetadata::MD_ShowWorldContextPin) != nullptr : false;
 }
 
-FString UBtf_ExtendConstructObject_K2Node::GetPinMetaData(const FName InPinName, const FName InKey)
+FString UBtf_ExtendConstructObject_K2Node::GetPinMetaData(const FName PinName, const FName Key)
 {
-    if (const auto* Metadata = PinMetadataMap.Find(InPinName))
+    if (const auto* Metadata = PinMetadataMap.Find(PinName))
     {
-        if (const auto* Value = Metadata->Find(InKey))
-        {
-            return *Value;
-        }
+        if (const auto* Value = Metadata->Find(Key))
+        { return *Value; }
     }
 
-    return Super::GetPinMetaData(InPinName, InKey);
+    return Super::GetPinMetaData(PinName, Key);
 }
 
 void UBtf_ExtendConstructObject_K2Node::ReconstructNode()
@@ -691,26 +666,26 @@ void UBtf_ExtendConstructObject_K2Node::PostReconstructNode()
 void UBtf_ExtendConstructObject_K2Node::PostPasteNode()
 {
     RefreshNames(AutoCallFunction);
-    for (auto& It : AutoCallFunction)
+    for (auto& FuncName : AutoCallFunction)
     {
-        It.SetAllExclude(AllFunctions, AutoCallFunction);
-        ExecFunction.Remove(It);
+        FuncName.SetAllExclude(AllFunctions, AutoCallFunction);
+        ExecFunction.Remove(FuncName);
     }
     RefreshNames(ExecFunction);
-    for (auto& It : ExecFunction)
+    for (auto& FuncName : ExecFunction)
     {
-        It.SetAllExclude(AllFunctionsExec, ExecFunction);
+        FuncName.SetAllExclude(AllFunctionsExec, ExecFunction);
     }
     RefreshNames(InDelegate);
-    for (auto& It : InDelegate)
+    for (auto& DelegateName : InDelegate)
     {
-        It.SetAllExclude(AllDelegates, InDelegate);
-        OutDelegate.Remove(It);
+        DelegateName.SetAllExclude(AllDelegates, InDelegate);
+        OutDelegate.Remove(DelegateName);
     }
     RefreshNames(OutDelegate);
-    for (auto& It : OutDelegate)
+    for (auto& DelegateName : OutDelegate)
     {
-        It.SetAllExclude(AllDelegates, OutDelegate);
+        DelegateName.SetAllExclude(AllDelegates, OutDelegate);
     }
 
     AllowInstance = false;
@@ -722,9 +697,8 @@ void UBtf_ExtendConstructObject_K2Node::PostPasteNode()
 UObject* UBtf_ExtendConstructObject_K2Node::GetJumpTargetForDoubleClick() const
 {
     if (IsValid(ProxyClass))
-    {
-        return ProxyClass->ClassGeneratedBy;
-    }
+    { return ProxyClass->ClassGeneratedBy; }
+    
     return nullptr;
 }
 
@@ -734,14 +708,12 @@ bool UBtf_ExtendConstructObject_K2Node::CanBePlacedInGraph() const
     {
         if (IsValid(ProxyClass) && IsValid(Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject)) && Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject)->ClassLimitations.IsValidIndex(0))
         {
-            for (auto& CurrentClass : Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject)->ClassLimitations)
+            for (const auto& CurrentClass : Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject)->ClassLimitations)
             {
                 if (NOT CurrentClass.IsNull())
                 {
                     if (CurrentClass->GetClassPathName().ToString() == Blueprint->GetPathName() + "_C")
-                    {
-                        return true;
-                    }
+                    { return true; }
                 }
             }
 
@@ -763,42 +735,38 @@ void UBtf_ExtendConstructObject_K2Node::GenerateCustomOutputPins()
     {
         if (auto* TargetClassAsBlueprintTask = GetInstanceOrDefaultObject())
         {
-            auto OldCustomPins = CustomPins;
+            const auto OldCustomPins = CustomPins;
             CustomPins = TargetClassAsBlueprintTask->Get_CustomOutputPins();
 
-            const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
+            const auto* K2Schema = GetDefault<UEdGraphSchema_K2>();
 
             for (const auto& Pin : CustomPins)
             {
-                FString PinNameStr = Pin.PinName;
+                const FString PinNameStr = Pin.PinName;
 
-                // Create the execution pin for this custom output
-                if (!FindPin(PinNameStr))
+                if (NOT FindPin(PinNameStr))
                 {
-                    UEdGraphPin* ExecPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, FName(PinNameStr));
+                    auto* ExecPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, FName(PinNameStr));
                     ExecPin->PinToolTip = Pin.Tooltip;
                 }
 
-                // If this pin has a payload type, create output pins for each property
                 if (Pin.PayloadType)
                 {
-                    for (TFieldIterator<FProperty> It(Pin.PayloadType); It; ++It)
+                    for (TFieldIterator<FProperty> PropertyIt(Pin.PayloadType); PropertyIt; ++PropertyIt)
                     {
-                        FProperty* Property = *It;
+                        const auto* Property = *PropertyIt;
 
-                        if (!Property->HasAnyPropertyFlags(CPF_Parm) &&
+                        if (NOT Property->HasAnyPropertyFlags(CPF_Parm) &&
                             Property->HasAllPropertyFlags(CPF_BlueprintVisible))
                         {
+                            const FName PayloadPinName = Property->GetFName();
 
-                            // Create pin name as CustomPinName_PropertyName
-                            FName PayloadPinName = Property->GetFName();
-
-                            if (!FindPin(PayloadPinName))
+                            if (NOT FindPin(PayloadPinName))
                             {
                                 FEdGraphPinType PinType;
                                 if (K2Schema->ConvertPropertyToPinType(Property, PinType))
                                 {
-                                    UEdGraphPin* PayloadPin = CreatePin(EGPD_Output, PinType, PayloadPinName);
+                                    auto* PayloadPin = CreatePin(EGPD_Output, PinType, PayloadPinName);
                                     PayloadPin->PinFriendlyName = Property->GetDisplayNameText();
 
                                     K2Schema->ConstructBasicPinTooltip(*PayloadPin,
@@ -810,23 +778,19 @@ void UBtf_ExtendConstructObject_K2Node::GenerateCustomOutputPins()
                 }
                 else
                 {
-                    // Clean up old payload pins if they exist
-                    for (auto& OldPin : OldCustomPins)
+                    for (const auto& OldPin : OldCustomPins)
                     {
                         if (OldPin.PinName == Pin.PinName)
                         {
-                            // Remove any associated payload pins
                             TArray<UEdGraphPin*> PinsToRemove;
-                            for (UEdGraphPin* ExistingPin : Pins)
+                            for (auto* ExistingPin : Pins)
                             {
-                                FString ExistingPinName = ExistingPin->PinName.ToString();
+                                const FString ExistingPinName = ExistingPin->PinName.ToString();
                                 if (ExistingPinName.StartsWith(PinNameStr + TEXT("_")))
-                                {
-                                    PinsToRemove.Add(ExistingPin);
-                                }
+                                { PinsToRemove.Add(ExistingPin); }
                             }
 
-                            for (UEdGraphPin* PinToRemove : PinsToRemove)
+                            for (auto* PinToRemove : PinsToRemove)
                             {
                                 RemovePin(PinToRemove);
                                 PinToRemove->MarkAsGarbage();
@@ -844,7 +808,7 @@ TSharedPtr<SGraphNode> UBtf_ExtendConstructObject_K2Node::CreateVisualWidget()
 {
     if (IsValid(TaskInstance))
     {
-        TaskInstance->OnPostPropertyChanged.BindLambda([this](FPropertyChangedEvent PropertyChangedEvent)
+        TaskInstance->OnPostPropertyChanged.BindLambda([this](FPropertyChangedEvent)
         {
             ReconstructNode();
         });
@@ -871,9 +835,7 @@ void UBtf_ExtendConstructObject_K2Node::PinDefaultValueChanged(UEdGraphPin* Pin)
     if (Pin->PinName == ClassPinName)
     {
         if (Pin && Pin->LinkedTo.Num() == 0)
-        {
-            ProxyClass = Cast<UClass>(Pin->DefaultObject);
-        }
+        { ProxyClass = Cast<UClass>(Pin->DefaultObject); }
         else if (Pin && (Pin->LinkedTo.Num() == 1))
         {
             const auto* SourcePin = Pin->LinkedTo[0];
@@ -884,15 +846,15 @@ void UBtf_ExtendConstructObject_K2Node::PinDefaultValueChanged(UEdGraphPin* Pin)
 
         for (int32 PinIndex = Pins.Num() - 1; PinIndex >= 0; --PinIndex)
         {
-            auto N = Pins[PinIndex]->PinName;
+            const auto PinName = Pins[PinIndex]->PinName;
 
-            if (N != UEdGraphSchema_K2::PN_Self &&
-                N != WorldContextPinName &&
-                N != OutPutObjectPinName &&
-                N != ClassPinName &&
-                N != UEdGraphSchema_K2::PN_Execute &&
-                N != UEdGraphSchema_K2::PN_Then &&
-                N != NodeGuidStrName)
+            if (PinName != UEdGraphSchema_K2::PN_Self &&
+                PinName != WorldContextPinName &&
+                PinName != OutPutObjectPinName &&
+                PinName != ClassPinName &&
+                PinName != UEdGraphSchema_K2::PN_Execute &&
+                PinName != UEdGraphSchema_K2::PN_Then &&
+                PinName != NodeGuidStrName)
             {
                 Pins[PinIndex]->MarkAsGarbage();
                 Pins.RemoveAt(PinIndex);
@@ -917,40 +879,36 @@ void UBtf_ExtendConstructObject_K2Node::AllocateDefaultPins()
 {
     if (const auto OldPin = FindPin(UEdGraphSchema_K2::PN_Execute))
     {
-        const auto Idx = Pins.IndexOfByKey(OldPin);
-        if (Idx != 0)
+        const auto Index = Pins.IndexOfByKey(OldPin);
+        if (Index != 0)
         {
-            Pins.RemoveAt(Idx, 1, EAllowShrinking::No);
+            Pins.RemoveAt(Index, 1, EAllowShrinking::No);
             Pins.Insert(OldPin, 0);
         }
     }
     else
-    {
-        CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Execute);
-    }
+    { CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Execute); }
 
     if (const auto OldPin = FindPin(UEdGraphSchema_K2::PN_Then))
     {
-        const auto Idx = Pins.IndexOfByKey(OldPin);
-        if (Idx != 1)
+        const auto Index = Pins.IndexOfByKey(OldPin);
+        if (Index != 1)
         {
-            Pins.RemoveAt(Idx, 1, EAllowShrinking::No);
+            Pins.RemoveAt(Index, 1, EAllowShrinking::No);
             Pins.Insert(OldPin, 1);
         }
     }
     else
-    {
-        CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Then);
-    }
+    { CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Then); }
 
     if (IsValid(ProxyClass))
     {
         const auto* K2Schema = GetDefault<UEdGraphSchema_K2>();
         if (const auto* Function = GetFactoryFunction())
         {
-            for (TFieldIterator<FProperty> PropIt(Function); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+            for (TFieldIterator<FProperty> PropertyIt(Function); PropertyIt && (PropertyIt->PropertyFlags & CPF_Parm); ++PropertyIt)
             {
-                const auto* Param = *PropIt;
+                const auto* Param = *PropertyIt;
 
                 const auto IsFunctionOutput = Param->HasAnyPropertyFlags(CPF_OutParm) &&
                     NOT Param->HasAnyPropertyFlags(CPF_ReferenceParm) &&
@@ -966,9 +924,7 @@ void UBtf_ExtendConstructObject_K2Node::AllocateDefaultPins()
         CreatePinsForClass(ProxyClass, true);
     }
     else
-    {
-        CreatePinsForClass(nullptr, true);
-    }
+    { CreatePinsForClass(nullptr, true); }
 
     GenerateCustomOutputPins();
 
@@ -979,7 +935,7 @@ void UBtf_ExtendConstructObject_K2Node::AllocateDefaultPins()
             if (CurrentExtension.GetName().Contains(NodeGuid.ToString()))
             {
                 TaskInstance = Cast<UBtf_TaskForge>(CurrentExtension);
-                TaskInstance->OnPostPropertyChanged.BindLambda([this](FPropertyChangedEvent PropertyChangedEvent)
+                TaskInstance->OnPostPropertyChanged.BindLambda([this](FPropertyChangedEvent)
                 {
                     ReconstructNode();
                 });
@@ -1011,9 +967,9 @@ void UBtf_ExtendConstructObject_K2Node::ReallocatePinsDuringReconstruction(TArra
         const auto* K2Schema = GetDefault<UEdGraphSchema_K2>();
         if (const auto* Function = GetFactoryFunction())
         {
-            for (TFieldIterator<FProperty> PropIt(Function); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+            for (TFieldIterator<FProperty> PropertyIt(Function); PropertyIt && (PropertyIt->PropertyFlags & CPF_Parm); ++PropertyIt)
             {
-                const auto* Param = *PropIt;
+                const auto* Param = *PropertyIt;
                 const auto IsFunctionOutput = Param->HasAnyPropertyFlags(CPF_OutParm) &&
                     NOT Param->HasAnyPropertyFlags(CPF_ReferenceParm) &&
                     NOT Param->HasAnyPropertyFlags(CPF_ReturnParm);
@@ -1027,9 +983,7 @@ void UBtf_ExtendConstructObject_K2Node::ReallocatePinsDuringReconstruction(TArra
         CreatePinsForClass(ProxyClass, false);
     }
     else
-    {
-        CreatePinsForClass(ProxyClass, true);
-    }
+    { CreatePinsForClass(ProxyClass, true); }
 
     GenerateCustomOutputPins();
 
@@ -1074,20 +1028,18 @@ UFunction* UBtf_ExtendConstructObject_K2Node::GetFactoryFunction() const
 void UBtf_ExtendConstructObject_K2Node::RefreshNames(TArray<FBtf_NameSelect>& NameArray, const bool RemoveNone) const
 {
     if (RemoveNone)
-    {
-        NameArray.RemoveAll([](const FBtf_NameSelect& A) { return A.Name == NAME_None; });
-    }
+    { NameArray.RemoveAll([](const FBtf_NameSelect& Item) { return Item.Name == NAME_None; }); }
 
     auto CopyNameArray = NameArray;
 
     CopyNameArray.Sort([](const FBtf_NameSelect& A, const FBtf_NameSelect& B) { return GetTypeHash(A.Name) < GetTypeHash(B.Name); });
 
-    auto UniquePred = [&Arr = NameArray](const FBtf_NameSelect& A, const FBtf_NameSelect& B)
+    auto UniquePred = [&NameArray](const FBtf_NameSelect& A, const FBtf_NameSelect& B)
     {
         if (A.Name != NAME_None && A.Name == B.Name)
         {
-            const auto ID = Arr.FindLast(FBtf_NameSelect{B.Name});
-            Arr.RemoveAt(ID, 1, EAllowShrinking::No);
+            const auto ID = NameArray.FindLast(FBtf_NameSelect{B.Name});
+            NameArray.RemoveAt(ID, 1, EAllowShrinking::No);
             return true;
         }
         return false;
@@ -1139,7 +1091,7 @@ void UBtf_ExtendConstructObject_K2Node::AddAutoCallFunction(const FName PinName)
             }
         }
         ReconstructNode();
-    };
+    }
 }
 
 void UBtf_ExtendConstructObject_K2Node::AddInputExec(const FName PinName)
@@ -1159,7 +1111,7 @@ void UBtf_ExtendConstructObject_K2Node::AddInputExec(const FName PinName)
             }
         }
         ReconstructNode();
-    };
+    }
 }
 
 void UBtf_ExtendConstructObject_K2Node::AddOutputDelegate(const FName PinName)
@@ -1205,9 +1157,7 @@ void UBtf_ExtendConstructObject_K2Node::AddSpawnParam(const FName PinName)
 
     SpawnParam.AddUnique(PinNameSelect);
     if (OldNum - SpawnParam.Num() != 0)
-    {
-        ReconstructNode();
-    }
+    { ReconstructNode(); }
 }
 
 void UBtf_ExtendConstructObject_K2Node::RemoveNodePin(const FName PinName)
@@ -1223,21 +1173,19 @@ void UBtf_ExtendConstructObject_K2Node::RemoveNodePin(const FName PinName)
             if (NOT OutDelegate.Remove(PinNameSelect))
             {
                 if (NOT InDelegate.Remove(PinNameSelect))
-                {
-                    SpawnParam.Remove(PinNameSelect);
-                }
+                { SpawnParam.Remove(PinNameSelect); }
             }
         }
     }
 
     Modify();
-    auto NameStr = PinName.ToString();
+    const auto NameStr = PinName.ToString();
     Pins.RemoveAll(
-        [&NameStr](UEdGraphPin* InPin)
+        [&NameStr](UEdGraphPin* CurrentPin)
         {
-            if (InPin->GetName().StartsWith(NameStr))
+            if (CurrentPin->GetName().StartsWith(NameStr))
             {
-                InPin->MarkAsGarbage();
+                CurrentPin->MarkAsGarbage();
                 return true;
             }
             return false;
@@ -1277,7 +1225,7 @@ void UBtf_ExtendConstructObject_K2Node::GetRedirectPinNames(const UEdGraphPin& P
     RedirectPinNames.Add(FullPinName);
 }
 
-void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* InClass)
+void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* TargetClass)
 {
     const auto* K2Schema = GetDefault<UEdGraphSchema_K2>();
     if (const auto* Function = GetFactoryFunction())
@@ -1286,9 +1234,9 @@ void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* InCl
         auto PinsToHide = Get_PinsHiddenByDefault();
 
         FBlueprintEditorUtils::GetHiddenPinsForFunction(GetGraph(), Function, PinsToHide);
-        for (TFieldIterator<FProperty> PropIt(Function); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+        for (TFieldIterator<FProperty> PropertyIt(Function); PropertyIt && (PropertyIt->PropertyFlags & CPF_Parm); ++PropertyIt)
         {
-            auto* const Property = *PropIt;
+            const auto* Property = *PropertyIt;
             const auto IsFunctionInput = NOT Property->HasAnyPropertyFlags(CPF_OutParm) || Property->HasAnyPropertyFlags(CPF_ReferenceParm);
             if (NOT IsFunctionInput)
             { continue; }
@@ -1297,23 +1245,21 @@ void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* InCl
             PinParams.bIsReference = Property->HasAnyPropertyFlags(CPF_ReferenceParm) && IsFunctionInput;
 
             UEdGraphPin* Pin = nullptr;
-            const auto N = Property->GetFName();
-            if (N == WorldContextPinName || N == UEdGraphSchema_K2::PSC_Self)
+            const auto PropertyName = Property->GetFName();
+            if (PropertyName == WorldContextPinName || PropertyName == UEdGraphSchema_K2::PSC_Self)
             {
                 if (auto* OldPin = FindPin(WorldContextPinName))
-                {
-                    Pin = OldPin;
-                }
+                { Pin = OldPin; }
+                
                 if (auto* OldPin = FindPin(UEdGraphSchema_K2::PSC_Self))
-                {
-                    Pin = OldPin;
-                }
+                { Pin = OldPin; }
+                
                 if (NOT OwnerContextPin)
                 {
-                    if (const auto* Prop = CastFieldChecked<FObjectProperty>(Property))
+                    if (const auto* ObjectProperty = CastFieldChecked<FObjectProperty>(Property))
                     {
                         const auto BPClass = GetBlueprintClassFromNode();
-                        SelfContext = BPClass->IsChildOf(Prop->PropertyClass);
+                        SelfContext = BPClass->IsChildOf(ObjectProperty->PropertyClass);
                         if (SelfContext)
                         {
                             Pin = CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Object, UEdGraphSchema_K2::PSC_Self, UEdGraphSchema_K2::PN_Self);
@@ -1335,7 +1281,7 @@ void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* InCl
                     }
                 }
             }
-            else if (N == ClassPinName)
+            else if (PropertyName == ClassPinName)
             {
                 if (auto* OldPin = GetClassPin())
                 {
@@ -1345,13 +1291,11 @@ void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* InCl
             }
 
             if (NOT Pin)
-            {
-                Pin = CreatePin(EGPD_Input, NAME_None, Property->GetFName(), PinParams);
-            }
+            { Pin = CreatePin(EGPD_Input, NAME_None, Property->GetFName(), PinParams); }
             else
             {
-                const auto Idx = Pins.IndexOfByKey(Pin);
-                Pins.RemoveAt(Idx, 1, EAllowShrinking::No);
+                const auto Index = Pins.IndexOfByKey(Pin);
+                Pins.RemoveAt(Index, 1, EAllowShrinking::No);
                 Pins.Add(Pin);
             }
 
@@ -1366,24 +1310,16 @@ void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* InCl
                 const auto AdvancedPin = Property->HasAllPropertyFlags(CPF_AdvancedDisplay);
                 Pin->bAdvancedView = AdvancedPin;
                 if (AdvancedPin && (ENodeAdvancedPins::NoPins == AdvancedPinDisplay))
-                {
-                    AdvancedPinDisplay = ENodeAdvancedPins::Hidden;
-                }
+                { AdvancedPinDisplay = ENodeAdvancedPins::Hidden; }
 
                 auto ParamValue = FString{};
                 if (K2Schema->FindFunctionParameterDefaultValue(Function, Property, ParamValue))
-                {
-                    K2Schema->SetPinAutogeneratedDefaultValue(Pin, ParamValue);
-                }
+                { K2Schema->SetPinAutogeneratedDefaultValue(Pin, ParamValue); }
                 else
-                {
-                    K2Schema->SetPinAutogeneratedDefaultValueBasedOnType(Pin);
-                }
+                { K2Schema->SetPinAutogeneratedDefaultValueBasedOnType(Pin); }
 
                 if (PinsToHide.Contains(Pin->PinName))
-                {
-                    Pin->bHidden = true;
-                }
+                { Pin->bHidden = true; }
             }
 
             AllPinsGood = AllPinsGood && PinGood;
@@ -1392,7 +1328,7 @@ void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* InCl
         if (AllPinsGood)
         {
             auto* ClassPin = FindPinChecked(ClassPinName);
-            ClassPin->DefaultObject = InClass;
+            ClassPin->DefaultObject = TargetClass;
             ClassPin->DefaultValue.Empty();
             check(GetWorldContextPin());
         }
@@ -1400,28 +1336,26 @@ void UBtf_ExtendConstructObject_K2Node::GenerateFactoryFunctionPins(UClass* InCl
 
     if (auto* OldPin = FindPin(OutPutObjectPinName))
     {
-        const auto Idx = Pins.IndexOfByKey(OldPin);
-        Pins.RemoveAt(Idx, 1, EAllowShrinking::No);
+        const auto Index = Pins.IndexOfByKey(OldPin);
+        Pins.RemoveAt(Index, 1, EAllowShrinking::No);
         Pins.Add(OldPin);
     }
     else
-    {
-        CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Object, InClass, OutPutObjectPinName);
-    }
+    { CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Object, TargetClass, OutPutObjectPinName); }
 }
 
-void UBtf_ExtendConstructObject_K2Node::GenerateSpawnParamPins(UClass* InClass)
+void UBtf_ExtendConstructObject_K2Node::GenerateSpawnParamPins(UClass* TargetClass)
 {
     PinMetadataMap.Reset();
 
     const auto* K2Schema = GetDefault<UEdGraphSchema_K2>();
-    const auto* ClassDefaultObject = InClass->GetDefaultObject(true);
+    const auto* ClassDefaultObject = TargetClass->GetDefaultObject(true);
 
     for (const auto ParamName : SpawnParam)
     {
         if (ParamName != NAME_None)
         {
-            if (const auto* Property = InClass->FindPropertyByName(ParamName))
+            if (const auto* Property = TargetClass->FindPropertyByName(ParamName))
             {
                 auto* Pin = CreatePin(EGPD_Input, NAME_None, ParamName);
                 check(Pin);
@@ -1439,9 +1373,9 @@ void UBtf_ExtendConstructObject_K2Node::GenerateSpawnParamPins(UClass* InClass)
 
                 if (const auto* MetaDataMap = Property->GetMetaDataMap())
                 {
-                    for (const auto& MetaDataKvp : *MetaDataMap)
+                    for (const auto& [MetaKey, MetaValue] : *MetaDataMap)
                     {
-                        PinMetadataMap.FindOrAdd(Pin->PinName).Add(MetaDataKvp.Key, MetaDataKvp.Value);
+                        PinMetadataMap.FindOrAdd(Pin->PinName).Add(MetaKey, MetaValue);
                     }
                 }
             }
@@ -1449,14 +1383,14 @@ void UBtf_ExtendConstructObject_K2Node::GenerateSpawnParamPins(UClass* InClass)
     }
 }
 
-void UBtf_ExtendConstructObject_K2Node::GenerateAutoCallFunctionPins(UClass* InClass)
+void UBtf_ExtendConstructObject_K2Node::GenerateAutoCallFunctionPins(UClass* TargetClass)
 {
-    for (const auto FnName : AutoCallFunction)
+    for (const auto FunctionName : AutoCallFunction)
     {
-        if (FnName != NAME_None)
+        if (FunctionName != NAME_None)
         {
-            CreatePinsForClassFunction(InClass, FnName, true);
-            if (auto* ExecPin = FindPin(FnName, EGPD_Input))
+            CreatePinsForClassFunction(TargetClass, FunctionName, true);
+            if (auto* ExecPin = FindPin(FunctionName, EGPD_Input))
             {
                 ExecPin->bHidden = true;
                 ExecPin->bNotConnectable = true;
@@ -1469,28 +1403,26 @@ void UBtf_ExtendConstructObject_K2Node::GenerateAutoCallFunctionPins(UClass* InC
     }
 }
 
-void UBtf_ExtendConstructObject_K2Node::GenerateExecFunctionPins(UClass* InClass)
+void UBtf_ExtendConstructObject_K2Node::GenerateExecFunctionPins(UClass* TargetClass)
 {
-    for (const auto FnName : ExecFunction)
+    for (const auto FunctionName : ExecFunction)
     {
-        if (FnName != NAME_None)
-        {
-            CreatePinsForClassFunction(InClass, FnName, false);
-        }
+        if (FunctionName != NAME_None)
+        { CreatePinsForClassFunction(TargetClass, FunctionName, false); }
     }
 }
 
-void UBtf_ExtendConstructObject_K2Node::GenerateInputDelegatePins(UClass* InClass)
+void UBtf_ExtendConstructObject_K2Node::GenerateInputDelegatePins(UClass* TargetClass)
 {
-    for (auto DelegateName : InDelegate)
+    for (const auto DelegateName : InDelegate)
     {
         if (DelegateName != NAME_None)
         {
-            if (const auto* Property = InClass->FindPropertyByName(DelegateName))
+            if (const auto* Property = TargetClass->FindPropertyByName(DelegateName))
             {
                 const auto* DelegateProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
 
-                auto DelegateNameStr = DelegateName.Name.ToString();
+                const auto DelegateNameStr = DelegateName.Name.ToString();
 
                 auto PinParams = FCreatePinParams{};
                 PinParams.bIsReference = true;
@@ -1510,17 +1442,17 @@ void UBtf_ExtendConstructObject_K2Node::GenerateInputDelegatePins(UClass* InClas
     }
 }
 
-void UBtf_ExtendConstructObject_K2Node::GenerateOutputDelegatePins(UClass* InClass)
+void UBtf_ExtendConstructObject_K2Node::GenerateOutputDelegatePins(UClass* TargetClass)
 {
     const auto* K2Schema = GetDefault<UEdGraphSchema_K2>();
-    for (auto DelegateName : OutDelegate)
+    for (const auto DelegateName : OutDelegate)
     {
         if (DelegateName != NAME_None)
         {
-            if (const auto* Property = InClass->FindPropertyByName(DelegateName))
+            if (const auto* Property = TargetClass->FindPropertyByName(DelegateName))
             {
                 const auto* DelegateProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
-                auto DelegateNameStr = DelegateName.Name.ToString();
+                const auto DelegateNameStr = DelegateName.Name.ToString();
 
                 auto* ExecPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, DelegateName);
                 ExecPin->PinToolTip = DelegateProperty->GetToolTipText().ToString();
@@ -1528,9 +1460,9 @@ void UBtf_ExtendConstructObject_K2Node::GenerateOutputDelegatePins(UClass* InCla
 
                 if (const auto DelegateSignatureFunction = DelegateProperty->SignatureFunction)
                 {
-                    for (TFieldIterator<FProperty> PropIt(DelegateSignatureFunction); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+                    for (TFieldIterator<FProperty> PropertyIt(DelegateSignatureFunction); PropertyIt && (PropertyIt->PropertyFlags & CPF_Parm); ++PropertyIt)
                     {
-                        const auto* Param = *PropIt;
+                        const auto* Param = *PropertyIt;
                         const auto IsFunctionInput = NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm);
                         if (IsFunctionInput)
                         {
@@ -1547,9 +1479,9 @@ void UBtf_ExtendConstructObject_K2Node::GenerateOutputDelegatePins(UClass* InCla
     }
 }
 
-void UBtf_ExtendConstructObject_K2Node::CreatePinsForClass(UClass* InClass, const bool FullRefresh)
+void UBtf_ExtendConstructObject_K2Node::CreatePinsForClass(UClass* TargetClass, const bool FullRefresh)
 {
-    if (FullRefresh || NOT IsValid(InClass))
+    if (FullRefresh || NOT IsValid(TargetClass))
     {
         ResetPinByNames(AllParam);
         ResetPinByNames(AllFunctions);
@@ -1567,77 +1499,67 @@ void UBtf_ExtendConstructObject_K2Node::CreatePinsForClass(UClass* InClass, cons
         ResetPinByNames(ContextPin);
     }
 
-    GenerateFactoryFunctionPins(InClass);
+    GenerateFactoryFunctionPins(TargetClass);
 
-    if (NOT IsValid(InClass))
+    if (NOT IsValid(TargetClass))
     { return; }
 
-    const auto* const ClassDefaultObject = InClass->GetDefaultObject(true);
+    const auto* const ClassDefaultObject = TargetClass->GetDefaultObject(true);
     check(ClassDefaultObject);
-    CollectSpawnParam(InClass, FullRefresh);
+    CollectSpawnParam(TargetClass, FullRefresh);
 
     check(ClassDefaultObject);
-    GenerateSpawnParamPins(InClass);
-    GenerateAutoCallFunctionPins(InClass);
-    GenerateExecFunctionPins(InClass);
-    GenerateInputDelegatePins(InClass);
-    GenerateOutputDelegatePins(InClass);
+    GenerateSpawnParamPins(TargetClass);
+    GenerateAutoCallFunctionPins(TargetClass);
+    GenerateExecFunctionPins(TargetClass);
+    GenerateInputDelegatePins(TargetClass);
+    GenerateOutputDelegatePins(TargetClass);
 
     {
-        const auto Pred = [&](const FBtf_NameSelect& A) { return A.Name != NAME_None && NOT FindPin(A.Name); };
-        const auto ValidPropertyPred = [InCl = InClass](const FName& Name)
+        const auto PinNotFoundPredicate = [&](const FBtf_NameSelect& Item) { return Item.Name != NAME_None && NOT FindPin(Item.Name); };
+        const auto ValidPropertyPredicate = [TargetClass](const FName& Name)
         {
             if (Name != NAME_None)
             {
-                if (NOT InCl->FindPropertyByName(Name))
-                {
-                    return true;
-                }
+                if (NOT TargetClass->FindPropertyByName(Name))
+                { return true; }
             }
             return false;
         };
-        const auto ValidFunctionPred = [InCl = InClass](const FName& Name)
+        const auto ValidFunctionPredicate = [TargetClass](const FName& Name)
         {
             if (Name != NAME_None)
             {
-                if (NOT InCl->FindPropertyByName(Name))
-                {
-                    return true;
-                }
+                if (NOT TargetClass->FindPropertyByName(Name))
+                { return true; }
             }
             return false;
         };
 
         if (AllParam.Num())
         {
-            auto Arr = AllParam.Array();
-            if (const auto Count = Arr.RemoveAll(ValidPropertyPred))
-            {
-                AllParam = TSet<FName>(Arr);
-            }
+            auto ParamArray = AllParam.Array();
+            if (const auto Count = ParamArray.RemoveAll(ValidPropertyPredicate))
+            { AllParam = TSet<FName>(ParamArray); }
 
             AllParam.Sort([](const FName& A, const FName& B) { return A.LexicalLess(B); });
             AllParam.Shrink();
-            SpawnParam.RemoveAll(Pred);
+            SpawnParam.RemoveAll(PinNotFoundPredicate);
             SpawnParam.Shrink();
         }
         else
-        {
-            ResetPinByNames(SpawnParam);
-        }
+        { ResetPinByNames(SpawnParam); }
 
         if (AllDelegates.Num())
         {
-            auto Arr = AllDelegates.Array();
-            if (const auto Count = Arr.RemoveAll(ValidPropertyPred))
-            {
-                AllDelegates = TSet<FName>(Arr);
-            }
+            auto DelegateArray = AllDelegates.Array();
+            if (const auto Count = DelegateArray.RemoveAll(ValidPropertyPredicate))
+            { AllDelegates = TSet<FName>(DelegateArray); }
 
             AllDelegates.Sort([](const FName& A, const FName& B) { return A.LexicalLess(B); });
             AllDelegates.Shrink();
-            InDelegate.RemoveAll(Pred);
-            OutDelegate.RemoveAll(Pred);
+            InDelegate.RemoveAll(PinNotFoundPredicate);
+            OutDelegate.RemoveAll(PinNotFoundPredicate);
             InDelegate.Shrink();
             OutDelegate.Shrink();
         }
@@ -1650,17 +1572,15 @@ void UBtf_ExtendConstructObject_K2Node::CreatePinsForClass(UClass* InClass, cons
         if (AllFunctions.Num())
         {
             {
-                auto Arr = AllFunctions.Array();
-                if (const auto Count = Arr.RemoveAll(ValidFunctionPred))
-                {
-                    AllFunctions = TSet<FName>(Arr);
-                }
+                auto FunctionArray = AllFunctions.Array();
+                if (const auto Count = FunctionArray.RemoveAll(ValidFunctionPredicate))
+                { AllFunctions = TSet<FName>(FunctionArray); }
             }
             AllFunctions.Sort([](const FName& A, const FName& B) { return A.LexicalLess(B); });
             AllFunctions.Shrink();
 
             AllFunctionsExec = AllFunctions;
-            AutoCallFunction.RemoveAll(Pred);
+            AutoCallFunction.RemoveAll(PinNotFoundPredicate);
             AutoCallFunction.Shrink();
         }
         else
@@ -1672,115 +1592,97 @@ void UBtf_ExtendConstructObject_K2Node::CreatePinsForClass(UClass* InClass, cons
 
         if (AllFunctionsExec.Num())
         {
-            const auto PureFunctionPred = [InCl = InClass](const FName Name)
+            const auto PureFunctionPredicate = [TargetClass](const FName Name)
             {
                 if (Name != NAME_None)
                 {
-                    if (const auto* Property = InCl->FindFunctionByName(Name))
-                    {
-                        return Property->HasAnyFunctionFlags(FUNC_BlueprintPure | FUNC_Const);
-                    }
+                    if (const auto* Property = TargetClass->FindFunctionByName(Name))
+                    { return Property->HasAnyFunctionFlags(FUNC_BlueprintPure | FUNC_Const); }
                 }
                 return false;
             };
 
             {
-                auto Arr = AllFunctionsExec.Array();
-                if (const auto Count = Arr.RemoveAll(PureFunctionPred))
-                {
-                    AllFunctionsExec = TSet<FName>(Arr);
-                }
+                auto ExecFunctionArray = AllFunctionsExec.Array();
+                if (const auto Count = ExecFunctionArray.RemoveAll(PureFunctionPredicate))
+                { AllFunctionsExec = TSet<FName>(ExecFunctionArray); }
             }
 
-            ExecFunction.RemoveAll(Pred);
-            ExecFunction.RemoveAll(PureFunctionPred);
+            ExecFunction.RemoveAll(PinNotFoundPredicate);
+            ExecFunction.RemoveAll(PureFunctionPredicate);
             ExecFunction.Shrink();
         }
         else
-        {
-            ResetPinByNames(ExecFunction);
-        }
+        { ResetPinByNames(ExecFunction); }
 
-        for (auto& It : AutoCallFunction)
-        {
-            It.SetAllExclude(AllFunctions, AutoCallFunction);
-        }
-        for (auto& It : ExecFunction)
-        {
-            It.SetAllExclude(AllFunctionsExec, ExecFunction);
-        }
-        for (auto& It : InDelegate)
-        {
-            It.SetAllExclude(AllDelegates, InDelegate);
-        }
-        for (auto& It : OutDelegate)
-        {
-            It.SetAllExclude(AllDelegates, OutDelegate);
-        }
-        for (auto& It : SpawnParam)
-        {
-            It.SetAllExclude(AllParam, SpawnParam);
-        }
+        for (auto& FuncName : AutoCallFunction)
+        { FuncName.SetAllExclude(AllFunctions, AutoCallFunction); }
+        
+        for (auto& FuncName : ExecFunction)
+        { FuncName.SetAllExclude(AllFunctionsExec, ExecFunction); }
+        
+        for (auto& DelegateName : InDelegate)
+        { DelegateName.SetAllExclude(AllDelegates, InDelegate); }
+        
+        for (auto& DelegateName : OutDelegate)
+        { DelegateName.SetAllExclude(AllDelegates, OutDelegate); }
+        
+        for (auto& Param : SpawnParam)
+        { Param.SetAllExclude(AllParam, SpawnParam); }
     }
 }
 
-void UBtf_ExtendConstructObject_K2Node::CreatePinsForClassFunction(UClass* InClass, const FName FnName, const bool RetValPins)
+void UBtf_ExtendConstructObject_K2Node::CreatePinsForClassFunction(UClass* TargetClass, const FName FunctionName, const bool RetValPins)
 {
-    if (const auto* LocFunction = InClass->FindFunctionByName(FnName))
+    if (const auto* TargetFunction = TargetClass->FindFunctionByName(FunctionName))
     {
         const auto* K2Schema = GetDefault<UEdGraphSchema_K2>();
 
-        auto* ExecPin = CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Exec, LocFunction->GetFName());
-        ExecPin->PinToolTip = LocFunction->GetToolTipText().ToString();
+        auto* ExecPin = CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Exec, TargetFunction->GetFName());
+        ExecPin->PinToolTip = TargetFunction->GetToolTipText().ToString();
 
         {
-            auto FunctionNameStr = LocFunction->HasMetaData(FBlueprintMetadata::MD_DisplayName)
-                ? LocFunction->GetMetaData(FBlueprintMetadata::MD_DisplayName)
-                : FnName.ToString();
+            auto FunctionNameStr = TargetFunction->HasMetaData(FBlueprintMetadata::MD_DisplayName)
+                ? TargetFunction->GetMetaData(FBlueprintMetadata::MD_DisplayName)
+                : FunctionName.ToString();
 
             if (FunctionNameStr.StartsWith(FNames_Helper::InPrefix))
-            {
-                FunctionNameStr.RemoveAt(0, FNames_Helper::InPrefix.Len());
-            }
+            { FunctionNameStr.RemoveAt(0, FNames_Helper::InPrefix.Len()); }
+            
             if (FunctionNameStr.StartsWith(FNames_Helper::InitPrefix))
-            {
-                FunctionNameStr.RemoveAt(0, FNames_Helper::InitPrefix.Len());
-            }
+            { FunctionNameStr.RemoveAt(0, FNames_Helper::InitPrefix.Len()); }
+            
             ExecPin->PinFriendlyName = FText::FromString(FunctionNameStr);
         }
 
         auto AllPinsGood = true;
-        for (TFieldIterator<FProperty> PropIt(LocFunction); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+        for (TFieldIterator<FProperty> PropertyIt(TargetFunction); PropertyIt && (PropertyIt->PropertyFlags & CPF_Parm); ++PropertyIt)
         {
-            auto* Param = *PropIt;
+            const auto* Param = *PropertyIt;
             const auto IsFunctionInput =
                 NOT Param->HasAnyPropertyFlags(CPF_ReturnParm) && (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
             const auto Direction = IsFunctionInput ? EGPD_Input : EGPD_Output;
 
-            if (Direction == EGPD_Output && NOT RetValPins) continue;
+            if (Direction == EGPD_Output && NOT RetValPins)
+            { continue; }
 
             auto PinParams = UEdGraphNode::FCreatePinParams{};
-
             PinParams.bIsReference = Param->HasAnyPropertyFlags(CPF_ReferenceParm) && IsFunctionInput;
 
-            const auto ParamFullName = FName(*FString::Printf(TEXT("%s_%s"), *FnName.ToString(), *Param->GetFName().ToString()));
+            const auto ParamFullName = FName(*FString::Printf(TEXT("%s_%s"), *FunctionName.ToString(), *Param->GetFName().ToString()));
             auto* Pin = CreatePin(Direction, NAME_None, ParamFullName, PinParams);
             const auto PinGood = (Pin && K2Schema->ConvertPropertyToPinType(Param, Pin->PinType));
 
             if (PinGood)
             {
                 Pin->bDefaultValueIsIgnored = Param->HasAllPropertyFlags(CPF_ReferenceParm) &&
-                    (NOT LocFunction->HasMetaData(FBlueprintMetadata::MD_AutoCreateRefTerm) || Pin->PinType.IsContainer());
+                    (NOT TargetFunction->HasMetaData(FBlueprintMetadata::MD_AutoCreateRefTerm) || Pin->PinType.IsContainer());
 
                 auto ParamValue = FString{};
-                if (K2Schema->FindFunctionParameterDefaultValue(LocFunction, Param, ParamValue))
-                {
-                    K2Schema->SetPinAutogeneratedDefaultValue(Pin, ParamValue);
-                }
+                if (K2Schema->FindFunctionParameterDefaultValue(TargetFunction, Param, ParamValue))
+                { K2Schema->SetPinAutogeneratedDefaultValue(Pin, ParamValue); }
                 else
-                {
-                    K2Schema->SetPinAutogeneratedDefaultValueBasedOnType(Pin);
-                }
+                { K2Schema->SetPinAutogeneratedDefaultValueBasedOnType(Pin); }
 
                 const auto& PinDisplayName = Param->HasMetaData(FBlueprintMetadata::MD_DisplayName)
                     ? Param->GetMetaData(FBlueprintMetadata::MD_DisplayName)
@@ -1788,19 +1690,17 @@ void UBtf_ExtendConstructObject_K2Node::CreatePinsForClassFunction(UClass* InCla
 
                 if (PinDisplayName == FString(TEXT("ReturnValue")))
                 {
-                    const auto ReturnPropertyName = FString::Printf(TEXT("%s\n%s"), *FnName.ToString(), *PinDisplayName);
+                    const auto ReturnPropertyName = FString::Printf(TEXT("%s\n%s"), *FunctionName.ToString(), *PinDisplayName);
                     Pin->PinFriendlyName = FText::FromString(ReturnPropertyName);
                 }
                 else if (NOT PinDisplayName.IsEmpty())
-                {
-                    Pin->PinFriendlyName = FText::FromString(PinDisplayName);
-                }
-                else if (LocFunction->GetReturnProperty() == Param && LocFunction->HasMetaData(FBlueprintMetadata::MD_ReturnDisplayName))
+                { Pin->PinFriendlyName = FText::FromString(PinDisplayName); }
+                else if (TargetFunction->GetReturnProperty() == Param && TargetFunction->HasMetaData(FBlueprintMetadata::MD_ReturnDisplayName))
                 {
                     const auto ReturnPropertyName = FString::Printf(
                         TEXT("%s_%s"),
-                        *FnName.ToString(),
-                        *(LocFunction->GetMetaDataText(FBlueprintMetadata::MD_ReturnDisplayName).ToString()));
+                        *FunctionName.ToString(),
+                        *(TargetFunction->GetMetaDataText(FBlueprintMetadata::MD_ReturnDisplayName).ToString()));
                     Pin->PinFriendlyName = FText::FromString(ReturnPropertyName);
                 }
                 Pin->PinToolTip = ParamFullName.ToString();
@@ -1812,9 +1712,10 @@ void UBtf_ExtendConstructObject_K2Node::CreatePinsForClassFunction(UClass* InCla
     }
 }
 
-void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
+void UBtf_ExtendConstructObject_K2Node::ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
 {
     Super::ExpandNode(CompilerContext, SourceGraph);
+    
     if (NOT IsValid(ProxyClass))
     {
         CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: ProxyClass nullptr error. @@"), this);
@@ -1825,11 +1726,11 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
     check(SourceGraph && Schema);
     auto IsErrorFree = true;
 
-    // Create a call to factory the proxy object
-    auto* const CreateProxyObject_Node = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-    CreateProxyObject_Node->FunctionReference.SetExternalMember(ProxyFactoryFunctionName, ProxyFactoryClass);
-    CreateProxyObject_Node->AllocateDefaultPins();
-    if (NOT IsValid(CreateProxyObject_Node->GetTargetFunction()))
+    auto* const CreateProxyObjectNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+    CreateProxyObjectNode->FunctionReference.SetExternalMember(ProxyFactoryFunctionName, ProxyFactoryClass);
+    CreateProxyObjectNode->AllocateDefaultPins();
+    
+    if (NOT IsValid(CreateProxyObjectNode->GetTargetFunction()))
     {
         const auto ClassName = IsValid(ProxyFactoryClass) ? FText::FromString(ProxyFactoryClass->GetName()) : LOCTEXT("MissingClassString", "Unknown Class");
         const auto FormattedMessage = FText::Format(
@@ -1845,40 +1746,36 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
     IsErrorFree &= CompilerContext
                         .MovePinLinksToIntermediate(
                             *FindPinChecked(UEdGraphSchema_K2::PN_Execute),
-                            *CreateProxyObject_Node->FindPinChecked(UEdGraphSchema_K2::PN_Execute))
+                            *CreateProxyObjectNode->FindPinChecked(UEdGraphSchema_K2::PN_Execute))
                         .CanSafeConnect();
+    
     if (SelfContext)
     {
-        auto* const Self_Node = CompilerContext.SpawnIntermediateNode<UK2Node_Self>(this, SourceGraph);
-        Self_Node->AllocateDefaultPins();
-        auto* SelfPin = Self_Node->FindPinChecked(UEdGraphSchema_K2::PN_Self);
-        IsErrorFree &= Schema->TryCreateConnection(SelfPin, CreateProxyObject_Node->FindPinChecked(WorldContextPinName));
+        auto* const SelfNode = CompilerContext.SpawnIntermediateNode<UK2Node_Self>(this, SourceGraph);
+        SelfNode->AllocateDefaultPins();
+        auto* SelfPin = SelfNode->FindPinChecked(UEdGraphSchema_K2::PN_Self);
+        IsErrorFree &= Schema->TryCreateConnection(SelfPin, CreateProxyObjectNode->FindPinChecked(WorldContextPinName));
         if (NOT IsErrorFree)
-        {
-            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Pin Self Context Error. @@"), this);
-        }
+        { CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Pin Self Context Error. @@"), this); }
     }
 
     for (auto* CurrentPin : Pins)
     {
         if (CurrentPin->PinName != UEdGraphSchema_K2::PSC_Self && FNodeHelper::ValidDataPin(CurrentPin, EGPD_Input))
         {
-            if (auto* DestPin = CreateProxyObject_Node->FindPin(CurrentPin->PinName))
+            if (auto* DestPin = CreateProxyObjectNode->FindPin(CurrentPin->PinName))
             {
                 IsErrorFree &= CompilerContext.CopyPinLinksToIntermediate(*CurrentPin, *DestPin).CanSafeConnect();
                 if (NOT IsErrorFree)
-                {
-                    CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to factory the proxy object error. @@"), this);
-                }
+                { CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to factory the proxy object error. @@"), this); }
             }
         }
     }
 
-    CreateProxyObject_Node->FindPin(NodeGuidStrName)->DefaultValue = NodeGuid.ToString();
+    CreateProxyObjectNode->FindPin(NodeGuidStrName)->DefaultValue = NodeGuid.ToString();
 
-    // Expose Async Task Proxy object
-    auto* const PinProxyObject = CreateProxyObject_Node->GetReturnValuePin();
-    auto* Cast_Output = PinProxyObject;
+    auto* const PinProxyObject = CreateProxyObjectNode->GetReturnValuePin();
+    auto* CastOutput = PinProxyObject;
     if (PinProxyObject->PinType.PinSubCategoryObject.Get() != ProxyClass)
     {
         auto* CastNode = CompilerContext.SpawnIntermediateNode<UK2Node_DynamicCast>(this, SourceGraph);
@@ -1886,17 +1783,15 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
         CastNode->TargetType = ProxyClass;
         CastNode->AllocateDefaultPins();
         IsErrorFree &= Schema->TryCreateConnection(PinProxyObject, CastNode->GetCastSourcePin());
-        Cast_Output = CastNode->GetCastResultPin();
-        check(Cast_Output);
+        CastOutput = CastNode->GetCastResultPin();
+        check(CastOutput);
     }
+    
     auto* const OutputObjectPin = FindPinChecked(OutPutObjectPinName, EGPD_Output);
-    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*OutputObjectPin, *Cast_Output).CanSafeConnect();
+    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*OutputObjectPin, *CastOutput).CanSafeConnect();
     if (NOT IsErrorFree)
-    {
-        CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: OutObjectPin Error. @@"), this);
-    }
+    { CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: OutObjectPin Error. @@"), this); }
 
-    // Gather output parameters and pair them with local variables
     auto VariableOutputs = TArray<FNodeHelper::FOutputPinAndLocalVariable>{};
     for (auto* CurrentPin : Pins)
     {
@@ -1904,34 +1799,34 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
         {
             const auto& PinType = CurrentPin->PinType;
 
-            bool bIsCustomPin = false;
+            auto IsCustomPin = false;
             for (const auto& CustomPin : CustomPins)
             {
                 if (CustomPin.PayloadType)
                 {
-                    for (TFieldIterator<FProperty> It(CustomPin.PayloadType); It; ++It)
+                    for (TFieldIterator<FProperty> PropertyIt(CustomPin.PayloadType); PropertyIt; ++PropertyIt)
                     {
-                        FProperty* Property = *It;
+                        const FProperty* Property = *PropertyIt;
 
-                        if (!Property->HasAnyPropertyFlags(CPF_Parm) &&
+                        if (NOT Property->HasAnyPropertyFlags(CPF_Parm) &&
                             Property->HasAllPropertyFlags(CPF_BlueprintVisible))
                         {
-                            FName PayloadPinName = Property->GetFName();
+                            const FName PayloadPinName = Property->GetFName();
 
                             if (CurrentPin->PinName == PayloadPinName)
                             {
-                                bIsCustomPin = true;
+                                IsCustomPin = true;
                                 break;
                             }
                         }
                     }
                 }
 
-                if (bIsCustomPin)
+                if (IsCustomPin)
                 { break; }
             }
 
-            if (bIsCustomPin)
+            if (IsCustomPin)
             { continue; }
 
             auto* TempVarOutput = CompilerContext.SpawnInternalVariable(
@@ -1951,7 +1846,7 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
     const auto IsValidFuncName = GET_FUNCTION_NAME_CHECKED(UKismetSystemLibrary, IsValid);
 
     auto* OriginalThenPin = FindPinChecked(UEdGraphSchema_K2::PN_Then);
-    auto* LastThenPin = CreateProxyObject_Node->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+    auto* LastThenPin = CreateProxyObjectNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
     auto* ValidateProxyNode = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>(this, SourceGraph);
     ValidateProxyNode->AllocateDefaultPins();
     {
@@ -1969,14 +1864,14 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
         LastThenPin = ValidateProxyNode->GetThenPin();
     }
 
-    // Create InDelegate Assign
-    for (auto DelegateName : InDelegate)
+    for (const auto DelegateName : InDelegate)
     {
-        if (DelegateName == NAME_None) continue;
+        if (DelegateName == NAME_None)
+        { continue; }
 
-        if (auto* Property = ProxyClass->FindPropertyByName(DelegateName))
+        if (const auto* Property = ProxyClass->FindPropertyByName(DelegateName))
         {
-            if (auto* CurrentProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
+            if (const auto* CurrentProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
                 CurrentProperty && CurrentProperty->GetFName() == DelegateName)
             {
                 if (auto* InDelegatePin = FindPinChecked(DelegateName, EGPD_Input);
@@ -1986,15 +1881,14 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
                     AssignDelegate->SetFromProperty(CurrentProperty, false, CurrentProperty->GetOwnerClass());
                     AssignDelegate->AllocateDefaultPins();
 
-                    IsErrorFree &= Schema->TryCreateConnection(AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Self), Cast_Output);
+                    IsErrorFree &= Schema->TryCreateConnection(AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Self), CastOutput);
                     IsErrorFree &= Schema->TryCreateConnection(LastThenPin, AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
                     auto* DelegatePin = AssignDelegate->GetDelegatePin();
 
                     IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*InDelegatePin, *DelegatePin).CanSafeConnect();
                     if (NOT IsErrorFree)
-                    {
-                        CompilerContext.MessageLog.Error(*LOCTEXT("Invalid_DelegateProperties", "Error @@").ToString(), this);
-                    }
+                    { CompilerContext.MessageLog.Error(*LOCTEXT("Invalid_DelegateProperties", "Error @@").ToString(), this); }
+                    
                     LastThenPin = AssignDelegate->FindPinChecked(UEdGraphSchema_K2::PN_Then);
                 }
             }
@@ -2006,14 +1900,14 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
         }
     }
 
-    // Create OutDelegate
-    for (auto DelegateName : OutDelegate)
+    for (const auto DelegateName : OutDelegate)
     {
-        if (DelegateName == NAME_None) continue;
+        if (DelegateName == NAME_None)
+        { continue; }
 
-        if (auto* Property = ProxyClass->FindPropertyByName(DelegateName))
+        if (const auto* Property = ProxyClass->FindPropertyByName(DelegateName))
         {
-            if (auto* CurrentProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
+            if (const auto* CurrentProperty = CastFieldChecked<FMulticastDelegateProperty>(Property);
                 CurrentProperty && CurrentProperty->GetFName() == DelegateName)
             {
                 if (FindPin(CurrentProperty->GetFName()))
@@ -2021,20 +1915,17 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
                     IsErrorFree &= FNodeHelper::HandleDelegateImplementation(
                         CurrentProperty,
                         VariableOutputs,
-                        Cast_Output,
+                        CastOutput,
                         LastThenPin,
                         this,
                         SourceGraph,
                         CompilerContext);
                 }
                 else
-                {
-                    IsErrorFree = false;
-                }
+                { IsErrorFree = false; }
+                
                 if (NOT IsErrorFree)
-                {
-                    CompilerContext.MessageLog.Error(*LOCTEXT("Invalid_DelegateProperties", "@@").ToString(), this);
-                }
+                { CompilerContext.MessageLog.Error(*LOCTEXT("Invalid_DelegateProperties", "@@").ToString(), this); }
             }
         }
         else
@@ -2050,7 +1941,8 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
             TEXT("ExtendConstructObject: For each delegate define event, connect it to delegate and implement a chain of assignments error. @@"),
             this);
     }
-    if (CreateProxyObject_Node->FindPinChecked(UEdGraphSchema_K2::PN_Then) == LastThenPin)
+    
+    if (CreateProxyObjectNode->FindPinChecked(UEdGraphSchema_K2::PN_Then) == LastThenPin)
     {
         CompilerContext.MessageLog.Error(*LOCTEXT("MissingDelegateProperties", "ExtendConstructObject: Proxy has no delegates defined. @@").ToString(), this);
         return;
@@ -2058,11 +1950,8 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
 
     IsErrorFree &= ConnectSpawnProperties(ProxyClass, Schema, CompilerContext, SourceGraph, LastThenPin, PinProxyObject);
     if (NOT IsErrorFree)
-    {
-        CompilerContext.MessageLog.Error(TEXT("ConnectSpawnProperties error. @@"), this);
-    }
+    { CompilerContext.MessageLog.Error(TEXT("ConnectSpawnProperties error. @@"), this); }
 
-    // Create the custom pins
     if (NOT CustomPins.IsEmpty())
     {
         auto* DelegateProperty = ProxyClass->FindPropertyByName(GET_MEMBER_NAME_CHECKED(UBtf_TaskForge, OnCustomPinTriggered));
@@ -2077,7 +1966,7 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
 
         const auto Success = FNodeHelper::HandleCustomPinsImplementation(
             MulticastDelegateProperty,
-            Cast_Output,
+            CastOutput,
             LastThenPin,
             this,
             SourceGraph,
@@ -2086,15 +1975,14 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
         );
 
         if (NOT Success)
-        {
-            CompilerContext.MessageLog.Error(*FString::Printf(TEXT("Failed to handle delegate for %s."), *GetNodeTitle(ENodeTitleType::FullTitle).ToString()));
-        }
+        { CompilerContext.MessageLog.Error(*FString::Printf(TEXT("Failed to handle delegate for %s."), *GetNodeTitle(ENodeTitleType::FullTitle).ToString())); }
     }
 
-    // Create a call to activate the proxy object
-    for (auto FunctionName : AutoCallFunction)
+    for (const auto FunctionName : AutoCallFunction)
     {
-        if (FunctionName == NAME_None) continue;
+        if (FunctionName == NAME_None)
+        { continue; }
+        
         {
             const auto* FindFunc = ProxyClass->FindFunctionByName(FunctionName);
             if (NOT IsValid(FindFunc))
@@ -2105,52 +1993,47 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
             }
         }
 
-        auto* const CallFunction_Node = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-        CallFunction_Node->FunctionReference.SetExternalMember(FunctionName, ProxyClass);
-        CallFunction_Node->AllocateDefaultPins();
+        auto* const CallFunctionNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+        CallFunctionNode->FunctionReference.SetExternalMember(FunctionName, ProxyClass);
+        CallFunctionNode->AllocateDefaultPins();
 
-        auto* ActivateCallSelfPin = Schema->FindSelfPin(*CallFunction_Node, EGPD_Input);
+        auto* ActivateCallSelfPin = Schema->FindSelfPin(*CallFunctionNode, EGPD_Input);
         check(ActivateCallSelfPin);
-        IsErrorFree &= Schema->TryCreateConnection(Cast_Output, ActivateCallSelfPin);
+        IsErrorFree &= Schema->TryCreateConnection(CastOutput, ActivateCallSelfPin);
         if (NOT IsErrorFree)
-        {
-            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this);
-        }
+        { CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this); }
 
-        const auto IsPureFunc = CallFunction_Node->IsNodePure();
+        const auto IsPureFunc = CallFunctionNode->IsNodePure();
         if (NOT IsPureFunc)
         {
-            auto* ActivateExecPin = CallFunction_Node->FindPinChecked(UEdGraphSchema_K2::PN_Execute);
-            auto* ActivateThenPin = CallFunction_Node->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+            auto* ActivateExecPin = CallFunctionNode->FindPinChecked(UEdGraphSchema_K2::PN_Execute);
+            auto* ActivateThenPin = CallFunctionNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
             IsErrorFree &= Schema->TryCreateConnection(LastThenPin, ActivateExecPin);
             if (NOT IsErrorFree)
-            {
-                CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this);
-            }
+            { CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this); }
+            
             LastThenPin = ActivateThenPin;
         }
 
-        auto* EventSignature = CallFunction_Node->GetTargetFunction();
+        auto* EventSignature = CallFunctionNode->GetTargetFunction();
         check(EventSignature);
-        for (TFieldIterator<FProperty> PropIt(EventSignature); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+        for (TFieldIterator<FProperty> PropertyIt(EventSignature); PropertyIt && (PropertyIt->PropertyFlags & CPF_Parm); ++PropertyIt)
         {
-            const auto* Param = *PropIt;
+            const auto* Param = *PropertyIt;
 
             const auto IsFunctionInput = NOT Param->HasAnyPropertyFlags(CPF_ReturnParm) &&
                 (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
 
             const auto Direction = IsFunctionInput ? EGPD_Input : EGPD_Output;
 
-            if (auto* InNodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), Direction))
+            if (auto* NodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), Direction))
             {
-                auto* InFunctionPin = CallFunction_Node->FindPinChecked(Param->GetFName(), Direction);
+                auto* FunctionPin = CallFunctionNode->FindPinChecked(Param->GetFName(), Direction);
                 if (IsFunctionInput)
-                {
-                    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*InNodePin, *InFunctionPin).CanSafeConnect();
-                }
+                { IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*NodePin, *FunctionPin).CanSafeConnect(); }
                 else
                 {
-                    auto* OutputPair = VariableOutputs.FindByKey(InNodePin);
+                    auto* OutputPair = VariableOutputs.FindByKey(NodePin);
                     check(OutputPair);
 
                     auto* AssignNode = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>(this, SourceGraph);
@@ -2159,7 +2042,7 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
 
                     IsErrorFree &= Schema->TryCreateConnection(OutputPair->TempVar->GetVariablePin(), AssignNode->GetVariablePin());
                     AssignNode->NotifyPinConnectionListChanged(AssignNode->GetVariablePin());
-                    IsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), InFunctionPin);
+                    IsErrorFree &= Schema->TryCreateConnection(AssignNode->GetValuePin(), FunctionPin);
                     AssignNode->NotifyPinConnectionListChanged(AssignNode->GetValuePin());
 
                     LastThenPin = AssignNode->GetThenPin();
@@ -2173,15 +2056,14 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
         }
 
         if (NOT IsErrorFree)
-        {
-            CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this);
-        }
+        { CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to activate the proxy object error. @@"), this); }
     }
 
-    // Create a call to Expand Functions the proxy object
-    for (auto FunctionName : ExecFunction)
+    for (const auto FunctionName : ExecFunction)
     {
-        if (FunctionName == NAME_None) continue;
+        if (FunctionName == NAME_None)
+        { continue; }
+        
         {
             if (const auto* FindFunc = ProxyClass->FindFunctionByName(FunctionName);
                 NOT FindFunc)
@@ -2202,45 +2084,45 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
         IfThenElse->AllocateDefaultPins();
 
         auto* IsValidInputPin = IsValidFuncNode->FindPinChecked(TEXT("Object"));
-        IsErrorFree &= Schema->TryCreateConnection(Cast_Output, IsValidInputPin);
+        IsErrorFree &= Schema->TryCreateConnection(CastOutput, IsValidInputPin);
         IsErrorFree &= Schema->TryCreateConnection(IsValidFuncNode->GetReturnValuePin(), IfThenElse->GetConditionPin());
 
         IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*ExecPin, *IfThenElse->GetExecPin()).CanSafeConnect();
 
-        auto* const CallFunction_Node = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-        CallFunction_Node->FunctionReference.SetExternalMember(FunctionName, ProxyClass);
-        CallFunction_Node->AllocateDefaultPins();
+        auto* const CallFunctionNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+        CallFunctionNode->FunctionReference.SetExternalMember(FunctionName, ProxyClass);
+        CallFunctionNode->AllocateDefaultPins();
 
-        if (CallFunction_Node->IsNodePure())
+        if (CallFunctionNode->IsNodePure())
         {
             CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Need To Refresh Node. @@"), this);
             continue;
         }
 
-        auto* CallSelfPin = Schema->FindSelfPin(*CallFunction_Node, EGPD_Input);
+        auto* CallSelfPin = Schema->FindSelfPin(*CallFunctionNode, EGPD_Input);
         check(CallSelfPin);
 
-        IsErrorFree &= Schema->TryCreateConnection(Cast_Output, CallSelfPin);
+        IsErrorFree &= Schema->TryCreateConnection(CastOutput, CallSelfPin);
 
-        auto* FunctionExecPin = CallFunction_Node->FindPinChecked(UEdGraphSchema_K2::PN_Execute);
+        auto* FunctionExecPin = CallFunctionNode->FindPinChecked(UEdGraphSchema_K2::PN_Execute);
 
         check(FunctionExecPin && ExecPin);
 
         IsErrorFree &= Schema->TryCreateConnection(IfThenElse->GetThenPin(), FunctionExecPin);
 
-        auto* EventSignature = CallFunction_Node->GetTargetFunction();
-        for (TFieldIterator<FProperty> PropIt(EventSignature); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+        auto* EventSignature = CallFunctionNode->GetTargetFunction();
+        for (TFieldIterator<FProperty> PropertyIt(EventSignature); PropertyIt && (PropertyIt->PropertyFlags & CPF_Parm); ++PropertyIt)
         {
-            const auto* Param = *PropIt;
+            const auto* Param = *PropertyIt;
             const auto IsFunctionInput = NOT Param->HasAnyPropertyFlags(CPF_ReturnParm) &&
                 (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm));
             if (IsFunctionInput)
             {
-                if (auto* InNodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), EGPD_Input))
+                if (auto* NodePin = FindParamPin(FunctionName.Name.ToString(), Param->GetFName(), EGPD_Input))
                 {
-                    auto* InFunctionPin = CallFunction_Node->FindPinChecked(Param->GetFName(), EGPD_Input);
+                    auto* FunctionPin = CallFunctionNode->FindPinChecked(Param->GetFName(), EGPD_Input);
 
-                    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*InNodePin, *InFunctionPin).CanSafeConnect();
+                    IsErrorFree &= CompilerContext.MovePinLinksToIntermediate(*NodePin, *FunctionPin).CanSafeConnect();
                 }
                 else
                 {
@@ -2252,16 +2134,11 @@ void UBtf_ExtendConstructObject_K2Node::ExpandNode(class FKismetCompilerContext&
     }
 
     if (NOT IsErrorFree)
-    {
-        CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to Expand Functions the proxy object error. @@"), this);
-    }
+    { CompilerContext.MessageLog.Error(TEXT("ExtendConstructObject: Create a call to Expand Functions the proxy object error. @@"), this); }
 
-    // Move the connections from the original node then pin to the last internal then pin
     IsErrorFree &= CompilerContext.CopyPinLinksToIntermediate(*OriginalThenPin, *LastThenPin).CanSafeConnect();
     if (NOT IsErrorFree)
-    {
-        CompilerContext.MessageLog.Error(*LOCTEXT("InternalConnectionError", "ExtendConstructObject: Internal connection error. @@").ToString(), this);
-    }
+    { CompilerContext.MessageLog.Error(*LOCTEXT("InternalConnectionError", "ExtendConstructObject: Internal connection error. @@").ToString(), this); }
 
     SpawnParam.Shrink();
 
@@ -2306,7 +2183,8 @@ bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
                         DefaultValueAsString,
                         this);
 
-                    if (DefaultValueAsString == SpawnVarPin->DefaultValue) continue;
+                    if (DefaultValueAsString == SpawnVarPin->DefaultValue)
+                    { continue; }
                 }
             }
 
@@ -2319,7 +2197,6 @@ bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
                 SetVarNode->SetFromFunction(SetByNameFunction);
                 SetVarNode->AllocateDefaultPins();
 
-                // Connect this node into the exec chain
                 IsErrorFree &= Schema->TryCreateConnection(LastThenPin, SetVarNode->GetExecPin());
                 if (NOT IsErrorFree)
                 {
@@ -2333,11 +2210,9 @@ bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
                 static const auto ValueParamName = FName(TEXT("Value"));
                 static const auto PropertyNameParamName = FName(TEXT("PropertyName"));
 
-                // Connect the new actor to the 'object' pin
                 auto* ObjectPin = SetVarNode->FindPinChecked(ObjectParamName);
                 SpawnedActorReturnPin->MakeLinkTo(ObjectPin);
 
-                // Fill in literal for 'property name' pin - name of pin is property name
                 auto* PropertyNamePin = SetVarNode->FindPinChecked(PropertyNameParamName);
                 PropertyNamePin->DefaultValue = SpawnVarPin->PinName.ToString();
 
@@ -2348,18 +2223,16 @@ bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
                     SpawnVarPin->PinType.PinSubCategoryObject.IsValid() &&
                     SpawnVarPin->PinType.PinSubCategoryObject->IsA<UEnum>())
                 {
-                    // Pin is an enum, we need to alias the enum value to an int:
                     auto* EnumLiteralNode = CompilerContext.SpawnIntermediateNode<UK2Node_EnumLiteral>(this, SourceGraph);
                     EnumLiteralNode->Enum = CastChecked<UEnum>(SpawnVarPin->PinType.PinSubCategoryObject.Get());
                     EnumLiteralNode->AllocateDefaultPins();
                     EnumLiteralNode->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue)->MakeLinkTo(ValuePin);
 
-                    auto* InPin = EnumLiteralNode->FindPinChecked(UK2Node_EnumLiteral::GetEnumInputPinName());
-                    InPin->DefaultValue = SpawnVarPin->DefaultValue;
+                    auto* InputPin = EnumLiteralNode->FindPinChecked(UK2Node_EnumLiteral::GetEnumInputPinName());
+                    InputPin->DefaultValue = SpawnVarPin->DefaultValue;
                 }
                 else
                 {
-                    // For non-array struct pins that are not linked, transfer the pin type so that the node will expand an auto-ref that will assign the value by-ref.
                     if (NOT SpawnVarPin->PinType.IsArray() &&
                         SpawnVarPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Struct &&
                         SpawnVarPin->LinkedTo.Num() == 0)
@@ -2371,7 +2244,6 @@ bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
                     }
                     else
                     {
-                        // Move connection from the variable pin on the spawn node to the 'value' pin
                         CompilerContext.MovePinLinksToIntermediate(*SpawnVarPin, *ValuePin);
                         SetVarNode->PinConnectionListChanged(ValuePin);
                     }
@@ -2404,8 +2276,6 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::CreateDelegateForNewFunctio
     check(DelegateInputPin && Schema && CurrentNode && SourceGraph && (FunctionName != NAME_None));
     auto Result = true;
 
-    // WORKAROUND, so we can create delegate from nonexistent function by avoiding check at expanding step
-    // instead simply: Schema->TryCreateConnection(AddDelegateNode->GetDelegatePin(), CurrentCENode->FindPinChecked(UK2Node_CustomEvent::DelegateOutputName));
     auto* SelfNode = CompilerContext.SpawnIntermediateNode<UK2Node_Self>(CurrentNode, SourceGraph);
     SelfNode->AllocateDefaultPins();
 
@@ -2423,9 +2293,9 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::CopyEventSignature(UK2Node_
     check(CENode && Function && Schema);
 
     auto Result = true;
-    for (TFieldIterator<FProperty> PropIt(Function); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+    for (TFieldIterator<FProperty> PropertyIt(Function); PropertyIt && (PropertyIt->PropertyFlags & CPF_Parm); ++PropertyIt)
     {
-        const auto* Param = *PropIt;
+        const auto* Param = *PropertyIt;
         if (NOT Param->HasAnyPropertyFlags(CPF_OutParm) || Param->HasAnyPropertyFlags(CPF_ReferenceParm))
         {
             auto PinType = FEdGraphPinType{};
@@ -2483,7 +2353,7 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleDelegateImplementatio
     auto* LastActivatedNodeThen = CurrentCeNode->FindPinChecked(UEdGraphSchema_K2::PN_Then);
 
     const auto DelegateNameStr = CurrentProperty->GetName();
-    for (const auto& OutputPair : VariableOutputs) // CREATE CHAIN OF ASSIGMENTS
+    for (const auto& OutputPair : VariableOutputs)
     {
         auto PinNameStr = OutputPair.OutputPin->PinName.ToString();
 
@@ -2533,7 +2403,6 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleCustomPinsImplementat
         CurrentCeNode->CustomFunctionName = *FString::Printf(TEXT("%s_%s"), *CurrentProperty->GetName(), *CompilerContext.GetGuid(CurrentNode));
         CurrentCeNode->AllocateDefaultPins();
 
-        // We need to assign the signature for the proper pins to generate before we connect them
         IsErrorFree &= FNodeHelper::CreateDelegateForNewFunction(
             AddDelegateNode->GetDelegatePin(),
             CurrentCeNode->GetFunctionName(),
@@ -2545,85 +2414,69 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleCustomPinsImplementat
         auto* PinNamePin = CurrentCeNode->FindPin(TEXT("PinName"));
         auto* DataPin = CurrentCeNode->FindPin(TEXT("Data"));
 
-        // Create a switch node for routing to the correct custom pin
         auto* SwitchNode = CompilerContext.SpawnIntermediateNode<UK2Node_SwitchName>(CurrentNode, SourceGraph);
         auto ConvertedOutputNames = TArray<FName>{};
-        for (auto& CurrentPin : OutputNames)
-        {
-            ConvertedOutputNames.Add(FName(CurrentPin.PinName));
-        }
+        for (const auto& CurrentPin : OutputNames)
+        { ConvertedOutputNames.Add(FName(CurrentPin.PinName)); }
+        
         SwitchNode->PinNames = ConvertedOutputNames;
         SwitchNode->AllocateDefaultPins();
 
-        // Connect the custom event to the switch node
         Schema->TryCreateConnection(CurrentCeNode->FindPinChecked(UEdGraphSchema_K2::PN_Then), SwitchNode->GetExecPin());
         Schema->TryCreateConnection(PinNamePin, SwitchNode->GetSelectionPin());
 
-        // For each custom output pin
-        for (int32 i = 0; i < OutputNames.Num(); ++i)
+        for (int32 PinIndex = 0; PinIndex < OutputNames.Num(); ++PinIndex)
         {
-            const auto& OutputName = FName(OutputNames[i].PinName);
+            const auto& OutputName = FName(OutputNames[PinIndex].PinName);
             if (auto* SwitchCasePin = SwitchNode->FindPin(OutputName.ToString()))
             {
-                // Handle payload extraction if this pin has a payload type
-                if (OutputNames[i].PayloadType)
+                if (OutputNames[PinIndex].PayloadType)
                 {
-                    // Create GetInstancedStructValue node
                     auto* GetInstancedStructNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(CurrentNode, SourceGraph);
                     GetInstancedStructNode->SetFromFunction(
                         UBlueprintInstancedStructLibrary::StaticClass()->FindFunctionByName(
                             GET_FUNCTION_NAME_CHECKED(UBlueprintInstancedStructLibrary, GetInstancedStructValue)));
                     GetInstancedStructNode->AllocateDefaultPins();
 
-                    // Connect the data pin to GetInstancedStructValue
                     Schema->TryCreateConnection(DataPin, GetInstancedStructNode->FindPin(TEXT("InstancedStruct")));
                     Schema->TryCreateConnection(SwitchCasePin, GetInstancedStructNode->GetExecPin());
 
-                    // Create BreakStruct node
                     auto* BreakStructNode = CompilerContext.SpawnIntermediateNode<UK2Node_BreakStruct>(CurrentNode, SourceGraph);
-                    BreakStructNode->StructType = OutputNames[i].PayloadType;
+                    BreakStructNode->StructType = OutputNames[PinIndex].PayloadType;
                     BreakStructNode->AllocateDefaultPins();
                     BreakStructNode->bMadeAfterOverridePinRemoval = true;
 
-                    // Connect GetInstancedStructValue to BreakStruct
-                    UEdGraphPin* ValuePin = GetInstancedStructNode->FindPin(TEXT("Value"));
-                    UEdGraphPin* StructInputPin = BreakStructNode->FindPin(OutputNames[i].PayloadType->GetFName());
+                    auto* ValuePin = GetInstancedStructNode->FindPin(TEXT("Value"));
+                    auto* StructInputPin = BreakStructNode->FindPin(OutputNames[PinIndex].PayloadType->GetFName());
                     Schema->TryCreateConnection(ValuePin, StructInputPin);
 
-                    // Connect the broken out values to the output pins
-                    for (TFieldIterator<FProperty> It(OutputNames[i].PayloadType); It; ++It)
+                    for (TFieldIterator<FProperty> PropertyIt(OutputNames[PinIndex].PayloadType); PropertyIt; ++PropertyIt)
                     {
-                        FProperty* Property = *It;
-                        if (!Property->HasAnyPropertyFlags(CPF_Parm) &&
+                        const FProperty* Property = *PropertyIt;
+                        if (NOT Property->HasAnyPropertyFlags(CPF_Parm) &&
                             Property->HasAllPropertyFlags(CPF_BlueprintVisible))
                         {
-                            UEdGraphPin* BreakPin = BreakStructNode->FindPin(Property->GetFName());
+                            auto* BreakPin = BreakStructNode->FindPin(Property->GetFName());
                             if (BreakPin)
                             {
-                                FName PayloadPinName = Property->GetFName();
+                                const FName PayloadPinName = Property->GetFName();
 
-                                if (UEdGraphPin* NodeOutputPin = CurrentNode->FindPin(PayloadPinName))
-                                {
-                                    CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *BreakPin);
-                                }
+                                if (auto* NodeOutputPin = CurrentNode->FindPin(PayloadPinName))
+                                { CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *BreakPin); }
                             }
                         }
                     }
 
-                    // Connect execution output
                     if (auto* NodeOutputPin = CurrentNode->FindPin(OutputName))
                     {
-                        UEdGraphPin* ValidPin = GetInstancedStructNode->FindPin(TEXT("Valid"));
+                        auto* ValidPin = GetInstancedStructNode->FindPin(TEXT("Valid"));
                         CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *ValidPin);
                     }
                 }
                 else
                 {
-                    // No payload, just connect the execution pin
                     if (auto* NodeOutputPin = CurrentNode->FindPin(OutputName))
-                    {
-                        CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *SwitchCasePin);
-                    }
+                    { CompilerContext.MovePinLinksToIntermediate(*NodeOutputPin, *SwitchCasePin); }
                 }
             }
         }
@@ -2632,15 +2485,14 @@ bool UBtf_ExtendConstructObject_K2Node::FNodeHelper::HandleCustomPinsImplementat
     return IsErrorFree;
 }
 
-void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const bool FullRefresh)
+void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* TargetClass, const bool FullRefresh)
 {
     const auto InPrefix = FString::Printf(TEXT("In_"));
     const auto OutPrefix = FString::Printf(TEXT("Out_"));
     const auto InitPrefix = FString::Printf(TEXT("Init_"));
 
-    //params
     {
-        for (TFieldIterator<FProperty> PropertyIt(InClass, EFieldIteratorFlags::IncludeSuper); PropertyIt; ++PropertyIt)
+        for (TFieldIterator<FProperty> PropertyIt(TargetClass, EFieldIteratorFlags::IncludeSuper); PropertyIt; ++PropertyIt)
         {
             const auto* Property = *PropertyIt;
             const auto IsDelegate = Property->IsA(FMulticastDelegateProperty::StaticClass());
@@ -2653,7 +2505,6 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
                 if (IsExposedToSpawn && IsSettableExternally && Property->HasAllPropertyFlags(CPF_BlueprintVisible))
                 {
                     AllParam.Add(PropertyName);
-                    //force add ExposedToSpawn Param
                     SpawnParam.AddUnique(FBtf_NameSelect{PropertyName});
                 }
                 else if (
@@ -2674,37 +2525,33 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
         }
     }
 
-    //functions
     {
-        for (TFieldIterator<UField> It(InClass); It; ++It)
+        for (TFieldIterator<UField> FieldIt(TargetClass); FieldIt; ++FieldIt)
         {
-            if (const auto* LocFunction = Cast<UFunction>(*It))
+            if (const auto* TargetFunction = Cast<UFunction>(*FieldIt))
             {
-                if (LocFunction->HasAllFunctionFlags(FUNC_BlueprintCallable | FUNC_Public) &&
-                    NOT LocFunction->HasAnyFunctionFlags(
+                if (TargetFunction->HasAllFunctionFlags(FUNC_BlueprintCallable | FUNC_Public) &&
+                    NOT TargetFunction->HasAnyFunctionFlags(
                         FUNC_Static | FUNC_UbergraphFunction | FUNC_Delegate | FUNC_Private | FUNC_Protected | FUNC_EditorOnly) &&
-                    NOT LocFunction->GetBoolMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly) &&
-                    NOT LocFunction->HasMetaData(FBlueprintMetadata::MD_DeprecatedFunction) &&
-                    NOT FObjectEditorUtils::IsFunctionHiddenFromClass(LocFunction, InClass))
+                    NOT TargetFunction->GetBoolMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly) &&
+                    NOT TargetFunction->HasMetaData(FBlueprintMetadata::MD_DeprecatedFunction) &&
+                    NOT FObjectEditorUtils::IsFunctionHiddenFromClass(TargetFunction, TargetClass))
                 {
-                    const auto FunctionName = LocFunction->GetFName();
+                    const auto FunctionName = TargetFunction->GetFName();
 
                     const auto OldNum = AllFunctions.Num();
                     AllFunctions.Add(FunctionName);
-                    //force add InitFunction
-                    if (LocFunction->GetBoolMetaData(FName("ExposeAutoCall")) || FunctionName.ToString().StartsWith(InitPrefix))
-                    {
-                        AutoCallFunction.AddUnique(FBtf_NameSelect{FunctionName});
-                    }
+                    
+                    if (TargetFunction->GetBoolMetaData(FName("ExposeAutoCall")) || FunctionName.ToString().StartsWith(InitPrefix))
+                    { AutoCallFunction.AddUnique(FBtf_NameSelect{FunctionName}); }
+                    
                     const auto NewFunction = OldNum - AllFunctions.Num() != 0;
                     if (NewFunction)
                     {
-                        if (FunctionName.ToString().StartsWith(InPrefix) && NOT LocFunction->HasAnyFunctionFlags(FUNC_BlueprintPure | FUNC_Const))
+                        if (FunctionName.ToString().StartsWith(InPrefix) && NOT TargetFunction->HasAnyFunctionFlags(FUNC_BlueprintPure | FUNC_Const))
                         {
                             if (FullRefresh)
-                            {
-                                ExecFunction.AddUnique(FBtf_NameSelect{FunctionName});
-                            }
+                            { ExecFunction.AddUnique(FBtf_NameSelect{FunctionName}); }
                         }
                     }
                 }
@@ -2718,13 +2565,12 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
         }
     }
 
-    //delegates
     {
         const auto* K2Schema = GetDefault<UEdGraphSchema_K2>();
         const auto GraphType = K2Schema->GetGraphType(GetGraph());
         const auto AllowOutDelegate = GraphType != EGraphType::GT_Function;
 
-        for (TFieldIterator<FProperty> PropertyIt(InClass); PropertyIt; ++PropertyIt)
+        for (TFieldIterator<FProperty> PropertyIt(TargetClass); PropertyIt; ++PropertyIt)
         {
             if (const auto* DelegateProperty = CastField<FMulticastDelegateProperty>(*PropertyIt))
             {
@@ -2732,20 +2578,16 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
                     NOT DelegateProperty->HasAnyPropertyFlags(CPF_BlueprintAssignable) ||
                     DelegateProperty->GetBoolMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly) ||
                     DelegateProperty->HasMetaData(FBlueprintMetadata::MD_DeprecatedFunction))
-                {
-                    continue;
-                }
+                { continue; }
 
-                if (const auto LocFunction = DelegateProperty->SignatureFunction)
+                if (const auto TargetFunction = DelegateProperty->SignatureFunction)
                 {
-                    if (NOT LocFunction->HasAllFunctionFlags(FUNC_Public) ||
-                        LocFunction->HasAnyFunctionFlags(
+                    if (NOT TargetFunction->HasAllFunctionFlags(FUNC_Public) ||
+                        TargetFunction->HasAnyFunctionFlags(
                             FUNC_Static | FUNC_BlueprintPure | FUNC_Const | FUNC_UbergraphFunction | FUNC_Private | FUNC_Protected | FUNC_EditorOnly) ||
-                        LocFunction->GetBoolMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly) ||
-                        LocFunction->HasMetaData(FBlueprintMetadata::MD_DeprecatedFunction))
-                    {
-                        continue;
-                    }
+                        TargetFunction->GetBoolMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly) ||
+                        TargetFunction->HasMetaData(FBlueprintMetadata::MD_DeprecatedFunction))
+                    { continue; }
                 }
 
                 const auto DelegateName = DelegateProperty->GetFName();
@@ -2766,17 +2608,11 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
                 {
                     if (DelegateName.ToString().StartsWith(InPrefix) ||
                         (DelegateName.ToString().StartsWith(OutPrefix) && NOT AllowOutDelegate))
-                    {
-                        InDelegate.AddUnique(FBtf_NameSelect{DelegateName});
-                    }
+                    { InDelegate.AddUnique(FBtf_NameSelect{DelegateName}); }
                     else if (DelegateName.ToString().StartsWith(OutPrefix) && AllowOutDelegate)
-                    {
-                        OutDelegate.AddUnique(FBtf_NameSelect{DelegateName});
-                    }
+                    { OutDelegate.AddUnique(FBtf_NameSelect{DelegateName}); }
                     else
-                    {
-                        continue;
-                    }
+                    { continue; }
                 }
 
                 if (DelegateName != NAME_None)
@@ -2784,14 +2620,14 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
                     auto AllPinsGood = true;
                     auto DelegateNameStr = DelegateName.ToString();
 
-                    if (DelegateNameStr.StartsWith(OutPrefix)) //check Properties
+                    if (DelegateNameStr.StartsWith(OutPrefix))
                     {
                         DelegateNameStr.RemoveAt(0, OutPrefix.Len());
                         if (const auto DelegateSignatureFunction = DelegateProperty->SignatureFunction)
                         {
-                            for (TFieldIterator<FProperty> PropIt(DelegateSignatureFunction); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+                            for (TFieldIterator<FProperty> PropertyIt(DelegateSignatureFunction); PropertyIt && (PropertyIt->PropertyFlags & CPF_Parm); ++PropertyIt)
                             {
-                                const auto ParamName = FName(*FString::Printf(TEXT("%s_%s"), *DelegateNameStr, *(*PropIt)->GetFName().ToString()));
+                                const auto ParamName = FName(*FString::Printf(TEXT("%s_%s"), *DelegateNameStr, *(*PropertyIt)->GetFName().ToString()));
                                 AllPinsGood &= FindPin(ParamName, EGPD_Output) != nullptr;
                             }
 
@@ -2810,13 +2646,10 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
                     if (NOT AllPinsGood)
                     {
                         if (DelegateNameStr.StartsWith(InPrefix))
-                        {
-                            DelegateNameStr.RemoveAt(0, InPrefix.Len());
-                        }
+                        { DelegateNameStr.RemoveAt(0, InPrefix.Len()); }
+                        
                         if (DelegateNameStr.StartsWith(OutPrefix))
-                        {
-                            DelegateNameStr.RemoveAt(0, OutPrefix.Len());
-                        }
+                        { DelegateNameStr.RemoveAt(0, OutPrefix.Len()); }
 
                         Pins.RemoveAll(
                             [&DelegateNameStr](UEdGraphPin* Pin)
@@ -2838,7 +2671,7 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
             if (const auto* DelegateProperty = CastField<FDelegateProperty>(*PropertyIt))
             {
                 check(DelegateProperty);
-                //todo not Multicast DelegateProperty
+                // TODO: Handle non-multicast delegate properties
             }
         }
     }
@@ -2849,10 +2682,10 @@ void UBtf_ExtendConstructObject_K2Node::CollectSpawnParam(UClass* InClass, const
         {
             const auto AStr = A.ToString();
             const auto BStr = B.ToString();
-            const auto A_Init = AStr.StartsWith(InitPrefix);
-            const auto B_Init = BStr.StartsWith(InitPrefix);
-            return (A_Init && NOT B_Init) ||
-                ((A_Init && B_Init) ? UBtf_ExtendConstructObject_Utils::LessSuffix(A, AStr, B, BStr) : A.FastLess(B));
+            const auto AInit = AStr.StartsWith(InitPrefix);
+            const auto BInit = BStr.StartsWith(InitPrefix);
+            return (AInit && NOT BInit) ||
+                ((AInit && BInit) ? UBtf_ExtendConstructObject_Utils::LessSuffix(A, AStr, B, BStr) : A.FastLess(B));
         });
 }
 

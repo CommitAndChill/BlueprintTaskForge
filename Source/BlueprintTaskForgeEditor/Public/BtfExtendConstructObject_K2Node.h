@@ -61,12 +61,12 @@ public:
     virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
     virtual FText GetMenuCategory() const override;
     virtual bool UseWorldContext() const;
-    virtual FString GetPinMetaData(FName InPinName, FName InKey) override;
+    virtual FString GetPinMetaData(FName PinName, FName Key) override;
 
     virtual void Serialize(FArchive& Ar) override;
 
 #if WITH_EDITORONLY_DATA
-    virtual void PostEditChangeProperty(FPropertyChangedEvent& e) override;
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
     UFUNCTION(BlueprintCallable, CallInEditor, Category = "ExposeOptions")
     void ResetToDefaultExposeOptions() { ResetToDefaultExposeOptions_Impl(); }
@@ -172,17 +172,17 @@ protected:
     void AddSpawnParam(FName PinName);
 
     virtual TSet<FName> Get_PinsHiddenByDefault() { return {}; };
-    virtual void CollectSpawnParam(UClass* InClass, const bool FullRefresh);
+    virtual void CollectSpawnParam(UClass* TargetClass, const bool FullRefresh);
 
     // Pin Generation
-    virtual void GenerateFactoryFunctionPins(UClass* InClass);
-    virtual void GenerateSpawnParamPins(UClass* InClass);
-    virtual void GenerateAutoCallFunctionPins(UClass* InClass);
-    virtual void GenerateExecFunctionPins(UClass* InClass);
-    virtual void GenerateInputDelegatePins(UClass* InClass);
-    virtual void GenerateOutputDelegatePins(UClass* InClass);
-    virtual void CreatePinsForClass(UClass* InClass, bool FullRefresh = true);
-    virtual void CreatePinsForClassFunction(UClass* InClass, FName FnName, bool RetValPins = true);
+    virtual void GenerateFactoryFunctionPins(UClass* TargetClass);
+    virtual void GenerateSpawnParamPins(UClass* TargetClass);
+    virtual void GenerateAutoCallFunctionPins(UClass* TargetClass);
+    virtual void GenerateExecFunctionPins(UClass* TargetClass);
+    virtual void GenerateInputDelegatePins(UClass* TargetClass);
+    virtual void GenerateOutputDelegatePins(UClass* TargetClass);
+    virtual void CreatePinsForClass(UClass* TargetClass, bool FullRefresh = true);
+    virtual void CreatePinsForClassFunction(UClass* TargetClass, FName FunctionName, bool RetValPins = true);
 
     bool ConnectSpawnProperties(
         const UClass* ClassToSpawn,
@@ -198,6 +198,48 @@ private:
     mutable bool PinTooltipsValid;
 
     TMap<FName, TMap<FName, FString>> PinMetadataMap;
+
+#if WITH_EDITORONLY_DATA
+    // Helper methods for PostEditChangeProperty
+    void HandleAutoCallFunctionChange();
+    void HandleExecFunctionChange();
+    void HandleInDelegateChange();
+    void HandleOutDelegateChange();
+    void HandleSpawnParamChange();
+    void HandleAllowInstanceChange();
+    void CreateOrFindTaskInstance();
+    void DestroyTaskInstance();
+    void BindTaskInstancePropertyChanged();
+#endif
+
+    // Helper methods for Serialize
+    void ValidateProxyClass();
+    void HandleLegacyWorldContextPin();
+
+    // Helper methods for GetNodeContextMenuActions
+    bool IsValidContextForMenu(const UGraphNodeContextMenuContext* Context) const;
+    void AddNodeContextMenuActions(FToolMenuSection& Section) const;
+    void AddSubmenuForItems(
+        FToolMenuSection& Section,
+        const FName& SubmenuName,
+        const FString& SubmenuLabel,
+        const TSet<FName>& AllItems,
+        const TArray<FBtf_NameSelect>& CurrentItems,
+        void (UBtf_ExtendConstructObject_K2Node::*AddFunction)(const FName) const) const;
+    void AddPinContextMenuActions(FToolMenuSection& Section, const UEdGraphPin* Pin) const;
+    bool IsSystemPin(const UEdGraphPin* Pin) const;
+    bool IsRemovablePin(const UEdGraphPin* Pin, const FName& PinName) const;
+
+    // Helper methods for ValidateNodeDuringCompilation
+    void ValidateMacroUsage(FCompilerResultsLog& MessageLog) const;
+    bool IsInUbergraph() const;
+    void ValidateProxyClass(FCompilerResultsLog& MessageLog) const;
+    void ValidateClassPin(FCompilerResultsLog& MessageLog) const;
+    void ValidateGraphPlacement(FCompilerResultsLog& MessageLog) const;
+    void ValidateTaskInstance(FCompilerResultsLog& MessageLog) const;
+
+    // Helper methods for GetPinHoverText
+    void RefreshPinTooltips() const;
 
 protected:
     struct FNodeHelper
