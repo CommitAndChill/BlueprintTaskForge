@@ -293,13 +293,35 @@ FString UBtf_TaskForge_K2Node::Get_StatusString() const
 
 FLinearColor UBtf_TaskForge_K2Node::Get_StatusBackgroundColor() const
 {
+    auto ObtainedColor = FLinearColor{};
+    if (NOT IsValid(GEditor->PlayWorld) && IsValid(ProxyClass))
+    {
+        if (IsValid(TaskInstance))
+        {
+            if (TaskInstance->Get_StatusBackgroundColor(ObtainedColor))
+            {
+                return ObtainedColor;
+            }
+        }
+
+        if (const auto& TaskCDO = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
+            IsValid(TaskCDO))
+        {
+            if (TaskCDO->Get_StatusBackgroundColor(ObtainedColor))
+            {
+                return ObtainedColor;
+            }
+        }
+
+        return {};
+    }
+
     if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
         IsValid(Subsystem))
     {
         if (const auto FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
             IsValid(FoundTaskInstance))
         {
-            auto ObtainedColor = FLinearColor{};
             if (FoundTaskInstance->Get_StatusBackgroundColor(ObtainedColor))
             {
                 return ObtainedColor;

@@ -7,6 +7,8 @@
 
 #include "BtfTriggerCustomOutputPin_K2Node.generated.h"
 
+// --------------------------------------------------------------------------------------------------------------------
+
 class FBlueprintActionDatabaseRegistrar;
 class UEdGraph;
 
@@ -75,3 +77,5 @@ private:
     static const FName PN_TaskForge;
     static const FName PN_CustomPinName;
 };
+
+// --------------------------------------------------------------------------------------------------------------------
