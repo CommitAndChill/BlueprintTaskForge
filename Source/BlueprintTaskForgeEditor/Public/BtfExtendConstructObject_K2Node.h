@@ -215,7 +215,7 @@ protected:
         static bool CreateDelegateForNewFunction(UEdGraphPin* DelegateInputPin, FName FunctionName, UK2Node* CurrentNode, UEdGraph* SourceGraph, FKismetCompilerContext& CompilerContext);
         static bool CopyEventSignature(class UK2Node_CustomEvent* CENode, UFunction* Function, const UEdGraphSchema_K2* Schema);
         static bool HandleDelegateImplementation(FMulticastDelegateProperty* CurrentProperty, const TArray<FOutputPinAndLocalVariable>& VariableOutputs, UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, FKismetCompilerContext& CompilerContext);
-        static bool HandleCustomPinsImplementation(FMulticastDelegateProperty* CurrentProperty, const TArray<FOutputPinAndLocalVariable>& VariableOutputs, UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, TArray<FCustomOutputPin> OutputNames, FKismetCompilerContext& CompilerContext);
+        static bool HandleCustomPinsImplementation(FMulticastDelegateProperty* CurrentProperty, UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, TArray<FCustomOutputPin> OutputNames, FKismetCompilerContext& CompilerContext);
     };
 
     struct FNames_Helper

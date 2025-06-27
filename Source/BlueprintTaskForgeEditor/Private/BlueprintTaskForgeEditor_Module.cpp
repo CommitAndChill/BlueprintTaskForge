@@ -5,6 +5,7 @@
 #include "Engine/Blueprint.h"
 #include "BlueprintActionDatabase.h"
 #include "BlueprintActionDatabaseRegistrar.h"
+#include "BlueprintCompilationManager.h"
 #include "BtfTaskForge.h"
 #include "BtfTaskForge_K2Node.h"
 #include "PropertyEditorDelegates.h"

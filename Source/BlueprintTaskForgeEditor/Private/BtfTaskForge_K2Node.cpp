@@ -3,6 +3,8 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintFunctionNodeSpawner.h"
 #include "BlueprintNodeSpawner.h"
+#include "BtfTriggerCustomOutputPin_K2Node.h"
+
 #include "Kismet2/BlueprintEditorUtils.h"
 
 #include "BlueprintTaskForge/Public/BtfTaskForge.h"
@@ -157,6 +159,34 @@ void UBtf_TaskForge_K2Node::ReallocatePinsDuringReconstruction(TArray<UEdGraphPi
     UK2Node::AllocateDefaultPins();
     GetGraph()->NotifyGraphChanged();
     FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
+}
+
+void UBtf_TaskForge_K2Node::ReconstructNode()
+{
+    if (const auto* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
+            IsValid(TargetClassAsBlueprintTask))
+    {
+        if (ProxyClass && ProxyClass->ClassGeneratedBy)
+        {
+            if (UBlueprint* SourceBlueprint = Cast<UBlueprint>(ProxyClass->ClassGeneratedBy))
+            {
+                // Find all TriggerCustomOutputPin nodes
+                for (UEdGraphNode* Node : SourceBlueprint->UbergraphPages[0]->Nodes)
+                {
+                    if (UBtf_K2Node_TriggerCustomOutputPin* TriggerNode = Cast<UBtf_K2Node_TriggerCustomOutputPin>(Node);
+                        IsValid(TriggerNode))
+                    {
+                        TriggerNode->CachedCustomPins = CustomPins;
+                        TriggerNode->bHasValidCachedPins = true;
+
+                        TriggerNode->ReconstructNode();
+                    }
+            }
+            }
+        }
+    }
+
+    Super::ReconstructNode();
 }
 
 void UBtf_TaskForge_K2Node::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
