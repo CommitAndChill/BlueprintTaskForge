@@ -21,6 +21,8 @@ class UEdGraph;
 class UEdGraphPin;
 class UEdGraphSchema;
 class UEdGraphSchema_K2;
+class UK2Node_CallFunction;
+class FKismetCompilerContext;
 
 UCLASS()
 class BLUEPRINTTASKFORGEEDITOR_API UBtf_ExtendConstructObject_K2Node : public UK2Node
@@ -153,6 +155,25 @@ public:
     IDetailLayoutBuilder* DetailsPanelBuilder = nullptr;
 
 protected:
+    struct FNodeHelper
+    {
+        struct FOutputPinAndLocalVariable
+        {
+            FOutputPinAndLocalVariable() = default;
+            UEdGraphPin* OutputPin;
+            class UK2Node_TemporaryVariable* TempVar;
+            FOutputPinAndLocalVariable(UEdGraphPin* Pin, class UK2Node_TemporaryVariable* Var) : OutputPin(Pin), TempVar(Var) {}
+            bool operator==(const UEdGraphPin* Pin) const { return Pin == OutputPin; }
+        };
+
+        static bool ValidDataPin(const UEdGraphPin* Pin, EEdGraphPinDirection Direction);
+        static bool CreateDelegateForNewFunction(UEdGraphPin* DelegateInputPin, FName FunctionName, UK2Node* CurrentNode, UEdGraph* SourceGraph, FKismetCompilerContext& CompilerContext);
+        static bool CopyEventSignature(class UK2Node_CustomEvent* CENode, UFunction* Function, const UEdGraphSchema_K2* Schema);
+        static bool HandleDelegateImplementation(FMulticastDelegateProperty* CurrentProperty, const TArray<FOutputPinAndLocalVariable>& VariableOutputs, UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, FKismetCompilerContext& CompilerContext);
+        static bool HandleCustomPinsImplementation(FMulticastDelegateProperty* CurrentProperty, UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, TArray<FCustomOutputPin> OutputNames, FKismetCompilerContext& CompilerContext);
+    };
+
+protected:
     // UK2Node Interface
     virtual void GetRedirectPinNames(const UEdGraphPin& Pin, TArray<FString>& RedirectPinNames) const override;
 
@@ -192,6 +213,28 @@ protected:
         UEdGraphPin*& LastThenPin,
         UEdGraphPin* SpawnedActorReturnPin);
 
+    // New ExpandNode helper functions
+    bool CreateProxyObject(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph,
+                          UK2Node_CallFunction*& OutProxyNode, UEdGraphPin*& OutProxyPin);
+    bool ValidateProxyObject(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph,
+                            UEdGraphPin* ProxyObjectPin, UEdGraphPin*& LastThenPin);
+    UEdGraphPin* CastProxyObjectIfNeeded(FKismetCompilerContext& CompilerContext,
+                                        UEdGraph* SourceGraph,
+                                        UEdGraphPin* ProxyObjectPin);
+    TArray<FNodeHelper::FOutputPinAndLocalVariable> CreateVariableOutputs(FKismetCompilerContext& CompilerContext);
+    bool ProcessInputDelegates(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph,
+                              UEdGraphPin* ProxyObjectPin, UEdGraphPin*& LastThenPin);
+    bool ProcessOutputDelegates(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph,
+                               UEdGraphPin* ProxyObjectPin, UEdGraphPin*& LastThenPin,
+                               const TArray<FNodeHelper::FOutputPinAndLocalVariable>& VariableOutputs);
+    bool ProcessCustomPins(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph,
+                          UEdGraphPin* ProxyObjectPin, UEdGraphPin*& LastThenPin);
+    bool ProcessAutoCallFunctions(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph,
+                                 UEdGraphPin* ProxyObjectPin, UEdGraphPin*& LastThenPin,
+                                 const TArray<FNodeHelper::FOutputPinAndLocalVariable>& VariableOutputs);
+    bool ProcessExecFunctions(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph,
+                             UEdGraphPin* ProxyObjectPin);
+
 private:
     void InvalidatePinTooltips() const { PinTooltipsValid = false; }
     void GeneratePinTooltip(UEdGraphPin& Pin) const;
@@ -199,67 +242,7 @@ private:
 
     TMap<FName, TMap<FName, FString>> PinMetadataMap;
 
-#if WITH_EDITORONLY_DATA
-    // Helper methods for PostEditChangeProperty
-    void HandleAutoCallFunctionChange();
-    void HandleExecFunctionChange();
-    void HandleInDelegateChange();
-    void HandleOutDelegateChange();
-    void HandleSpawnParamChange();
-    void HandleAllowInstanceChange();
-    void CreateOrFindTaskInstance();
-    void DestroyTaskInstance();
-    void BindTaskInstancePropertyChanged();
-#endif
-
-    // Helper methods for Serialize
-    void ValidateProxyClass();
-    void HandleLegacyWorldContextPin();
-
-    // Helper methods for GetNodeContextMenuActions
-    bool IsValidContextForMenu(const UGraphNodeContextMenuContext* Context) const;
-    void AddNodeContextMenuActions(FToolMenuSection& Section) const;
-    void AddSubmenuForItems(
-        FToolMenuSection& Section,
-        const FName& SubmenuName,
-        const FString& SubmenuLabel,
-        const TSet<FName>& AllItems,
-        const TArray<FBtf_NameSelect>& CurrentItems,
-        void (UBtf_ExtendConstructObject_K2Node::*AddFunction)(const FName) const) const;
-    void AddPinContextMenuActions(FToolMenuSection& Section, const UEdGraphPin* Pin) const;
-    bool IsSystemPin(const UEdGraphPin* Pin) const;
-    bool IsRemovablePin(const UEdGraphPin* Pin, const FName& PinName) const;
-
-    // Helper methods for ValidateNodeDuringCompilation
-    void ValidateMacroUsage(FCompilerResultsLog& MessageLog) const;
-    bool IsInUbergraph() const;
-    void ValidateProxyClass(FCompilerResultsLog& MessageLog) const;
-    void ValidateClassPin(FCompilerResultsLog& MessageLog) const;
-    void ValidateGraphPlacement(FCompilerResultsLog& MessageLog) const;
-    void ValidateTaskInstance(FCompilerResultsLog& MessageLog) const;
-
-    // Helper methods for GetPinHoverText
-    void RefreshPinTooltips() const;
-
 protected:
-    struct FNodeHelper
-    {
-        struct FOutputPinAndLocalVariable
-        {
-            FOutputPinAndLocalVariable() = default;
-            UEdGraphPin* OutputPin;
-            class UK2Node_TemporaryVariable* TempVar;
-            FOutputPinAndLocalVariable(UEdGraphPin* Pin, class UK2Node_TemporaryVariable* Var) : OutputPin(Pin), TempVar(Var) {}
-            bool operator==(const UEdGraphPin* Pin) const { return Pin == OutputPin; }
-        };
-
-        static bool ValidDataPin(const UEdGraphPin* Pin, EEdGraphPinDirection Direction);
-        static bool CreateDelegateForNewFunction(UEdGraphPin* DelegateInputPin, FName FunctionName, UK2Node* CurrentNode, UEdGraph* SourceGraph, FKismetCompilerContext& CompilerContext);
-        static bool CopyEventSignature(class UK2Node_CustomEvent* CENode, UFunction* Function, const UEdGraphSchema_K2* Schema);
-        static bool HandleDelegateImplementation(FMulticastDelegateProperty* CurrentProperty, const TArray<FOutputPinAndLocalVariable>& VariableOutputs, UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, FKismetCompilerContext& CompilerContext);
-        static bool HandleCustomPinsImplementation(FMulticastDelegateProperty* CurrentProperty, UEdGraphPin* ProxyObjectPin, UEdGraphPin*& InOutLastThenPin, UK2Node* CurrentNode, UEdGraph* SourceGraph, TArray<FCustomOutputPin> OutputNames, FKismetCompilerContext& CompilerContext);
-    };
-
     struct FNames_Helper
     {
         static FString InPrefix;
