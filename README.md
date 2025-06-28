@@ -83,7 +83,7 @@ Blueprint Task Forge (formerly Blueprint Node Template by Alexandr Marchenko) re
 - **Custom Validation**: Implement compile-time validation for your tasks
 
 ## 📄 License
-This project is open source under the **GPLv3** license. See LICENSE file for more details.
+See LICENSE file for more details.
 
 ## 🙏 Acknowledgments
 Originally based on the (now discontinued) Blueprint Node Template plugin by Alexandr Marchenko
