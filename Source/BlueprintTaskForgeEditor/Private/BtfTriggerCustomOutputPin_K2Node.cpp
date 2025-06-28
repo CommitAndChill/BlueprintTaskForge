@@ -6,14 +6,13 @@
 #include "GraphEditorSettings.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_MakeStruct.h"
-#include "K2Node_TemporaryVariable.h"
 #include "K2Node_Self.h"
 #include "KismetCompiler.h"
 #include "Kismet2/BlueprintEditorUtils.h"
-#include "StructUtils/InstancedStruct.h"
 #include "Engine/Blueprint.h"
-
 #include "Kismet/BlueprintInstancedStructLibrary.h"
+
+// --------------------------------------------------------------------------------------------------------------------
 
 #define LOCTEXT_NAMESPACE "K2Node_TriggerCustomOutputPin"
 
@@ -30,12 +29,7 @@ void UBtf_K2Node_TriggerCustomOutputPin::AllocateDefaultPins()
     CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Execute);
     CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Then);
 
-    // Note: We don't create a TaskForge pin because this node should only work on 'self'
-    // The expansion will use the self context
-
-    // Create payload pins based on the selected custom pin
     CreatePayloadPins();
-
     Super::AllocateDefaultPins();
 }
 
@@ -80,18 +74,13 @@ void UBtf_K2Node_TriggerCustomOutputPin::Serialize(FArchive& Ar)
 {
     Super::Serialize(Ar);
 
-    // Ensure cached data is serialized
-    if (Ar.IsLoading())
+    if (Ar.IsLoading() && NOT HasValidCachedPins)
     {
-        // After loading, if we don't have valid cached pins, try to get them from CDO
-        if (!bHasValidCachedPins)
+        if (TArray<FCustomOutputPin> OutputPins;
+            TryGetCustomPinsFromCDO(OutputPins))
         {
-            TArray<FCustomOutputPin> OutputPinsPins;
-            if (TryGetCustomPinsFromCDO(OutputPinsPins))
-            {
-                CachedCustomPins = OutputPinsPins;
-                bHasValidCachedPins = true;
-            }
+            CachedCustomPins = MoveTemp(OutputPins);
+            HasValidCachedPins = true;
         }
     }
 }
@@ -103,12 +92,12 @@ FText UBtf_K2Node_TriggerCustomOutputPin::GetMenuCategory() const
 
 void UBtf_K2Node_TriggerCustomOutputPin::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
 {
-    UClass* ActionKey = GetClass();
-    if (ActionRegistrar.IsOpenForRegistration(ActionKey))
-    {
-        UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
-        check(NodeSpawner != nullptr);
+    const auto ActionKey = GetClass();
+    if (NOT ActionRegistrar.IsOpenForRegistration(ActionKey))
+    { return; }
 
+    if (auto* const NodeSpawner = UBlueprintNodeSpawner::Create(GetClass()))
+    {
         ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
     }
 }
@@ -117,79 +106,74 @@ void UBtf_K2Node_TriggerCustomOutputPin::ExpandNode(FKismetCompilerContext& Comp
 {
     Super::ExpandNode(CompilerContext, SourceGraph);
 
-    const UEdGraphSchema_K2* Schema = CompilerContext.GetSchema();
+    const auto* const Schema = CompilerContext.GetSchema();
+    auto* const ExecPin = GetExecPin();
+    auto* const ThenPin = FindPinChecked(UEdGraphSchema_K2::PN_Then);
 
-    // Get our pins
-    UEdGraphPin* ExecPin = GetExecPin();
-    UEdGraphPin* ThenPin = FindPinChecked(UEdGraphSchema_K2::PN_Then);
-
-    if (!CustomPinName.IsNone() && GetPayloadStruct())
+    if (CustomPinName.IsNone() || NOT GetPayloadStruct())
     {
-        // Create a self node since we're calling TriggerCustomOutputPin on ourselves
-        UK2Node_Self* SelfNode = CompilerContext.SpawnIntermediateNode<UK2Node_Self>(this, SourceGraph);
-        SelfNode->AllocateDefaultPins();
-
-        // Create MakeInstancedStruct node
-        UK2Node_CallFunction* MakeInstancedStructNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-        MakeInstancedStructNode->SetFromFunction(UBlueprintInstancedStructLibrary::StaticClass()->FindFunctionByName(GET_FUNCTION_NAME_CHECKED(UBlueprintInstancedStructLibrary, MakeInstancedStruct)));
-        MakeInstancedStructNode->AllocateDefaultPins();
-
-        // Create MakeStruct node for the payload
-        UK2Node_MakeStruct* MakeStructNode = CompilerContext.SpawnIntermediateNode<UK2Node_MakeStruct>(this, SourceGraph);
-        MakeStructNode->StructType = GetPayloadStruct();
-        MakeStructNode->AllocateDefaultPins();
-        MakeStructNode->bMadeAfterOverridePinRemoval = true;
-
-        // Connect payload pins to MakeStruct
-        for (UEdGraphPin* Pin : Pins)
-        {
-            if (Pin->Direction == EGPD_Input && Pin->PinName != UEdGraphSchema_K2::PN_Execute)
-            {
-                UEdGraphPin* StructPin = MakeStructNode->FindPin(Pin->PinName);
-                if (StructPin)
-                {
-                    CompilerContext.MovePinLinksToIntermediate(*Pin, *StructPin);
-                }
-            }
-        }
-
-        // Connect MakeStruct to MakeInstancedStruct
-        UEdGraphPin* StructOutputPin = MakeStructNode->FindPin(MakeStructNode->StructType->GetFName());
-        UEdGraphPin* ValuePin = MakeInstancedStructNode->FindPin(TEXT("Value"));
-        Schema->TryCreateConnection(StructOutputPin, ValuePin);
-
-        // Create the TriggerCustomOutputPin function call
-        UK2Node_CallFunction* CallFunctionNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-        CallFunctionNode->FunctionReference.SetExternalMember(
-            GET_FUNCTION_NAME_CHECKED(UBtf_TaskForge, TriggerCustomOutputPin),
-            UBtf_TaskForge::StaticClass()
-        );
-        CallFunctionNode->AllocateDefaultPins();
-
-        // Connect execution
-        CompilerContext.MovePinLinksToIntermediate(*ExecPin, *MakeInstancedStructNode->GetExecPin());
-        Schema->TryCreateConnection(MakeInstancedStructNode->GetThenPin(), CallFunctionNode->GetExecPin());
-
-        // Connect self to the function call
-        Schema->TryCreateConnection(SelfNode->FindPinChecked(UEdGraphSchema_K2::PN_Self),
-                                  CallFunctionNode->FindPinChecked(UEdGraphSchema_K2::PN_Self));
-
-        // Set the custom pin name
-        UEdGraphPin* OutputPinPin = CallFunctionNode->FindPin(TEXT("OutputPin"));
-        if (OutputPinPin)
-        {
-            OutputPinPin->DefaultValue = CustomPinName.ToString();
-        }
-
-        // Connect the payload
-        UEdGraphPin* DataPin = CallFunctionNode->FindPin(TEXT("Data"));
-        UEdGraphPin* ResultPin = MakeInstancedStructNode->FindPin(UEdGraphSchema_K2::PN_ReturnValue);
-        Schema->TryCreateConnection(ResultPin, DataPin);
-
-        // Connect output execution
-        CompilerContext.MovePinLinksToIntermediate(*ThenPin, *CallFunctionNode->GetThenPin());
+        BreakAllNodeLinks();
+        return;
     }
 
+    auto* const SelfNode = CompilerContext.SpawnIntermediateNode<UK2Node_Self>(this, SourceGraph);
+    SelfNode->AllocateDefaultPins();
+
+    auto* const MakeInstancedStructNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+    MakeInstancedStructNode->SetFromFunction(UBlueprintInstancedStructLibrary::StaticClass()->FindFunctionByName(GET_FUNCTION_NAME_CHECKED(UBlueprintInstancedStructLibrary, MakeInstancedStruct)));
+    MakeInstancedStructNode->AllocateDefaultPins();
+
+    auto* const MakeStructNode = CompilerContext.SpawnIntermediateNode<UK2Node_MakeStruct>(this, SourceGraph);
+    MakeStructNode->StructType = GetPayloadStruct();
+    MakeStructNode->AllocateDefaultPins();
+    MakeStructNode->bMadeAfterOverridePinRemoval = true;
+
+    for (auto* Pin : Pins)
+    {
+        if (Pin->Direction == EGPD_Input && Pin->PinName != UEdGraphSchema_K2::PN_Execute)
+        {
+            if (auto* const StructPin = MakeStructNode->FindPin(Pin->PinName))
+            {
+                CompilerContext.MovePinLinksToIntermediate(*Pin, *StructPin);
+            }
+        }
+    }
+
+    if (auto* const StructOutputPin = MakeStructNode->FindPin(MakeStructNode->StructType->GetFName()))
+    {
+        if (auto* const ValuePin = MakeInstancedStructNode->FindPin(TEXT("Value")))
+        {
+            Schema->TryCreateConnection(StructOutputPin, ValuePin);
+        }
+    }
+
+    auto* const CallFunctionNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
+    CallFunctionNode->FunctionReference.SetExternalMember(
+        GET_FUNCTION_NAME_CHECKED(UBtf_TaskForge, TriggerCustomOutputPin),
+        UBtf_TaskForge::StaticClass()
+    );
+    CallFunctionNode->AllocateDefaultPins();
+
+    CompilerContext.MovePinLinksToIntermediate(*ExecPin, *MakeInstancedStructNode->GetExecPin());
+    Schema->TryCreateConnection(MakeInstancedStructNode->GetThenPin(), CallFunctionNode->GetExecPin());
+
+    Schema->TryCreateConnection(SelfNode->FindPinChecked(UEdGraphSchema_K2::PN_Self),
+                              CallFunctionNode->FindPinChecked(UEdGraphSchema_K2::PN_Self));
+
+    if (auto* const OutputPinPin = CallFunctionNode->FindPin(TEXT("OutputPin")))
+    {
+        OutputPinPin->DefaultValue = CustomPinName.ToString();
+    }
+
+    if (auto* const DataPin = CallFunctionNode->FindPin(TEXT("Data")))
+    {
+        if (auto* const ResultPin = MakeInstancedStructNode->FindPin(UEdGraphSchema_K2::PN_ReturnValue))
+        {
+            Schema->TryCreateConnection(ResultPin, DataPin);
+        }
+    }
+
+    CompilerContext.MovePinLinksToIntermediate(*ThenPin, *CallFunctionNode->GetThenPin());
     BreakAllNodeLinks();
 }
 
@@ -198,12 +182,14 @@ void UBtf_K2Node_TriggerCustomOutputPin::ReallocatePinsDuringReconstruction(TArr
     AllocateDefaultPins();
     RestoreSplitPins(OldPins);
 
-    for (UEdGraphPin* OldPin : OldPins)
+    for (const auto* const OldPin : OldPins)
     {
-        if (OldPin->Direction == EGPD_Input)
+        if (OldPin->Direction != EGPD_Input)
+        { continue; }
+
+        if (auto* const NewPin = FindPin(OldPin->PinName))
         {
-            UEdGraphPin* NewPin = FindPin(OldPin->PinName);
-            if (NewPin && NewPin->PinType.PinCategory == OldPin->PinType.PinCategory)
+            if (NewPin->PinType.PinCategory == OldPin->PinType.PinCategory)
             {
                 NewPin->DefaultValue = OldPin->DefaultValue;
                 NewPin->DefaultObject = OldPin->DefaultObject;
@@ -214,20 +200,13 @@ void UBtf_K2Node_TriggerCustomOutputPin::ReallocatePinsDuringReconstruction(TArr
 
 bool UBtf_K2Node_TriggerCustomOutputPin::IsCompatibleWithGraph(const UEdGraph* TargetGraph) const
 {
-    // This node should only be placeable in BlueprintTaskForge graphs
-    if (!TargetGraph)
-    {
-        return false;
-    }
+    if (NOT IsValid(TargetGraph))
+    { return false; }
 
-    // Check if the blueprint that owns this graph is a BlueprintTaskForge
-    UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForGraph(TargetGraph);
-    if (!Blueprint)
-    {
-        return false;
-    }
+    const auto* const Blueprint = FBlueprintEditorUtils::FindBlueprintForGraph(TargetGraph);
+    if (NOT IsValid(Blueprint))
+    { return false; }
 
-    // Check if the generated class is derived from UBtf_TaskForge
     if (Blueprint->GeneratedClass && Blueprint->GeneratedClass->IsChildOf(UBtf_TaskForge::StaticClass()))
     {
         return Super::IsCompatibleWithGraph(TargetGraph);
@@ -253,16 +232,8 @@ void UBtf_K2Node_TriggerCustomOutputPin::RefreshPayloadPins()
 
 TArray<FCustomOutputPin> UBtf_K2Node_TriggerCustomOutputPin::GetAllCustomOutputPins() const
 {
-    TArray<FCustomOutputPin> CustomPins;
-
-    // First try to get from cache
-    if (TryGetCustomPinsFromCache(CustomPins))
-    {
-        return CustomPins;
-    }
-
-    // If cache is invalid, try to get from CDO
-    if (TryGetCustomPinsFromCDO(CustomPins))
+    if (TArray<FCustomOutputPin> CustomPins;
+        TryGetCustomPinsFromCache(CustomPins) || TryGetCustomPinsFromCDO(CustomPins))
     {
         return CustomPins;
     }
@@ -272,59 +243,46 @@ TArray<FCustomOutputPin> UBtf_K2Node_TriggerCustomOutputPin::GetAllCustomOutputP
 
 bool UBtf_K2Node_TriggerCustomOutputPin::TryGetCustomPinsFromCache(TArray<FCustomOutputPin>& OutPins) const
 {
-    if (bHasValidCachedPins && CachedCustomPins.Num() > 0)
-    {
-        OutPins = CachedCustomPins;
-        return true;
-    }
-    return false;
+    if (NOT HasValidCachedPins || CachedCustomPins.IsEmpty())
+    { return false; }
+
+    OutPins = CachedCustomPins;
+    return true;
 }
 
 bool UBtf_K2Node_TriggerCustomOutputPin::TryGetCustomPinsFromCDO(TArray<FCustomOutputPin>& OutPins) const
 {
-    // Get the blueprint that owns this node
-    UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
-    if (!Blueprint || !Blueprint->GeneratedClass)
-    {
-        return false;
-    }
+    const auto* const Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
+    if (NOT IsValid(Blueprint) || NOT Blueprint->GeneratedClass)
+    { return false; }
 
-    // Check if the class is being compiled
     if (Blueprint->bBeingCompiled)
-    {
-        // During compilation, we can't rely on the CDO
-        return false;
-    }
+    { return false; }
 
-    // Get the CDO of the task class
-    UBtf_TaskForge* TaskCDO = Cast<UBtf_TaskForge>(Blueprint->GeneratedClass->GetDefaultObject(false));
-    if (!TaskCDO)
-    {
-        return false;
-    }
+    const auto* const TaskCDO = Cast<UBtf_TaskForge>(Blueprint->GeneratedClass->GetDefaultObject());
+    if (NOT IsValid(TaskCDO))
+    { return false; }
 
-    // Get the custom output pins from the task
     OutPins = TaskCDO->Get_CustomOutputPins();
     return OutPins.Num() > 0;
 }
 
 UScriptStruct* UBtf_K2Node_TriggerCustomOutputPin::GetPayloadStruct() const
 {
-    FCustomOutputPin CustomPin = GetCustomOutputPin();
+    const auto CustomPin = GetCustomOutputPin();
     return CustomPin.PayloadType;
 }
 
 FCustomOutputPin UBtf_K2Node_TriggerCustomOutputPin::GetCustomOutputPin() const
 {
-    TArray<FCustomOutputPin> CustomPins = GetAllCustomOutputPins();
+    const auto CustomPins = GetAllCustomOutputPins();
 
-    // Find the pin with matching name
-    for (const FCustomOutputPin& Pin : CustomPins)
+    if (const auto* const FoundPin = Algo::FindBy(CustomPins, CustomPinName, [](const FCustomOutputPin& Pin)
     {
-        if (FName(Pin.PinName) == CustomPinName)
-        {
-            return Pin;
-        }
+        return FName(Pin.PinName);
+    }))
+    {
+        return *FoundPin;
     }
 
     return FCustomOutputPin();
@@ -332,61 +290,56 @@ FCustomOutputPin UBtf_K2Node_TriggerCustomOutputPin::GetCustomOutputPin() const
 
 void UBtf_K2Node_TriggerCustomOutputPin::CreatePayloadPins()
 {
-    UScriptStruct* PayloadStruct = GetPayloadStruct();
-    if (!PayloadStruct)
-    {
-        return;
-    }
+    const auto* const PayloadStruct = GetPayloadStruct();
+    if (NOT IsValid(PayloadStruct))
+    { return; }
 
-    const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
+    const auto* const K2Schema = GetDefault<UEdGraphSchema_K2>();
+    const auto StructSize = PayloadStruct->GetStructureSize();
 
-    // Create default instance of the struct to get default values
-    uint8* StructData = (uint8*)FMemory::Malloc(PayloadStruct->GetStructureSize());
+    auto* const StructData = static_cast<uint8*>(FMemory::Malloc(StructSize));
     PayloadStruct->InitializeStruct(StructData);
 
-    for (TFieldIterator<FProperty> It(PayloadStruct); It; ++It)
+    const auto CleanupGuard = [PayloadStruct, StructData]()
     {
-        FProperty* Property = *It;
+        PayloadStruct->DestroyStruct(StructData);
+        FMemory::Free(StructData);
+    };
 
-        if (!Property->HasAnyPropertyFlags(CPF_Parm) &&
-            Property->HasAllPropertyFlags(CPF_BlueprintVisible))
+    for (TFieldIterator<FProperty> PropertyIterator(PayloadStruct); PropertyIterator; ++PropertyIterator)
+    {
+        const auto* const Property = *PropertyIterator;
+
+        if (Property->HasAnyPropertyFlags(CPF_Parm) || NOT Property->HasAllPropertyFlags(CPF_BlueprintVisible))
+        { continue; }
+
+        FEdGraphPinType PinType;
+        if (NOT K2Schema->ConvertPropertyToPinType(Property, PinType))
+        { continue; }
+
+        auto* const NewPin = CreatePin(EGPD_Input, PinType, Property->GetFName());
+        NewPin->PinFriendlyName = Property->GetDisplayNameText();
+
+        if (K2Schema->PinDefaultValueIsEditable(*NewPin))
         {
-            FEdGraphPinType PinType;
-            if (K2Schema->ConvertPropertyToPinType(Property, PinType))
-            {
-                UEdGraphPin* NewPin = CreatePin(EGPD_Input, PinType, Property->GetFName());
-                NewPin->PinFriendlyName = Property->GetDisplayNameText();
-
-                // Set default value
-                if (K2Schema->PinDefaultValueIsEditable(*NewPin))
-                {
-                    FString DefaultValue;
-                    FBlueprintEditorUtils::PropertyValueToString(Property, StructData, DefaultValue, this);
-                    K2Schema->SetPinAutogeneratedDefaultValue(NewPin, DefaultValue);
-                }
-
-                K2Schema->ConstructBasicPinTooltip(*NewPin, Property->GetToolTipText(), NewPin->PinToolTip);
-            }
+            FString DefaultValue;
+            FBlueprintEditorUtils::PropertyValueToString(Property, StructData, DefaultValue, this);
+            K2Schema->SetPinAutogeneratedDefaultValue(NewPin, DefaultValue);
         }
+
+        K2Schema->ConstructBasicPinTooltip(*NewPin, Property->GetToolTipText(), NewPin->PinToolTip);
     }
 
-    // Clean up the temporary struct instance
-    PayloadStruct->DestroyStruct(StructData);
-    FMemory::Free(StructData);
+    CleanupGuard();
 }
 
 TArray<FString> UBtf_K2Node_TriggerCustomOutputPin::GetCustomPinOptions() const
 {
     TArray<FString> Options;
-
-    // Add None option
     Options.Add(TEXT("None"));
 
-    // Get all custom pins
-    TArray<FCustomOutputPin> CustomPins = GetAllCustomOutputPins();
-
-    // Add each custom pin name to the options
-    for (const FCustomOutputPin& Pin : CustomPins)
+    for (const auto& CustomPins = GetAllCustomOutputPins();
+        const auto& Pin : CustomPins)
     {
         Options.Add(Pin.PinName);
     }
@@ -395,3 +348,5 @@ TArray<FString> UBtf_K2Node_TriggerCustomOutputPin::GetCustomPinOptions() const
 }
 
 #undef LOCTEXT_NAMESPACE
+
+// --------------------------------------------------------------------------------------------------------------------
