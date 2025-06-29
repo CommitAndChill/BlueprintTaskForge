@@ -19,8 +19,13 @@ If you modify the Plugin in any way, including but not limited to:
 
 and use the modified Plugin in any distributed product (such as a packaged game, tool, or plugin), you must:
 
-- Make the source code of your modifications publicly accessible under the same license  
+- Make the source code of your modifications publicly accessible under this same license
 - Submit your changes back to the original Plugin repository (by opening a pull request or by notifying the maintainers of a public fork)
+
+This requirement is waived only if **all** of the following conditions are met:
+
+- The modifications are strictly for private integration, internal tooling, or compatibility with non-public systems; **and**
+- The modified Plugin is not distributed outside your organization or development team;
 
 ## 3. Redistribution
 
