@@ -33,24 +33,21 @@ UBtf_TaskForge* UBtf_TaskForge::BlueprintTaskForge(UObject* Outer, const TSubcla
     if (NOT IsValid(Outer) || NOT IsValid(Class) || Class->HasAnyClassFlags(CLASS_Abstract))
     { return nullptr; }
 
-    if (auto* TaskTemplate = GetTaskByNodeGUID(Outer, NodeGuidStr))
+    auto* TaskTemplate = GetTaskByNodeGUID(Outer, NodeGuidStr);
+
+    const auto TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName(), EUniqueObjectNameOptions::GloballyUnique);
+    const auto Task = NewObject<UBtf_TaskForge>(Outer, Class, TaskObjName, RF_NoFlags, TaskTemplate);
+
+    if (NOT IsValid(Task))
+    { return Task; }
+
+    if (const auto& BlueprintTaskEngineSystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
+        IsValid(BlueprintTaskEngineSystem))
     {
-        const auto TaskObjName = MakeUniqueObjectName(Outer, Class, Class->GetFName(), EUniqueObjectNameOptions::GloballyUnique);
-        const auto Task = NewObject<UBtf_TaskForge>(Outer, Class, TaskObjName, RF_NoFlags, TaskTemplate);
-
-        if (NOT IsValid(Task))
-        { return Task; }
-
-        if (const auto& BlueprintTaskEngineSystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
-            IsValid(BlueprintTaskEngineSystem))
-        {
-            BlueprintTaskEngineSystem->Add(FGuid(NodeGuidStr), Task);
-        }
-
-        return Task;
+        BlueprintTaskEngineSystem->Add(FGuid(NodeGuidStr), Task);
     }
 
-    return nullptr;
+    return Task;
 }
 
 UBtf_TaskForge* UBtf_TaskForge::GetTaskByNodeGUID(UObject* Outer, FString NodeGUID)
