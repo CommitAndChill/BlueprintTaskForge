@@ -483,6 +483,8 @@ void UBtf_TaskForge::RefreshCollected()
         AutoCallFunction.AddUnique(FBtf_NameSelect{TEXT("Activate")});
 
         AutoCallFunction.Remove(FBtf_NameSelect{TEXT("Deactivate")});
+        InDelegate.Remove(FBtf_NameSelect{TEXT("OnCustomPinTriggered")});
+        OutDelegate.Remove(FBtf_NameSelect{TEXT("OnCustomPinTriggered")});
 
         if (const auto* DeveloperSettings = GetDefault<UBtf_RuntimeSettings>())
         {
