@@ -73,7 +73,7 @@ public:
 
     // Flag to indicate if cached pins are valid
     UPROPERTY()
-    bool bHasValidCachedPins = false;
+    bool HasValidCachedPins = false;
 
     // Dropdown support
     UFUNCTION()
