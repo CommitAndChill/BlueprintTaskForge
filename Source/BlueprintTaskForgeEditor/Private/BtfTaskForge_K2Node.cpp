@@ -187,7 +187,7 @@ void UBtf_TaskForge_K2Node::ReconstructNode()
                         IsValid(TriggerNode))
                     {
                         TriggerNode->CachedCustomPins = CustomPins;
-                        TriggerNode->bHasValidCachedPins = true;
+                        TriggerNode->HasValidCachedPins = true;
 
                         TriggerNode->ReconstructNode();
                     }
