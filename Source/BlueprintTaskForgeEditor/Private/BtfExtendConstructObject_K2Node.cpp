@@ -1538,7 +1538,7 @@ void UBtf_ExtendConstructObject_K2Node::CreatePinsForClass(UClass* TargetClass, 
         {
             if (Name != NAME_None)
             {
-                if (NOT TargetClass->FindPropertyByName(Name))
+                if (NOT TargetClass->FindFunctionByName(Name))
                 { return true; }
             }
             return false;
