@@ -48,6 +48,11 @@ Blueprint Task Forge (formerly Blueprint Node Template by Alexandr Marchenko) re
 ## 💬 Community & Support
 [DiscordServer](https://discord.gg/VgMQKhWcmz)
 
+## 🖼️ Showcase
+<img width="1888" height="1071" alt="Showcase image" src="https://github.com/user-attachments/assets/aa73fd16-4142-4ccd-9b28-c35cf701637e" />
+
+[Sample project](https://github.com/CommitAndChill/BlueprintTaskForge_Samples)
+
 ## 🏃‍♂️ Quick Start
 
 ### 1. Installation
