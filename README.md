@@ -42,7 +42,6 @@ Blueprint Task Forge (formerly Blueprint Node Template by Alexandr Marchenko) re
 ## 📋 Requirements
 
 - **Unreal Engine**: 5.1 or later
-- **License**: Compatible with all Unreal Engine license types
 - **Platform**: Windows, Mac, Linux
 
 ## 💬 Community & Support
