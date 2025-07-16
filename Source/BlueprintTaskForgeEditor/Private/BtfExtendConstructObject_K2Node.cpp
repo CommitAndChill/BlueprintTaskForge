@@ -1054,7 +1054,7 @@ void UBtf_ExtendConstructObject_K2Node::RefreshNames(TArray<FBtf_NameSelect>& Na
         return false;
     };
 
-    Algo::Unique(CopyNameArray, UniquePred);
+    std::ignore = Algo::Unique(CopyNameArray, UniquePred);
 }
 
 void UBtf_ExtendConstructObject_K2Node::ResetPinByNames(TSet<FName>& NameArray)
