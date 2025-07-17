@@ -1,11 +1,11 @@
 // Copyright (c) 2025 BlueprintTaskForge Maintainers
-// 
+//
 // This file is part of the BlueprintTaskForge Plugin for Unreal Engine.
-// 
+//
 // Licensed under the BlueprintTaskForge Open Plugin License v1.0 (BTFPL-1.0).
 // You may obtain a copy of the license at:
 // https://github.com/CommitAndChill/BlueprintTaskForge/blob/main/LICENSE.md
-// 
+//
 // SPDX-License-Identifier: BTFPL-1.0
 
 #include "BtfTaskForge_K2Node.h"
@@ -19,6 +19,7 @@
 
 #include "BlueprintTaskForge/Public/BtfTaskForge.h"
 #include "BlueprintTaskForge/Public/Subsystem/BtfSubsystem.h"
+#include "Settings/BtfRuntimeSettings.h"
 
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -98,7 +99,7 @@ void UBtf_TaskForge_K2Node::RegisterBlueprintAction(UClass* TargetClass, FBluepr
             auto LocName = TargetClass->GetName();
             LocName.RemoveFromEnd(FNames_Helper::CompiledFromBlueprintSuffix);
 
-            if (const auto* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(TargetClass->ClassDefaultObject))
+            if (const auto* TargetClassAsBlueprintTask = GetDefault<UBtf_TaskForge>(TargetClass))
             {
                 if (TargetClassAsBlueprintTask->Category != NAME_None)
                 {
@@ -173,7 +174,7 @@ void UBtf_TaskForge_K2Node::ReallocatePinsDuringReconstruction(TArray<UEdGraphPi
 
 void UBtf_TaskForge_K2Node::ReconstructNode()
 {
-    if (const auto* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
+    if (const auto* TargetClassAsBlueprintTask = GetDefault<UBtf_TaskForge>(ProxyClass);
             IsValid(TargetClassAsBlueprintTask))
     {
         if (ProxyClass && ProxyClass->ClassGeneratedBy)
@@ -220,7 +221,7 @@ FText UBtf_TaskForge_K2Node::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
     if (IsValid(ProxyClass))
     {
-        if (const auto* TargetClassAsBlueprintTask = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
+        if (const auto* TargetClassAsBlueprintTask = GetDefault<UBtf_TaskForge>(ProxyClass);
             IsValid(TargetClassAsBlueprintTask))
         {
             const auto& MenuDisplayName = TargetClassAsBlueprintTask->MenuDisplayName;
@@ -254,7 +255,7 @@ FString UBtf_TaskForge_K2Node::Get_NodeDescription() const
             return TaskInstance->Get_NodeDescription();
         }
 
-        if (const auto& TaskCDO = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
+        if (const auto& TaskCDO = GetDefault<UBtf_TaskForge>(ProxyClass);
             IsValid(TaskCDO))
         {
             const auto& NodeDescription = TaskCDO->Get_NodeDescription();
@@ -264,19 +265,23 @@ FString UBtf_TaskForge_K2Node::Get_NodeDescription() const
         return {};
     }
 
-    constexpr auto ShowNodeDescriptionWhilePlaying = false;
-    if (NOT ShowNodeDescriptionWhilePlaying)
-    { return {}; }
-
-    if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
-        IsValid(Subsystem))
+    if (const auto* Settings = GetDefault<UBtf_RuntimeSettings>())
     {
-        if (const auto FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
-            IsValid(FoundTaskInstance))
-        {
-            const auto& NodeDescription = FoundTaskInstance->Get_NodeDescription();
-            return NodeDescription;
-        }
+
+      if (const auto ShowNodeDescriptionWhilePlaying = Settings->ShowNodeDescriptionWhilePlaying;
+          NOT ShowNodeDescriptionWhilePlaying)
+      { return {}; }
+
+      if (const auto& Subsystem = GEngine->GetEngineSubsystem<UBtf_EngineSubsystem>();
+          IsValid(Subsystem))
+      {
+          if (const auto FoundTaskInstance = Subsystem->FindTaskInstanceWithGuid(NodeGuid);
+              IsValid(FoundTaskInstance))
+          {
+              const auto& NodeDescription = FoundTaskInstance->Get_NodeDescription();
+              return NodeDescription;
+          }
+      }
     }
 
     return {};
@@ -314,7 +319,7 @@ FLinearColor UBtf_TaskForge_K2Node::Get_StatusBackgroundColor() const
             }
         }
 
-        if (const auto& TaskCDO = Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject);
+        if (const auto& TaskCDO = GetDefault<UBtf_TaskForge>(ProxyClass);
             IsValid(TaskCDO))
         {
             if (TaskCDO->Get_StatusBackgroundColor(ObtainedColor))

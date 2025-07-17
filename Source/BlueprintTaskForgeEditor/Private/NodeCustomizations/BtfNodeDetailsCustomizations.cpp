@@ -1,11 +1,11 @@
 ﻿// Copyright (c) 2025 BlueprintTaskForge Maintainers
-// 
+//
 // This file is part of the BlueprintTaskForge Plugin for Unreal Engine.
-// 
+//
 // Licensed under the BlueprintTaskForge Open Plugin License v1.0 (BTFPL-1.0).
 // You may obtain a copy of the license at:
 // https://github.com/CommitAndChill/BlueprintTaskForge/blob/main/LICENSE.md
-// 
+//
 // SPDX-License-Identifier: BTFPL-1.0
 
 #include "NodeCustomizations/BtfNodeDetailsCustomizations.h"
@@ -57,7 +57,7 @@ void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
 	{
 		//Set the filter function to exclude non-instance-editable properties before we add
 		//the task instance to the details panel
-		DetailBuilder.GetDetailsView()->SetIsPropertyVisibleDelegate(FIsPropertyVisible::CreateLambda(
+		DetailBuilder.GetDetailsViewSharedPtr()->SetIsPropertyVisibleDelegate(FIsPropertyVisible::CreateLambda(
 			[=](const FPropertyAndParent& PropertyAndParent) -> bool
 		{
 			//Check if the property is marked as instance-editable and public. If not, hide them
@@ -96,7 +96,7 @@ void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
 			CurrentObjectDetailsViewArgs.bHideSelectionTip = true;
 			CurrentObjectDetailsViewArgs.bAllowSearch = true;
 
-			DetailBuilder.GetDetailsView()->OnFinishedChangingProperties().AddLambda(
+			DetailBuilder.GetDetailsViewSharedPtr()->OnFinishedChangingProperties().AddLambda(
 				[TaskNode](const FPropertyChangedEvent& PropertyChangedEvent)
 			{
 				//Refresh the node, in-case the decorator is displaying info from the object
@@ -109,7 +109,7 @@ void FBtf_NodeDetailsCustomizations::CustomizeDetails(IDetailLayoutBuilder& Deta
 			/**Reset the visibility delegate to allow everything, in case the TaskInstance
 			 * delegate section was triggered, which only allows instance editable
 			 * properties to appear. */
-			DetailBuilder.GetDetailsView()->SetIsPropertyVisibleDelegate(FIsPropertyVisible::CreateLambda(
+			DetailBuilder.GetDetailsViewSharedPtr()->SetIsPropertyVisibleDelegate(FIsPropertyVisible::CreateLambda(
 				[=](const FPropertyAndParent& PropertyAndParent) -> bool
 			{
 				return true;

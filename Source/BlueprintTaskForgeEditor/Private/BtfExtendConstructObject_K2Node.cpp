@@ -1,11 +1,11 @@
 // Copyright (c) 2025 BlueprintTaskForge Maintainers
-// 
+//
 // This file is part of the BlueprintTaskForge Plugin for Unreal Engine.
-// 
+//
 // Licensed under the BlueprintTaskForge Open Plugin License v1.0 (BTFPL-1.0).
 // You may obtain a copy of the license at:
 // https://github.com/CommitAndChill/BlueprintTaskForge/blob/main/LICENSE.md
-// 
+//
 // SPDX-License-Identifier: BTFPL-1.0
 
 #include "BtfExtendConstructObject_K2Node.h"
@@ -716,9 +716,9 @@ bool UBtf_ExtendConstructObject_K2Node::CanBePlacedInGraph() const
 {
     if (const auto* Blueprint = FBlueprintEditorUtils::FindBlueprintForGraph(GetGraph()))
     {
-        if (IsValid(ProxyClass) && IsValid(Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject)) && Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject)->ClassLimitations.IsValidIndex(0))
+        if (IsValid(ProxyClass) && IsValid(GetDefault<UBtf_TaskForge>(ProxyClass)) && GetDefault<UBtf_TaskForge>(ProxyClass)->ClassLimitations.IsValidIndex(0))
         {
-            for (const auto& CurrentClass : Cast<UBtf_TaskForge>(ProxyClass->ClassDefaultObject)->ClassLimitations)
+            for (const auto& CurrentClass : GetDefault<UBtf_TaskForge>(ProxyClass)->ClassLimitations)
             {
                 if (NOT CurrentClass.IsNull())
                 {
@@ -2313,7 +2313,7 @@ bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
                 if (NOT Property)
                 { continue; }
 
-                if (IsValid(ClassToSpawn->ClassDefaultObject))
+                if (IsValid(ClassToSpawn->GetDefaultObject()))
                 {
                     auto DefaultValueAsString = FString{};
                     FBlueprintEditorUtils::PropertyValueToString(
@@ -2321,7 +2321,7 @@ bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
 #if ENGINE_MINOR_VERSION < 3
                         reinterpret_cast<uint8*>(ClassToSpawn->ClassDefaultObject),
 #else
-                        reinterpret_cast<uint8*>(ClassToSpawn->ClassDefaultObject.Get()),
+                        reinterpret_cast<uint8*>(ClassToSpawn->GetDefaultObject()),
 #endif
                         DefaultValueAsString,
                         this);
