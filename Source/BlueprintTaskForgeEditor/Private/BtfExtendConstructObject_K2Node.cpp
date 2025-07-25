@@ -629,7 +629,9 @@ FText UBtf_ExtendConstructObject_K2Node::GetTooltipText() const
 FLinearColor UBtf_ExtendConstructObject_K2Node::GetNodeTitleColor() const
 {
     auto CustomColor = FLinearColor{};
-    if (GetInstanceOrDefaultObject()->Get_NodeTitleColor(CustomColor))
+    if (const auto& TaskObject = GetInstanceOrDefaultObject();
+    	IsValid(TaskObject) &&
+    	TaskObject->Get_NodeTitleColor(CustomColor))
     { return CustomColor; }
 
     return Super::GetNodeTitleColor();
@@ -736,6 +738,9 @@ bool UBtf_ExtendConstructObject_K2Node::CanBePlacedInGraph() const
 
 UBtf_TaskForge* UBtf_ExtendConstructObject_K2Node::GetInstanceOrDefaultObject() const
 {
+	if (NOT IsValid(ProxyClass))
+	{ return {}; }
+
     return AllowInstance && IsValid(TaskInstance) ? TaskInstance : ProxyClass->GetDefaultObject<UBtf_TaskForge>();
 }
 
@@ -822,6 +827,9 @@ TSharedPtr<SGraphNode> UBtf_ExtendConstructObject_K2Node::CreateVisualWidget()
             ReconstructNode();
         });
     }
+
+	if (NOT IsValid(ProxyClass))
+	{ return {}; }
 
     return SNew(SBtf_Node, this, ProxyClass);
 }
