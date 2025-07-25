@@ -37,7 +37,8 @@ TSharedRef<SWidget> SBtf_Node::CreateNodeContentArea()
 	TSharedPtr<SWidget> CenterContent;
 	TSharedPtr<SWidget> BottomContent;
 
-	if(IsValid(_BlueprintTaskNode->GetInstanceOrDefaultObject()->Decorator))
+	if(_BlueprintTaskNode.IsValid() &&
+		IsValid(_BlueprintTaskNode->GetInstanceOrDefaultObject()->Decorator))
 	{
 		if(!Decorator)
 		{

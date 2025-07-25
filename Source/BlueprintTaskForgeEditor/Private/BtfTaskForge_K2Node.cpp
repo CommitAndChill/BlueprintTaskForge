@@ -174,6 +174,9 @@ void UBtf_TaskForge_K2Node::ReallocatePinsDuringReconstruction(TArray<UEdGraphPi
 
 void UBtf_TaskForge_K2Node::ReconstructNode()
 {
+	if (NOT IsValid(ProxyClass))
+	{ return; }
+
     if (const auto* TargetClassAsBlueprintTask = GetDefault<UBtf_TaskForge>(ProxyClass);
             IsValid(TargetClassAsBlueprintTask))
     {
