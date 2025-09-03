@@ -1,11 +1,11 @@
 // Copyright (c) 2025 BlueprintTaskForge Maintainers
-// 
+//
 // This file is part of the BlueprintTaskForge Plugin for Unreal Engine.
-// 
+//
 // Licensed under the BlueprintTaskForge Open Plugin License v1.0 (BTFPL-1.0).
 // You may obtain a copy of the license at:
 // https://github.com/CommitAndChill/BlueprintTaskForge/blob/main/LICENSE.md
-// 
+//
 // SPDX-License-Identifier: BTFPL-1.0
 
 #include "BtfTaskForge.h"
@@ -58,16 +58,23 @@ UBtf_TaskForge* UBtf_TaskForge::GetTaskByNodeGUID(UObject* Outer, FString NodeGU
     {
         if (auto* BPGC = Cast<UBlueprintGeneratedClass>(TemplateOwnerClass))
         {
+#if !UE_BUILD_TEST
+            // ClassGeneratedBy may not be available in Test builds due to optimization
             if (auto* Blueprint = Cast<UBlueprint>(BPGC->ClassGeneratedBy))
             {
-                for (TObjectPtr<UBlueprintExtension> Extension : Blueprint->GetExtensions())
+                // GetExtensions() might also be stripped in Test builds
+                if (Blueprint->HasAnyFlags(RF_ClassDefaultObject) == false)
                 {
-                    if (Extension && Extension->IsA<UBtf_TaskForge>() && Extension->GetFName().ToString().Contains(NodeGUID))
+                    for (TObjectPtr<UBlueprintExtension> Extension : Blueprint->GetExtensions())
                     {
-                        return Cast<UBtf_TaskForge>(Extension);
+                        if (Extension && Extension->IsA<UBtf_TaskForge>() && Extension->GetFName().ToString().Contains(NodeGUID))
+                        {
+                            return Cast<UBtf_TaskForge>(Extension);
+                        }
                     }
                 }
             }
+#endif
         }
     }
 
@@ -256,6 +263,7 @@ bool UBtf_TaskForge::Get_NodeTitleColor_Implementation(FLinearColor& Color)
 
 bool UBtf_TaskForge::IsExtension() const
 {
+#if !UE_BUILD_TEST
     for (UObject* TemplateOwnerClass = (GetOuter() != nullptr) ? GetOuter() : nullptr
         ; TemplateOwnerClass
         ; TemplateOwnerClass = TemplateOwnerClass->GetOuter())
@@ -273,6 +281,7 @@ bool UBtf_TaskForge::IsExtension() const
             return Blueprint->GetExtensions().Contains(this);
         }
     }
+#endif
 
     return false;
 }
@@ -322,12 +331,12 @@ FString UBtf_TaskForge::Get_StatusString_Implementation() const
     return FString();
 }
 
+#if WITH_EDITOR
 bool UBtf_TaskForge::Get_IsActive() const
 {
     return IsActive;
 }
 
-#if WITH_EDITOR
 void UBtf_TaskForge::CollectSpawnParam(const UClass* InClass, TSet<FName>& Out)
 {
     Out.Reset();
