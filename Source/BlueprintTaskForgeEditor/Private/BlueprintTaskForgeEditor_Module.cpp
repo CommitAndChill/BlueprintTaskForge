@@ -78,7 +78,10 @@ void FBlueprintTaskForgeEditorModule::OnFilesLoaded()
     RefreshClassActions();
 
 #if WITH_EDITOR
-    GEditor->OnBlueprintCompiled().AddRaw(this, &FBlueprintTaskForgeEditorModule::OnBlueprintCompiled);
+    if (GEditor)
+    {
+        GEditor->OnBlueprintCompiled().AddRaw(this, &FBlueprintTaskForgeEditorModule::OnBlueprintCompiled);
+    }
 #endif
 }
 
