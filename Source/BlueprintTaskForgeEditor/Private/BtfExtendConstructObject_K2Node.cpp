@@ -2341,25 +2341,28 @@ bool UBtf_ExtendConstructObject_K2Node::ConnectSpawnProperties(
         {
             if (SpawnVarPin->LinkedTo.Num() == 0)
             {
-                const auto* Property = FindFProperty<FProperty>(ClassToSpawn, SpawnVarPin->PinName);
-                if (NOT Property)
-                { continue; }
+                const FProperty* Property = FindFProperty<FProperty>(ClassToSpawn, SpawnVarPin->PinName);
+                if (!Property) continue;
 
-                if (IsValid(ClassToSpawn->GetDefaultObject()))
+                if (ClassToSpawn->GetDefaultObject() != nullptr)
                 {
-                    auto DefaultValueAsString = FString{};
+                    FString DefaultValueAsString;
                     FBlueprintEditorUtils::PropertyValueToString(
                         Property,
-#if ENGINE_MINOR_VERSION < 3
-                        reinterpret_cast<uint8*>(ClassToSpawn->ClassDefaultObject),
-#else
                         reinterpret_cast<uint8*>(ClassToSpawn->GetDefaultObject()),
-#endif
                         DefaultValueAsString,
                         this);
 
-                    if (DefaultValueAsString == SpawnVarPin->DefaultValue)
-                    { continue; }
+                    // Text is stored as DefaultTextValue, not entirely sure why
+                    if (SpawnVarPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Text)
+                    {
+                        if (SpawnVarPin->DefaultTextValue.EqualTo(FText::FromString(DefaultValueAsString)))
+                            continue;
+                    }
+                    else if (DefaultValueAsString == SpawnVarPin->DefaultValue)
+                    {
+                        continue;
+                    }
                 }
             }
 
