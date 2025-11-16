@@ -41,7 +41,7 @@ struct FCustomOutputPin
     UPROPERTY(BlueprintReadWrite, EditAnywhere)
     FString Tooltip;
 
-    UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (MetaStruct = "FCustomOutputPinData"))
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (BaseStruct = "/Script/BlueprintTaskForge.FCustomOutputPinData"))
     TObjectPtr<UScriptStruct> PayloadType;
 };
 
